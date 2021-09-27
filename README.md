@@ -7,9 +7,9 @@ RDBOX is an advanced IT platform for robotics and IoT developers that highly int
 [![CircleCI](https://circleci.com/gh/rdbox-intec/image-builder-rpi.svg?style=svg)](https://circleci.com/gh/rdbox-intec/image-builder-rpi)
 [![RDBOX App Market](https://github.com/rdbox-intec/script_for_rdbox_app_market/workflows/RDBOX%20App%20Market/badge.svg)](https://github.com/rdbox-intec/script_for_rdbox_app_market/actions?query=workflow%3A%22RDBOX+App+Market%22)
 [![RDBOX Middleware Build and Deploy](https://github.com/rdbox-intec/rdbox-middleware/workflows/RDBOX%20Middleware%20Build%20and%20Deploy/badge.svg)](https://github.com/rdbox-intec/rdbox-middleware/actions?query=workflow%3A%22RDBOX+Middleware+Build+and+Deploy%22)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/83414aa80f9f41a28a7ae73a50b67e13)](https://app.codacy.com/app/fukuta-tatsuya-intec/rdbox-middleware_2?utm_source=github.com&utm_medium=referral&utm_content=rdbox-intec/rdbox-middleware&utm_campaign=Badge_Grade_Dashboard)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/287bfe44a78d46c6aaecd1a31ca407c0)](https://www.codacy.com/gh/rdbox-intec/rdbox-middleware/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=rdbox-intec/rdbox-middleware&amp;utm_campaign=Badge_Grade)
 [![Github Release](https://img.shields.io/github/release/rdbox-intec/rdbox.svg)](https://github.com/rdbox-intec/rdbox/releases)
-![Bintray](https://img.shields.io/bintray/v/rdbox/deb/rdbox-middleware)
+[![JFrog](https://img.shields.io/badge/JFrog-ready-green)](https://rdbox0intec.jfrog.io/ui/packages?name=rdbox&type=packages)
 
 Don’t be surprised, there IT infrastructure is **built automatically** and **maintained automatically**.  
 [(DETAIL: Effect on you)](#Effect-on-you)  

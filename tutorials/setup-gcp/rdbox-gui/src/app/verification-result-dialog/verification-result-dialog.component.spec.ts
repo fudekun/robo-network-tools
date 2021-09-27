@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { VerificationResultDialogComponent } from './verification-result-dialog.component';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -10,7 +10,7 @@ describe('VerificationResultDialogComponent', () => {
   let component: VerificationResultDialogComponent;
   let fixture: ComponentFixture<VerificationResultDialogComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ VerificationResultDialogComponent ],
       imports: [
