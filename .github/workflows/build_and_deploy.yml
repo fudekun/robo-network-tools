@@ -1,0 +1,39 @@
+name: RDBOX OS Builder
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Get image tag
+      id: tags
+      run: echo "::set-output name=tag::$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")"
+    - name: Download ISO of rpi.
+      run: |
+        curl -OLs https://github.com/rdbox-intec/image-builder-rpi/releases/download/hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}/hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+        curl -OLs https://github.com/rdbox-intec/image-builder-rpi/releases/download/hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}/hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256
+      shell: bash
+    - name: Download ISO of x86.
+      run: |
+        curl -OLs https://github.com/rdbox-intec/image-builder-x86/releases/download/${{ steps.tags.outputs.tag }}/hypriotos-x86-legacy-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+        curl -OLs https://github.com/rdbox-intec/image-builder-x86/releases/download/${{ steps.tags.outputs.tag }}/hypriotos-x86-legacy-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256
+        curl -OLs https://github.com/rdbox-intec/image-builder-x86/releases/download/${{ steps.tags.outputs.tag }}/hypriotos-x86-uefi-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+        curl -OLs https://github.com/rdbox-intec/image-builder-x86/releases/download/${{ steps.tags.outputs.tag }}/hypriotos-x86-uefi-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256
+      shell: bash
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tags.outputs.tag }}
+        name: Release ${{ steps.tags.outputs.tag }}
+        draft: false
+        prerelease: false
+        files: |
+          hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+          hypriotos-rpi-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256
+          hypriotos-x86-legacy-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+          hypriotos-x86-legacy-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256
+          hypriotos-x86-uefi-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip
+          hypriotos-x86-uefi-sata-v1.12.3.rdbox-${{ steps.tags.outputs.tag }}.img.zip.sha256

@@ -1,4 +1,4 @@
-FROM ubuntu:bionic-20200311
+FROM ubuntu:bionic
 
 ENV LANG C.UTF-8
 
@@ -20,16 +20,19 @@ RUN apt-get update && \
         python3-psutil \
         python3-pip \
         python3-setuptools \
+        python3-oauth2client \
         sudo \
         ssh \
         git \
         dnsutils \
         vim \
-        ipcalc
+        ipcalc \
+        software-properties-common && \
+    apt-add-repository --yes --update ppa:ansible/ansible && \
+    apt install -y ansible
+
 RUN pip3 install --upgrade \
-        google-api-python-client \
-        oauth2client \
-        ansible
+        google-api-python-client
 
 RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
     echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
@@ -39,10 +42,10 @@ RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./tutorials/setup-gcp/rdbox-gui/dist /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/dist
-COPY ./tutorials/setup-gcp/rdbox-gui/flask_rdbox /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/flask_rdbox
-COPY ./tutorials/setup-gcp/rdbox-gui/server.py /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/server.py
-COPY ./tutorials/setup-rdbox /root/git/rdbox/tutorials/setup-rdbox
-COPY ./tutorials/setup-rdbox-hq /root/git/rdbox/tutorials/setup-rdbox-hq
+COPY ../tutorials/setup-gcp/rdbox-gui/dist /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/dist
+COPY ../tutorials/setup-gcp/rdbox-gui/flask_rdbox /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/flask_rdbox
+COPY ../tutorials/setup-gcp/rdbox-gui/server.py /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/server.py
+COPY ../tutorials/setup-rdbox /root/git/rdbox/tutorials/setup-rdbox
+COPY ../tutorials/setup-rdbox-hq /root/git/rdbox/tutorials/setup-rdbox-hq
 
 CMD DEBUG_RDBOX_GUI=False /usr/bin/python3 /root/git/rdbox/tutorials/setup-gcp/rdbox-gui/server.py
