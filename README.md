@@ -12,7 +12,7 @@ RDBOX is an advanced IT platform for robotics and IoT developers that highly int
 [![Github Release](https://img.shields.io/github/release/rdbox-intec/rdbox.svg)](https://github.com/rdbox-intec/rdbox/releases)
 [![JFrog](https://img.shields.io/badge/JFrog-ready-green)](https://rdbox0intec.jfrog.io/ui/packages?name=rdbox&type=packages)
 
-RDBOX makes "cloud-native technologies and ideas" more accessible by encompassing "the base fundamental technologies".
+RDBOX makes "cloud-native technologies and ideas" more accessible by encompassing "the base fundamental technologies".  
 <img src="./images/RDBOX_OverViews.jpg" title="./images/you_can_easily_make_by_rdbox.png" width=600px></img>
 
 To get started, Please prepare [RaspberryPi](https://www.raspberrypi.org/) and [AWS](https://github.com/rdbox-intec/rdbox/wiki/tutorials-en#aws) or [Azure](https://github.com/rdbox-intec/rdbox/wiki/tutorials-en#azure) or [Google Cloud Platform](https://github.com/rdbox-intec/rdbox/wiki/tutorials-en#google-cloud-platform-gcp) or [Laptop(With Vagrant)](https://github.com/rdbox-intec/rdbox/wiki/tutorials-en#virutalbox).  
