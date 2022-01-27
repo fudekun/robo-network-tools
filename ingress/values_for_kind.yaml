@@ -1,0 +1,20 @@
+extraArgs:
+  - --token-ttl=18000
+  - --enable-insecure-login
+protocolHttp: true
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: ambassador
+    ingress.kubernetes.io/protocol: https
+  paths:
+    - "/kubernetes-dashboard/"
+  hosts:
+    - rdbox.127-0-0-1.nip.io
+  tls:
+    - secretName: rdbox-common-tls
+      hosts:
+        - rdbox.127-0-0-1.nip.io
+  args:
+    - --kubelet-preferred-address-types=InternalIP
+    - --kubelet-insecure-tls
