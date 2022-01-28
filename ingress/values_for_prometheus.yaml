@@ -16,7 +16,16 @@ prometheus:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: ambassador
-      ingress.kubernetes.io/protocol: https
+      getambassador.io/config: |
+        ---
+        apiVersion: getambassador.io/v2
+        kind: Mapping
+        name: kube-prometheus-stack-grafana
+        host: rdbox.127-0-0-1.nip.io
+        prefix: /prometheus/
+        regex_rewrite:
+          pattern: '/prometheus(/|$)(.*)'
+          substitution: '/\2'
     paths:
       - /prometheus/
     hosts:
@@ -27,3 +36,29 @@ prometheus:
           - rdbox.127-0-0-1.nip.io
   prometheusSpec:
     externalUrl: /prometheus/
+  # ingress:
+  #   enabled: true
+  #   annotations:
+  #     kubernetes.io/ingress.class: ambassador
+  #     ingress.kubernetes.io/protocol: https
+  #     getambassador.io/config: |
+  #       ---
+  #       apiVersion: getambassador.io/v3alpha1
+  #       kind: Mapping
+  #       metadata:
+  #         name: kube-prometheus-stack-grafana
+  #       prefix: /prometheus/
+  #       hostname: "rdbox.127-0-0-1.nip.io"
+  #       service: exampleservice:8080
+  #       regex_rewrite:
+  #         pattern: '/prometheus(/|$)(.*)'
+  #         substitution: '\1'
+  #   paths:
+  #     - /prometheus/
+  #   hosts:
+  #     - rdbox.127-0-0-1.nip.io
+  #   tls:
+  #     - secretName: rdbox-common-tls
+  #       hosts:
+  #         - rdbox.127-0-0-1.nip.io
+
