@@ -15,6 +15,12 @@ ingress:
     - secretName: rdbox-common-tls
       hosts:
         - rdbox.127-0-0-1.nip.io
+metricsScraper:
+  enabled: true
+metrics-server:
+  enabled: true
   args:
     - --kubelet-preferred-address-types=InternalIP
     - --kubelet-insecure-tls
+serviceMonitor:
+  enabled: false

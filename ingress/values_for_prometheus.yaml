@@ -1,0 +1,29 @@
+grafana:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: ambassador
+      ingress.kubernetes.io/protocol: https
+    path: /grafana/
+    hosts:
+      - rdbox.127-0-0-1.nip.io
+    tls:
+      - secretName: rdbox-common-tls
+        hosts:
+          - rdbox.127-0-0-1.nip.io
+prometheus:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: ambassador
+      ingress.kubernetes.io/protocol: https
+    paths:
+      - /prometheus/
+    hosts:
+      - rdbox.127-0-0-1.nip.io
+    tls:
+      - secretName: rdbox-common-tls
+        hosts:
+          - rdbox.127-0-0-1.nip.io
+  prometheusSpec:
+    externalUrl: /prometheus/
