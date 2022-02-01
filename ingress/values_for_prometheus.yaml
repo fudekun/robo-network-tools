@@ -20,7 +20,7 @@ prometheus:
         ---
         apiVersion: getambassador.io/v2
         kind: Mapping
-        name: kube-prometheus-stack-grafana
+        name: kube-prometheus-stack-prometheus
         host: rdbox.127-0-0-1.nip.io
         prefix: /prometheus/
         regex_rewrite:
