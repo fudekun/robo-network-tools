@@ -1,9 +1,36 @@
+kubeScheduler:
+  service:
+    targetPort: 10259
+  serviceMonitor:
+    https: true
+    insecureSkipVerify: true
+kubeControllerManager:
+  service:
+    targetPort: 10257
+  serviceMonitor:
+    https: true
+    insecureSkipVerify: true
+kubeEtcd:
+  service:
+    port: 2381
+    targetPort: 2381
 grafana:
   ingress:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: ambassador
-      ingress.kubernetes.io/protocol: https
+      getambassador.io/config: |
+        ---
+        apiVersion: getambassador.io/v2
+        kind: Mapping
+        name: kube-prometheus-stack-grafana
+        host: rdbox.127-0-0-1.nip.io
+        prefix: /grafana/
+        allow_upgrade
+          - "websocket"
+        regex_rewrite:
+          pattern: '/grafana(/|$)(.*)'
+          substitution: '/\2'
     path: /grafana/
     hosts:
       - rdbox.127-0-0-1.nip.io
@@ -11,6 +38,16 @@ grafana:
       - secretName: rdbox-common-tls
         hosts:
           - rdbox.127-0-0-1.nip.io
+  grafana.ini:
+    server:
+      domain: rdbox.127-0-0-1.nip.io
+      root_url: "https://rdbox.127-0-0-1.nip.io/grafana/"
+      serve_from_sub_path: true
+    live:
+      max_connections: -1
+      allowed_origins: "*"
+    log:
+      level: debug
 prometheus:
   ingress:
     enabled: true
@@ -36,29 +73,3 @@ prometheus:
           - rdbox.127-0-0-1.nip.io
   prometheusSpec:
     externalUrl: /prometheus/
-  # ingress:
-  #   enabled: true
-  #   annotations:
-  #     kubernetes.io/ingress.class: ambassador
-  #     ingress.kubernetes.io/protocol: https
-  #     getambassador.io/config: |
-  #       ---
-  #       apiVersion: getambassador.io/v3alpha1
-  #       kind: Mapping
-  #       metadata:
-  #         name: kube-prometheus-stack-grafana
-  #       prefix: /prometheus/
-  #       hostname: "rdbox.127-0-0-1.nip.io"
-  #       service: exampleservice:8080
-  #       regex_rewrite:
-  #         pattern: '/prometheus(/|$)(.*)'
-  #         substitution: '\1'
-  #   paths:
-  #     - /prometheus/
-  #   hosts:
-  #     - rdbox.127-0-0-1.nip.io
-  #   tls:
-  #     - secretName: rdbox-common-tls
-  #       hosts:
-  #         - rdbox.127-0-0-1.nip.io
-

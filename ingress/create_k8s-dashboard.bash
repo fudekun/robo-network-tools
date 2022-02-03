@@ -17,7 +17,11 @@ kubectl wait --timeout=180s -n rdbox-systems --for=condition=available deploymen
 kubectl wait --timeout=180s -n rdbox-systems --for=condition=available deployment/kubernetes-dashboard-metrics-server
 
 ## On Browser ログインする時に$TOKENが必要だよ
-echo "TOKEN(Admin)::"
 TOKEN=$(kubectl -n rdbox-systems get secrets -o json | jq .items\[\] | jq 'select(.metadata.name | startswith("admin-user-token"))' | jq -r .data.token | base64 -d)
-echo "$TOKEN"
 
+echo ""
+echo "TOKEN(Admin)::"
+echo "---"
+echo "$TOKEN"
+echo "---"
+echo ""
