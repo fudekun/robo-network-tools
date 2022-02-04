@@ -19,18 +19,6 @@ grafana:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: ambassador
-      getambassador.io/config: |
-        ---
-        apiVersion: getambassador.io/v2
-        kind: Mapping
-        name: kube-prometheus-stack-grafana
-        host: rdbox.127-0-0-1.nip.io
-        prefix: /grafana/
-        allow_upgrade
-          - "websocket"
-        regex_rewrite:
-          pattern: '/grafana(/|$)(.*)'
-          substitution: '/\2'
     path: /grafana/
     hosts:
       - rdbox.127-0-0-1.nip.io
@@ -44,25 +32,14 @@ grafana:
       root_url: "https://rdbox.127-0-0-1.nip.io/grafana/"
       serve_from_sub_path: true
     live:
-      max_connections: -1
-      allowed_origins: "*"
+      max_connections: 0
     log:
-      level: debug
+      level: info
 prometheus:
   ingress:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: ambassador
-      getambassador.io/config: |
-        ---
-        apiVersion: getambassador.io/v2
-        kind: Mapping
-        name: kube-prometheus-stack-prometheus
-        host: rdbox.127-0-0-1.nip.io
-        prefix: /prometheus/
-        regex_rewrite:
-          pattern: '/prometheus(/|$)(.*)'
-          substitution: '/\2'
     paths:
       - /prometheus/
     hosts:

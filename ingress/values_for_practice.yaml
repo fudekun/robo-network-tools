@@ -1,30 +1,16 @@
-# Copyright 2017 The Kubernetes Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+apiVersion: getambassador.io/v2
+host: rdbox.127-0-0-1.nip.io
+kind: Mapping
 metadata:
-  name: kubernetes-dashboard
+  name: kube-prometheus-stack-grafana-0-0
   labels:
-    release: kube-prometheus-stack
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/version: 8.3.4
+    helm.sh/chart: grafana-6.21.0
+  namespace: rdbox-systems
 spec:
-  endpoints:
-    - port: http
-      path: /metrics
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: kubernetes-dashboard
-      app.kubernetes.io/instance: kubernetes-dashboard
-      app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: kubernetes-dashboard
+  prefix: /grafana/
+  prefix_exact: false
+  service: kube-prometheus-stack-grafana.rdbox-systems:80

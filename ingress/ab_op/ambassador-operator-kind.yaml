@@ -252,6 +252,7 @@ metadata:
   name: ambassador
 spec:
   installOSS: true
+  logLevel: debug
   helmValues:
     deploymentTool: amb-oper-kind
     tolerations:
