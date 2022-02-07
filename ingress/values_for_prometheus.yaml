@@ -1,3 +1,4 @@
+####### Component scraping
 kubeScheduler:
   service:
     targetPort: 10259
@@ -14,6 +15,8 @@ kubeEtcd:
   service:
     port: 2381
     targetPort: 2381
+
+####### kube-prometheus-stack
 grafana:
   ingress:
     enabled: true
@@ -32,9 +35,8 @@ grafana:
       root_url: "https://rdbox.127-0-0-1.nip.io/grafana/"
       serve_from_sub_path: true
     live:
-      max_connections: 0
-    log:
-      level: info
+      max_connections: -1                   # Temporarily disable WebSocket. Will be done soon.
+                                            # https://grafana.com/docs/grafana/latest/administration/configuration/#max_connections
 prometheus:
   ingress:
     enabled: true
@@ -50,3 +52,18 @@ prometheus:
           - rdbox.127-0-0-1.nip.io
   prometheusSpec:
     externalUrl: /prometheus/
+alertmanager:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: ambassador
+    paths:
+      - /alert-manager/
+    hosts:
+      - rdbox.127-0-0-1.nip.io
+    tls:
+      - secretName: rdbox-common-tls
+        hosts:
+          - rdbox.127-0-0-1.nip.io
+  alertmanagerSpec:
+    externalUrl: "https://rdbox.127-0-0-1.nip.io/alert-manager/"
