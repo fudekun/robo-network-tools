@@ -10,11 +10,11 @@ ingress:
   paths:
     - "/kubernetes-dashboard/"
   hosts:
-    - rdbox.127-0-0-1.nip.io
+    - internal.rdbox.172-16-0-110.nip.io
   tls:
     - secretName: rdbox-common-tls
       hosts:
-        - rdbox.127-0-0-1.nip.io
+        - internal.rdbox.172-16-0-110.nip.io
 metricsScraper:
   enabled: true
 metrics-server:

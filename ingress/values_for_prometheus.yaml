@@ -24,15 +24,15 @@ grafana:
       kubernetes.io/ingress.class: ambassador
     path: /grafana/
     hosts:
-      - rdbox.127-0-0-1.nip.io
+      - internal.rdbox.172-16-0-110.nip.io
     tls:
       - secretName: rdbox-common-tls
         hosts:
-          - rdbox.127-0-0-1.nip.io
+          - internal.rdbox.172-16-0-110.nip.io
   grafana.ini:
     server:
-      domain: rdbox.127-0-0-1.nip.io
-      root_url: "https://rdbox.127-0-0-1.nip.io/grafana/"
+      domain: internal.rdbox.172-16-0-110.nip.io
+      root_url: "https://internal.rdbox.172-16-0-110.nip.io/grafana/"
       serve_from_sub_path: true
     live:
       max_connections: -1                   # Temporarily disable WebSocket. Will be done soon.
@@ -45,11 +45,11 @@ prometheus:
     paths:
       - /prometheus/
     hosts:
-      - rdbox.127-0-0-1.nip.io
+      - internal.rdbox.172-16-0-110.nip.io
     tls:
       - secretName: rdbox-common-tls
         hosts:
-          - rdbox.127-0-0-1.nip.io
+          - internal.rdbox.172-16-0-110.nip.io
   prometheusSpec:
     externalUrl: /prometheus/
 alertmanager:
@@ -60,10 +60,10 @@ alertmanager:
     paths:
       - /alert-manager/
     hosts:
-      - rdbox.127-0-0-1.nip.io
+      - internal.rdbox.172-16-0-110.nip.io
     tls:
       - secretName: rdbox-common-tls
         hosts:
-          - rdbox.127-0-0-1.nip.io
+          - internal.rdbox.172-16-0-110.nip.io
   alertmanagerSpec:
-    externalUrl: "https://rdbox.127-0-0-1.nip.io/alert-manager/"
+    externalUrl: "https://internal.rdbox.172-16-0-110.nip.io/alert-manager/"

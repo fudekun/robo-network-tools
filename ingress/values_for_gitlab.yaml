@@ -28,11 +28,12 @@ global:
   edition: ee
   ## https://docs.gitlab.com/charts/charts/globals#configure-host-settings
   hosts:
-    domain: rdbox.127-0-0-1.nip.io
+    domain: rdbox.172-16-0-110.nip.io
     https: true
   ## https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
   ingress:
-    apiVersion: 'networking.k8s.io/v1'
+    annotations:
+      kubernetes.io/ingress.class: ambassador
     configureCertmanager: false
     class: ambassador
     enabled: true
@@ -157,7 +158,35 @@ gitlab-runner:
             BucketName = "runner-cache"
             BucketLocation = "us-east-1"
             Insecure = false
+
+  ###-------------------------------------------------------------------------------------------
+  ### The following are additional settings.
+  ### https://gitlab.com/gitlab-org/charts/gitlab-runner/-/blob/main/values.yaml
+  ###-------------------------------------------------------------------------------------------
+
+  ##---
+  ## The following configuration is required to make a TLS connection to your gitlab instance.
+  ##   - As root user (0)
+  ##   - Copy the server certificate specified in certsSecretName to /usr/local/share/ca-certificates/ca.crt
+  ##   - Run update-ca-certificates --fresh
+  ## Configure securitycontext
+  ## ref: http://kubernetes.io/docs/user-guide/security-context/
+  securityContext:
+    runAsUser: 0
+    fsGroup: 0
+  ## Set the certsSecretName in order to pass custom certficates for GitLab Runner to use
+  ## Provide resource name for a Kubernetes Secret Object in the same namespace,
+  ## this is used to populate the /home/gitlab-runner/.gitlab-runner/certs/ directory
+  ## ref: https://docs.gitlab.com/runner/configuration/tls-self-signed.html#supported-options-for-self-signed-certificates
   certsSecretName: rdbox-common-tls
+  ## Configure environment variables that will be present when the registration command runs
+  ## This provides further control over the registration process and the config.toml file
+  ## ref: `gitlab-runner register --help`
+  ## ref: https://docs.gitlab.com/runner/configuration/advanced-configuration.html
+  envVars:
+    - name: CA_CERTIFICATES_PATH
+      value:  /home/gitlab-runner/.gitlab-runner/certs/tls.crt
+  ##---
 
 ## Installation & configuration of stable/grafana
 ## See requirements.yaml for current version
