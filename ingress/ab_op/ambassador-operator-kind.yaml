@@ -277,3 +277,9 @@ spec:
           hostPort: 443
           targetPort: 8443
           protocol: TCP
+        - name: ssh
+          port: 32022
+          hostPort: 32022
+          targetPort: 32022
+          protocol: TCP
+

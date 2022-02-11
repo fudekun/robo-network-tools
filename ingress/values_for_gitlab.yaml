@@ -32,8 +32,6 @@ global:
     https: true
   ## https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
   ingress:
-    annotations:
-      kubernetes.io/ingress.class: ambassador
     configureCertmanager: false
     class: ambassador
     enabled: true
@@ -47,6 +45,9 @@ global:
   minio:
     enabled: true
     credentials: {}
+  ## https://docs.gitlab.com/charts/charts/globals#configure-gitlab-shell
+  shell:
+    port: 32022
 
 
 ##-------------------------------------------------------------------------------------------

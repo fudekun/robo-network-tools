@@ -1,0 +1,8 @@
+apiVersion: getambassador.io/v2
+kind: TCPMapping
+metadata:
+  name: gitlab-ssh
+spec:
+  host: gitlab.rdbox.172-16-0-110.nip.io
+  port: 32022
+  service: gitlab-gitlab-shell:32022
