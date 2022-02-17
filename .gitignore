@@ -136,3 +136,6 @@ vendordiff.patch
 *.key
 *.crt
 *.pem
+
+/sandbox
+*.ca.yaml

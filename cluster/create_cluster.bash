@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ###################
 # This script describes the minimum processing required
@@ -14,6 +15,6 @@ echo "---"
 echo "Installing Weave-Net ..."
 kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 kubectl wait --timeout=180s -n kube-system --for=condition=ready pod -l name=weave-net
-echo "---"
-echo "weave-net has been installed. Check its status by running:"
+echo ""
+echo "Weave-Net has been installed. Check its status by running:"
 echo "  kubectl get node -o wide"

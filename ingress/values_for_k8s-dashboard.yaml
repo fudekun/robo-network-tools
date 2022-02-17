@@ -7,6 +7,7 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: ambassador
     ingress.kubernetes.io/protocol: https
+    cert-manager.io/cluster-issuer: rdbox-ca-issuer
   paths:
     - "/kubernetes-dashboard/"
   hosts:

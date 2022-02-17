@@ -32,22 +32,21 @@ global:
     https: true
   ## https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
   ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: rdbox-ca-issuer
     configureCertmanager: false
-    class: ambassador
     enabled: true
     tls:
       enabled: true
-      secretName: rdbox-common-tls
     path: '/'
     pathType: Prefix
-    provider: ambassador
   ## https://docs.gitlab.com/charts/charts/globals#configure-minio-settings
   minio:
     enabled: true
     credentials: {}
-  ## https://docs.gitlab.com/charts/charts/globals#configure-gitlab-shell
-  shell:
-    port: 32022
+  # ## https://docs.gitlab.com/charts/charts/globals#configure-gitlab-shell
+  # shell:
+  #   port: 32022
 
 
 ##-------------------------------------------------------------------------------------------
@@ -108,6 +107,9 @@ registry:
   hpa:
     minReplicas: 1
     maxReplicas: 1
+  ingress:
+    tls:
+      secretName: registry
 
 ## Automatic shared secret generation
 ## https://docs.gitlab.com/charts/installation/secrets
@@ -179,7 +181,7 @@ gitlab-runner:
   ## Provide resource name for a Kubernetes Secret Object in the same namespace,
   ## this is used to populate the /home/gitlab-runner/.gitlab-runner/certs/ directory
   ## ref: https://docs.gitlab.com/runner/configuration/tls-self-signed.html#supported-options-for-self-signed-certificates
-  certsSecretName: rdbox-common-tls
+  certsSecretName: webservice
   ## Configure environment variables that will be present when the registration command runs
   ## This provides further control over the registration process and the config.toml file
   ## ref: `gitlab-runner register --help`
@@ -209,7 +211,10 @@ gitlab:
     helmTests:
       enabled: false
     minReplicas: 1
-    maxReplicas: 2
+    maxReplicas: 1
+    ingress:
+      tls:
+        secretName: webservice
     resources:
       limits:
         memory: 3.0G
@@ -260,3 +265,6 @@ minio:
   persistence:
     size: 3Gi
     storageClass: standard
+  ingress:
+    tls:
+      secretName: minio
