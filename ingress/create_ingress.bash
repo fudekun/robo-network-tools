@@ -11,9 +11,9 @@ if [ $# -eq 3 ]; then
 fi
 echo "Mode: $flag"
 
-DEFULT_NIC=$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')
+NAME_DEFULT_NIC=$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')
 # shellcheck disable=SC2015
-IP_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$DEFULT_NIC" || ifconfig "$DEFULT_NIC") | \
+IP_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
                   sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
 #HOSTNAME_NIPIO_BASED_ON_IP=$(echo "$IP_DEFAULT_NIC" | awk -F. '{printf "%02x", $1}{printf "%02x", $2}{printf "%02x", $3}{printf "%02x", $4}')
 HOSTNAME_NIPIO_BASED_ON_IP=${IP_DEFAULT_NIC//\./-}
