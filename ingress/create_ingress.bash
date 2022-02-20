@@ -25,8 +25,8 @@ FQDN_THIS_CLUSTER="$SUB_DOMAIN"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
 # recycle(For Developpers)
 # (for KinD && Win/Mac)
 # Depend on a FQDN_THIS_CLUSTER
-HISTORY_FILE=rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml
-ROOTCA_FILE=${FQDN_THIS_CLUSTER}.ca.crt
+HISTORY_FILE=${HISTORY_FILE:-rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
+ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
 
 # Step1 cert-manager Install
 echo ""
