@@ -1,23 +1,30 @@
 #!/bin/bash
 set -euo pipefail
 
+#################
+## Usage
 ## ./create_ingress.bash rdbox nip.io
+##   $1 sub_domain
+##   $2 DNS Service(Your Domain)
+##   (optional)$3 recycle flag(The HISTORY_FILE and ROOTCA_FILE must exist)
+#################
 
-sub_domain=$1
-dns_service=$2
+SUB_DOMAIN=$1
+DNS_SERVICE=$2
 flag="new-rootca" # or recycle(For Developpers)
 if [ $# -eq 3 ]; then
   flag=$3
 fi
 echo "Mode: $flag"
 
-NAME_DEFULT_NIC=$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')
-# shellcheck disable=SC2015
-IP_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
-                  sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-#HOSTNAME_NIPIO_BASED_ON_IP=$(echo "$IP_DEFAULT_NIC" | awk -F. '{printf "%02x", $1}{printf "%02x", $2}{printf "%02x", $3}{printf "%02x", $4}')
-HOSTNAME_NIPIO_BASED_ON_IP=${IP_DEFAULT_NIC//\./-}
-FQDN_THIS_CLUSTER="$sub_domain"."$HOSTNAME_NIPIO_BASED_ON_IP"."$dns_service"
+# Generate demand parameters for network connection
+# (for KinD && Win/Mac)
+source ./create_common.bash
+FQDN_THIS_CLUSTER="$SUB_DOMAIN"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
+
+# recycle(For Developpers)
+# (for KinD && Win/Mac)
+# Depend on a FQDN_THIS_CLUSTER
 HISTORY_FILE=rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml
 ROOTCA_FILE=${FQDN_THIS_CLUSTER}.ca.crt
 
