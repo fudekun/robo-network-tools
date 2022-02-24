@@ -125,8 +125,6 @@ if [[ $yn = [yY] ]]; then
         addresses:
         - $NETWORK_RANGE
 EOF
-  echo ""
-  kubectl -n metallb-system describe configmaps config
 else
   echo "abort"
   echo "  You will need to execute the MetalLB configuration yourself."
@@ -134,6 +132,8 @@ else
   exit 1
 fi
 
+echo ""
+kubectl -n metallb-system describe configmaps config
 echo ""
 echo "---"
 echo "The basic network modules has been installed. Check its status by running:"

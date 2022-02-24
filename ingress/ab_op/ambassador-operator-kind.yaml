@@ -282,4 +282,28 @@ spec:
           hostPort: 32022
           targetPort: 32022
           protocol: TCP
-
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ambassador-admin
+  namespace: ambassador
+  annotations:
+    cert-manager.io/cluster-issuer: rdbox-ca-issuer
+    kubernetes.io/ingress.class: ambassador
+spec:
+  rules:
+    - host: "ambassador-admin.rdbox.172-16-0-110.nip.io"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: ambassador-admin
+                port:
+                  number: 8877
+  tls:
+    - hosts:
+      - ambassador-admin.rdbox.172-16-0-110.nip.io
+      secretName: ambassador-admin
