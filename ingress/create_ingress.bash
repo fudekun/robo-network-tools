@@ -58,7 +58,7 @@ elif [ "$flag" = "recycle" ]; then
   fi
 else
   if [ -e "$HISTORY_FILE" ]; then
-    kubectl -n cert-manager apply -f $HISTORY_FILE
+    kubectl -n cert-manager apply -f "$HISTORY_FILE"
   else
     echo "No history file found. Please generate a new RootCA."
     exit 1
