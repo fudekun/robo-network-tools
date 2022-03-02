@@ -140,3 +140,4 @@ vendordiff.patch
 
 /sandbox
 *.ca.yaml
+/*/sandbox

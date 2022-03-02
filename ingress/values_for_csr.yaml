@@ -1,0 +1,45 @@
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: aes-kubeapi-context
+  namespace: ambassador
+spec:
+  hosts:
+  - {{YOUR_HOST_NAME}}
+  secret: aes-kubeapi
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: aes-kubeapi-mapping
+  namespace: ambassador
+spec:
+  hostname: {{YOUR_HOST_NAME}}
+  prefix: /
+  allow_upgrade:
+  - spdy/3.1
+  service: https://kubernetes.default.svc
+  timeout_ms: 0
+  tls: aes-kubeapi-context
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aes-impersonator-role
+rules:
+- apiGroups: [""]
+  resources: ["users", "groups", "serviceaccounts"]
+  verbs: ["impersonate"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aes-impersonator-rolebinding
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: ambassador-kubeapi
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aes-impersonator-role
