@@ -76,7 +76,8 @@ kubectl get csr aes-csr -o jsonpath='{.status.certificate}' | base64 -d > "$crt_
 ## 8. Create a TLS Secret using our private key and public certificate.
 ##
 kubectl create secret tls -n ambassador aes-kubeapi --cert "$crt_file" --key "$private_key_file"
-## 9~10. Create a Mapping and TLSContext and RBAC for the Kube API.
+## 9. Create a Mapping and TLSContext and RBAC for the Kube API.
+## 10. Same as above
 ##
 < values_for_csr.yaml sed "s/{{YOUR_HOST_NAME}}/$this_fqdn/g" | kubectl apply -f -
 ## 11. As a quick check

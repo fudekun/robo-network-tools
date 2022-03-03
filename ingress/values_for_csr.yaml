@@ -3,6 +3,8 @@ kind: TLSContext
 metadata:
   name: aes-kubeapi-context
   namespace: ambassador
+  labels:
+    app.kubernetes.io/component: aes-kubeapi
 spec:
   hosts:
   - {{YOUR_HOST_NAME}}
@@ -13,8 +15,10 @@ kind: Mapping
 metadata:
   name: aes-kubeapi-mapping
   namespace: ambassador
+  labels:
+    app.kubernetes.io/component: aes-kubeapi
 spec:
-  hostname: {{YOUR_HOST_NAME}}
+  host: {{YOUR_HOST_NAME}}
   prefix: /
   allow_upgrade:
   - spdy/3.1

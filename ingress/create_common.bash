@@ -33,6 +33,10 @@ getNetworkInfo() {
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
 
+getClusterName() {
+  kubectl -n rdbox-common get configmaps cluster-info -o json| jq -r ".data.name"
+}
+
 getBaseFQDN() {
   kubectl -n rdbox-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
 }
