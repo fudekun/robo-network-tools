@@ -21,10 +21,9 @@ echo "Installing cert-manager ..."
 helm repo update
 helm -n cert-manager install cert-manager jetstack/cert-manager  \
   --create-namespace \
+  --wait \
+  --timeout 180s \
   --set installCRDs=true & showLoading "Activating cert-manager "
-kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager & showLoading "Activating cert-manager "
-kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager-cainjector & showLoading "Activating cert-manager "
-kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager-webhook & showLoading "Activating cert-manager "
 ## 1-2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
 ##
 echo ""
@@ -35,7 +34,8 @@ HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
 HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
 if [ "$flag" = "new-rootca" ]; then
   kubectl apply -f values_for_cert-manager-rootca.yaml
-  while ! kubectl -n cert-manager get secret rdbox-selfsigned-ca-cert; do sleep 2; done
+  # Wait until RootCA is issued
+  while ! kubectl -n cert-manager get secret rdbox-selfsigned-ca-cert 2>/dev/null; do sleep 2; done
   # Save the History file and the RootCA
   mkdir -p "$HISTORY_DIR"
   chmod 0700 "$HISTORY_DIR"
@@ -61,16 +61,7 @@ fi
 kubectl apply -f values_for_cert-manager-issuer.yaml
 
 ## 2. MetalLB Install
-## 2-1. MetalLB Install
-##
-echo ""
-echo "---"
-echo "Installing MetalLB ..."
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/namespace.yaml
-kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/metallb.yaml
-kubectl wait --timeout=180s -n metallb-system --for=condition=available deployment/controller & showLoading "Activating MetalLB "
-## 2-2. Config MetalLB with L2 Mode
+## 2-1. Config MetalLB with L2 Mode
 ##
 NETWORK_IP=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
 NETWORK_PREFIX=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
@@ -90,20 +81,20 @@ echo ""
 echo "---"
 echo "MetalLB will reserve the following IP address ranges."
 echo "  $NETWORK_RANGE"
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: metallb-system
-  name: config
-data:
-  config: |
-    address-pools:
-    - name: default
-      protocol: layer2
-      addresses:
-      - $NETWORK_RANGE
-EOF
+## 2-2. MetalLB Install
+##
+echo ""
+echo "---"
+echo "Installing MetalLB ..."
+# kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/namespace.yaml
+# kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+# kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/metallb.yaml
+helm -n metallb-system install metallb metallb/metallb \
+  --create-namespace \
+  --set configInline.address-pools\[0\].addresses\[0\]="$NETWORK_RANGE" \
+  --wait \
+  --timeout 180s \
+  -f values_for_metallb.yaml & showLoading "Activating MetalLB "
 
 ## 3. Ambassador Install
 ##
