@@ -23,7 +23,9 @@ echo "---"
 echo "Setting UP Authenticate ambassador with Kubernetes API ..."
 ## 1. Delete the openapi mapping from the Ambassador namespace
 ##
-#kubectl delete -n ambassador ambassador-devportal-api
+if ! bash -c "kubectl delete -n ambassador ambassador-devportal-api"; then
+  echo "CRD(ambassador-devportal-api) is Not Found ...ok"
+fi
 ## 2. private key using root key of this clsters.
 ##
 kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o json | jq -r '.data["tls.key"]' | base64 -d > "$private_key_file"

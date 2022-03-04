@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ###############################################################################
-## Execute essential network configuration
+## Execute essentials(module) configuration
 ###############################################################################
 source ./create_common.bash
+FQDN_THIS_CLUSTER=$(getBaseFQDN)
 
 flag="new-rootca" # or recycle(For Developpers)
 if [ $# -eq 1 ]; then
@@ -12,13 +13,18 @@ if [ $# -eq 1 ]; then
 fi
 echo "Mode: $flag"
 
+## 0. Helm Update
+##
+echo ""
+echo "---"
+helm repo update 1> /dev/null & showLoading "Updateing Helm "
+
 ## 1. Cert-Manager Install
 ## 1-1. Cert-Manager Install
 ##
 echo ""
 echo "---"
 echo "Installing cert-manager ..."
-helm repo update
 helm -n cert-manager install cert-manager jetstack/cert-manager  \
   --create-namespace \
   --wait \
@@ -29,19 +35,20 @@ helm -n cert-manager install cert-manager jetstack/cert-manager  \
 echo ""
 echo "---"
 echo "Setup RootCA and Specific Issuer ..."
-FQDN_THIS_CLUSTER=$(getBaseFQDN)
 HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
 HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
 if [ "$flag" = "new-rootca" ]; then
   kubectl apply -f values_for_cert-manager-rootca.yaml
-  # Wait until RootCA is issued
   while ! kubectl -n cert-manager get secret rdbox-selfsigned-ca-cert 2>/dev/null; do sleep 2; done
-  # Save the History file and the RootCA
+    # NOTE
+    # Wait until RootCA is issued
   mkdir -p "$HISTORY_DIR"
   chmod 0700 "$HISTORY_DIR"
   kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o yaml > "$HISTORY_FILE"
   ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
   kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
+    # NOTE
+    # Save the History file and the RootCA
 elif [ "$flag" = "recycle" ]; then
   if [ -e "$HISTORY_FILE" ]; then
     kubectl -n cert-manager apply -f "$HISTORY_FILE"
@@ -63,6 +70,9 @@ kubectl apply -f values_for_cert-manager-issuer.yaml
 ## 2. MetalLB Install
 ## 2-1. Config MetalLB with L2 Mode
 ##
+echo ""
+echo "---"
+echo "Installing MetalLB ..."
 NETWORK_IP=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
 NETWORK_PREFIX=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
 if [ "$NETWORK_PREFIX" -le 16 ]; then
@@ -77,30 +87,33 @@ else
   echo "  https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
   exit 1
 fi
-echo ""
-echo "---"
-echo "MetalLB will reserve the following IP address ranges."
-echo "  $NETWORK_RANGE"
+echo "  MetalLB will reserve the following IP address ranges."
+echo "  - $NETWORK_RANGE"
 ## 2-2. MetalLB Install
 ##
-echo ""
-echo "---"
-echo "Installing MetalLB ..."
 # kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/namespace.yaml
 # kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
 # kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/metallb.yaml
 helm -n metallb-system install metallb metallb/metallb \
   --create-namespace \
-  --set configInline.address-pools\[0\].addresses\[0\]="$NETWORK_RANGE" \
   --wait \
   --timeout 180s \
+  --set configInline.address-pools\[0\].addresses\[0\]="$NETWORK_RANGE" \
   -f values_for_metallb.yaml & showLoading "Activating MetalLB "
 
-## 3. Ambassador Install
+## 3. Ambassador Install(Step1)
 ##
-echo ""
-echo "---"
-echo "Installing Ambassador ..."
+# echo ""
+# echo "---"
+# echo "Installing Ambassador ..."
+# kubectl apply -f https://app.getambassador.io/yaml/edge-stack/2.2.2/aes-crds.yaml & showLoading "Activating Ambassador "
+# kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system & showLoading "Activating Ambassador "
+# helm -n ambassador install ambassador edge-stack/edge-stack \
+#   --create-namespace \
+#   --wait \
+#   --timeout 180s \
+#   --version 7.2.2 \
+#   -f values_for_ambassador.yaml & showLoading "Activating Ambassador "
 kubectl apply -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-crds.yaml
 #kubectl apply -n ambassador -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-kind.yaml
 kubectl apply -n ambassador -f ./ab_op/ambassador-operator-kind.yaml
@@ -110,7 +123,36 @@ kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/a
 kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador-operator & showLoading "Activating Ambassador "
 kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador-redis & showLoading "Activating Ambassador "
 
-## 4. Notify Verifier-Command
+## 4. Keycloak Install
+## 4-1. Config extra secrets
+##
+echo ""
+echo "---"
+echo "Installing Keycloak ..."
+kubectl create namespace keycloak & showLoading "Getting Ready keycloak "
+kubectl -n keycloak create secret generic keycloak-specific-secrets \
+  --from-literal=admin-password="$(openssl rand -base64 32 | head -c 16)" \
+  --from-literal=management-password="$(openssl rand -base64 32 | head -c 16)" \
+  --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | head -c 16)" \
+  --from-literal=postgresql-password="$(openssl rand -base64 32 | head -c 16)" \
+  --from-literal=tls-keystore-password="$(openssl rand -base64 32 | head -c 16)" \
+  --from-literal=tls-truestore-password="$(openssl rand -base64 32 | head -c 16)"
+    # NOTE
+    # The postgresql-postgres-password is password for root user
+    # The postgresql-password is password for the unprivileged user
+## 4-2. Keycloak Install
+##
+helm -n keycloak upgrade --install keycloak bitnami/keycloak \
+  --wait \
+  --timeout 180s \
+  --set ingress.hostname="keycloak.$FQDN_THIS_CLUSTER" \
+  --set ingress.extraTls\[0\].hosts\[0\]="keycloak.$FQDN_THIS_CLUSTER" \
+  --set ingress.extraTls\[0\].secretName=keycloak \
+  --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
+  --set extraEnvVars\[0\].value="-Dkeycloak.frontendUrl=https://keycloak.$FQDN_THIS_CLUSTER/auth" \
+  -f values_for_keycloak.yaml & showLoading "Activating keycloak "
+
+## 5. Notify Verifier-Command
 ##
 echo ""
 echo "---"
@@ -118,5 +160,6 @@ echo "The basic network modules has been installed. Check its status by running:
 echo "  kubectl -n cert-manager get pod"
 echo "  kubectl -n ambassador get pod"
 echo "  kubectl -n metallb-system get pod"
+echo "  kubectl -n keycloak get pod"
 
 exit 0

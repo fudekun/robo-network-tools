@@ -17,8 +17,10 @@ showLoading() {
     echo -ne "$loadingText\r"
     sleep 0.5
   done
-
+  wait $mypid
+  st=$?
   echo "$loadingText...FINISHED"
+  return "$st"
 }
 
 getNetworkInfo() {
