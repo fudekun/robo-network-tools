@@ -5,7 +5,8 @@ set -euox pipefail
 ## https://github.com/keycloak/keycloak-documentation/blob/main/server_development/topics/admin-rest-api.adoc
 ##
 ##
-## 1. Obtain an access token for user in the realm master with username admin and password password:
+## 1. Obtain an access token for user in the realm master with username admin and password
+## 2. Invoke the API you need by extracting the value of the access_token property
 ##
 __getAccessToken() {
   local base_url=$1
@@ -26,11 +27,13 @@ __getAccessToken() {
 ## References
 ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
 ##
+##
 ## 1. Create a new Realm and Client
 ## 2. Make sure that http://localhost:8000 and http://localhost:18000 are valid Redirect URIs
 ## 3. Set access type to confidential and Save (bearerOnly:false, publicClient:false)
 ## 4. Go to the Credentials tab and note down the secret
 ## 5. Go to the user tab and create a user with the first name ????
+##
 __createEntry() {
   local base_url=$1
   local access_token=$2
@@ -43,7 +46,7 @@ __createEntry() {
   curl -fs -X POST "$operation_endpoint" \
     -H "Authorization: bearer $access_token" \
     -H "Content-Type: application/json" \
-    -d @- << EOS
+    -d @- <<EOS
     {
       "id": "$cluster_name",
       "realm": "$cluster_name",

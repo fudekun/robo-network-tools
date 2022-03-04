@@ -1,55 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-#################
-## Usage
-## ./create_ingress.bash rdbox nip.io
-##   $1 CLUSTER
-##   $2 DNS Service(Your Domain e.g. nip.io, sslip.io)
-##   (optional)$3 recycle flag(The HISTORY_FILE and ROOTCA_FILE must exist)
-#################
+###############################################################################
+## Execute essential network configuration
+###############################################################################
+source ./create_common.bash
 
-DNS_SERVICE=$1
 flag="new-rootca" # or recycle(For Developpers)
-if [ $# -eq 2 ]; then
-  flag=$2
+if [ $# -eq 1 ]; then
+  flag=$1
 fi
 echo "Mode: $flag"
 
-# Generate demand parameters for network connection
-# (for KinD && Win/Mac)
-source ./create_common.bash
-getNetworkInfo
-CLUSTER_NAME=$(kubectl -n rdbox-common get configmaps cluster-info -o json| jq -r ".data.name")
-FQDN_THIS_CLUSTER="$CLUSTER_NAME"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
-# SetUp ConfigMap
-echo ""
-echo "---"
-echo "Update cluster-info ..."
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-info
-  namespace: rdbox-common
-data:
-  name: ${CLUSTER_NAME}
-  base_fqdn: ${FQDN_THIS_CLUSTER}
-  nic.name: ${NAME_DEFULT_NIC}
-  nic.ip_v4: ${IP_DEFAULT_NIC}
-  nic.ip_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-EOF
-
-# recycle(For Developpers)
-# (for KinD && Win/Mac)
-# Depend on a FQDN_THIS_CLUSTER
-HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
-mkdir -p "$HISTORY_DIR"
-chmod 0700 "$HISTORY_DIR"
-HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
-ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
-
-# Step1 cert-manager Install
+## 1. Cert-Manager Install
+## 1-1. Cert-Manager Install
+##
 echo ""
 echo "---"
 echo "Installing cert-manager ..."
@@ -60,15 +25,22 @@ helm -n cert-manager install cert-manager jetstack/cert-manager  \
 kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager & showLoading "Activating cert-manager "
 kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager-cainjector & showLoading "Activating cert-manager "
 kubectl wait --timeout=180s -n cert-manager --for=condition=available deployment/cert-manager-webhook & showLoading "Activating cert-manager "
-
-# Step2 Setup RootCA and specific Issuer
+## 1-2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
+##
 echo ""
 echo "---"
 echo "Setup RootCA and Specific Issuer ..."
+FQDN_THIS_CLUSTER=$(getBaseFQDN)
+HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
+HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
 if [ "$flag" = "new-rootca" ]; then
   kubectl apply -f values_for_cert-manager-rootca.yaml
   while ! kubectl -n cert-manager get secret rdbox-selfsigned-ca-cert; do sleep 2; done
+  # Save the History file and the RootCA
+  mkdir -p "$HISTORY_DIR"
+  chmod 0700 "$HISTORY_DIR"
   kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o yaml > "$HISTORY_FILE"
+  ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
   kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
 elif [ "$flag" = "recycle" ]; then
   if [ -e "$HISTORY_FILE" ]; then
@@ -85,18 +57,12 @@ else
     exit 1
   fi
 fi
+## 1-3. Setup Specific Issuer
 kubectl apply -f values_for_cert-manager-issuer.yaml
 
-# Step3 Ambassador Install
-echo ""
-echo "---"
-echo "Installing Ambassador ..."
-kubectl apply -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-crds.yaml
-#kubectl apply -n ambassador -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-kind.yaml
-kubectl apply -n ambassador -f ./ab_op/ambassador-operator-kind.yaml
-kubectl wait --timeout=180s -n ambassador --for=condition=deployed ambassadorinstallations/ambassador & showLoading "Activating Ambassador "
-
-# Step4 MetalLB Install
+## 2. MetalLB Install
+## 2-1. MetalLB Install
+##
 echo ""
 echo "---"
 echo "Installing MetalLB ..."
@@ -104,9 +70,8 @@ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manife
 kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/metallb.yaml
 kubectl wait --timeout=180s -n metallb-system --for=condition=available deployment/controller & showLoading "Activating MetalLB "
-
-# Step5 Config MetalLB with L2 Mode
-#docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":"
+## 2-2. Config MetalLB with L2 Mode
+##
 NETWORK_IP=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
 NETWORK_PREFIX=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
 if [ "$NETWORK_PREFIX" -le 16 ]; then
@@ -121,7 +86,6 @@ else
   echo "  https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
   exit 1
 fi
-
 echo ""
 echo "---"
 echo "MetalLB will reserve the following IP address ranges."
@@ -141,6 +105,22 @@ data:
       - $NETWORK_RANGE
 EOF
 
+## 3. Ambassador Install
+##
+echo ""
+echo "---"
+echo "Installing Ambassador ..."
+kubectl apply -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-crds.yaml
+#kubectl apply -n ambassador -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-kind.yaml
+kubectl apply -n ambassador -f ./ab_op/ambassador-operator-kind.yaml
+kubectl wait --timeout=180s -n ambassador --for=condition=deployed ambassadorinstallations/ambassador & showLoading "Activating Ambassador "
+kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador & showLoading "Activating Ambassador "
+kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador-agent & showLoading "Activating Ambassador "
+kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador-operator & showLoading "Activating Ambassador "
+kubectl wait --timeout=180s -n ambassador --for=condition=available deployment/ambassador-redis & showLoading "Activating Ambassador "
+
+## 4. Notify Verifier-Command
+##
 echo ""
 echo "---"
 echo "The basic network modules has been installed. Check its status by running:"
