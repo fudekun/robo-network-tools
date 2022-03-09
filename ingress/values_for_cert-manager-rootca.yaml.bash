@@ -3,6 +3,7 @@ set -euo pipefail
 
 __hostname_for_certmanager=$1
 __fqdn_this_cluster=$2
+
 cat <<EOF | kubectl apply --timeout 90s --wait -f -
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
