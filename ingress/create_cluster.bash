@@ -25,7 +25,9 @@ kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
 echo ""
 echo "---"
 echo "Installing cluster-info ..."
-kubectl create namespace rdbox-common & showLoading "Getting Ready cluster-info "
+cmdWithLoding \
+  "kubectl create namespace rdbox-common" \
+  "Getting Ready cluster-info"
 getNetworkInfo # Get the information needed to fill in the blanks below
 FQDN_THIS_CLUSTER="$CLUSTER_NAME"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
 cat <<EOF | kubectl apply -f -
@@ -52,7 +54,9 @@ echo ""
 echo "---"
 echo "Installing Weave-Net ..."
 kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-kubectl wait --timeout=180s -n kube-system --for=condition=ready pod -l name=weave-net & showLoading "Activating Weave-Net "
+cmdWithLoding \
+  "kubectl wait --timeout=180s -n kube-system --for=condition=ready pod -l name=weave-net" \
+  "Activating Weave-Net"
 
 ## 4. Notify Verifier-Command
 ##

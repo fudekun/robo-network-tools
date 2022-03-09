@@ -4,23 +4,31 @@ showLoading() {
   mypid=$!
   loadingText=$1
 
-  echo -ne "$loadingText\r"
+  echo -ne "    $loadingText\r"
 
   while kill -0 $mypid 2>/dev/null; do
-    echo -ne "$loadingText.\r"
+    echo -ne ".   $loadingText\r"
     sleep 0.5
-    echo -ne "$loadingText..\r"
+    echo -ne "..  $loadingText\r"
     sleep 0.5
-    echo -ne "$loadingText...\r"
+    echo -ne "... $loadingText\r"
     sleep 0.5
     echo -ne "\r\033[K"
-    echo -ne "$loadingText\r"
+    echo -ne "    $loadingText\r"
     sleep 0.5
   done
   wait $mypid
   st=$?
-  echo "$loadingText...FINISHED"
+  echo -e "\033[32mok!\033[m $loadingText"
   return "$st"
+}
+
+cmdWithLoding() {
+  local command
+  local message
+  command=$1
+  message=$2
+  eval "${command} & showLoading '${message} '"
 }
 
 getNetworkInfo() {

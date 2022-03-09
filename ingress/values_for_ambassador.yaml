@@ -8,8 +8,6 @@
 # setting `emissary-ingress.service.type=NodePort` will pass `service.type=NodePort` to the underlying emissary chart
 emissary-ingress:
   createDefaultListeners: true
-  env:
-    AMBASSADOR_FORCE_SECRET_VALIDATION: false
   deploymentTool: amb-oper-kind
   tolerations:
     - key: "node-role.kubernetes.io/master"
@@ -25,10 +23,12 @@ emissary-ingress:
     ports:
     - name: http
       port: 80
+      hostPort: 80
       targetPort: 8080
       protocol: TCP
     - name: https
       port: 443
+      hostPort: 443
       targetPort: 8443
       protocol: TCP
     - name: ssh
