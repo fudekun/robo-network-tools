@@ -5,16 +5,53 @@ set -euo pipefail
 ## Execute essentials(module) configuration
 ###############################################################################
 source ./create_common.bash
-FQDN_THIS_CLUSTER=$(getBaseFQDN)
 
+applyRootCA() {
+local __hostname_for_certmanager
+local __fqdn_this_cluster
+__hostname_for_certmanager=$1
+__fqdn_this_cluster=$2
+cat <<EOF | kubectl apply --timeout 90s --wait -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-cacert
+  namespace: ${__hostname_for_certmanager}
+spec:
+  isCA: true
+  commonName: "${__fqdn_this_cluster}"
+  dnsNames:
+    - "${__fqdn_this_cluster}"
+    - "*.${__fqdn_this_cluster}"
+  duration: 8760h
+  secretName: selfsigned-cacert
+  privateKey:
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
+    # NOTE
+    # ClusterIssuer is namespace independent
+}
+
+## 0. Initializing
+##
+FQDN_THIS_CLUSTER=$(getBaseFQDN)
 flag="new-rootca" # or recycle(For Developpers)
 if [ $# -eq 1 ]; then
   flag=$1
 fi
 echo "Mode: $flag"
-
-## 0. Helm Update
-##
 echo ""
 echo "---"
 echo "Initializing essentials ..."
@@ -30,7 +67,7 @@ echo ""
 echo "---"
 echo "Installing cert-manager ..."
 cmdWithLoding \
-  "helm -n ${HOSTNAME_FOR_CERTMANAGER} install ${HOSTNAME_FOR_CERTMANAGER} jetstack/cert-manager \
+  "helm -n ${HOSTNAME_FOR_CERTMANAGER} upgrade --install ${HOSTNAME_FOR_CERTMANAGER} jetstack/cert-manager \
     --create-namespace \
     --wait \
     --timeout 180s \
@@ -41,19 +78,28 @@ cmdWithLoding \
 echo ""
 echo "---"
 echo "Setup RootCA and Specific Issuer ..."
-HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
-HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/rdbox-selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
-ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
 echo "Mode: $flag"
+HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
+HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
+ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
 if [ "$flag" = "new-rootca" ]; then
-  kubectl apply -f values_for_cert-manager-rootca.yaml
-  while ! kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secret rdbox-selfsigned-ca-cert 2>/dev/null; do sleep 2; done
+  cmdWithLoding \
+    "applyRootCA $HOSTNAME_FOR_CERTMANAGER $FQDN_THIS_CLUSTER" \
+    "Activating RootCA"
+  echo ""
+  count=1
+  while ! kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secret selfsigned-cacert 2>/dev/null; do
     # NOTE
     # Wait until RootCA is issued
+    sleep 1
+    echo -ne "\r\033[K"
+    seq -s '.' 0 $count | tr -d '0-9'
+    count=$((count++))
+  done
   mkdir -p "$HISTORY_DIR"
   chmod 0700 "$HISTORY_DIR"
-  kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets rdbox-selfsigned-ca-cert -o yaml > "$HISTORY_FILE"
-  kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets rdbox-selfsigned-ca-cert -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
+  kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets selfsigned-cacert -o yaml > "$HISTORY_FILE"
+  kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets selfsigned-cacert -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
     # NOTE
     # Save the History file and the RootCA
 elif [ "$flag" = "recycle" ]; then
@@ -71,6 +117,7 @@ else
     exit 1
   fi
 fi
+echo -e "\033[32mok!\033[m Activating RootCA"
 ## 1-3. Setup Specific Issuer
 ##
 cmdWithLoding \
@@ -78,6 +125,7 @@ cmdWithLoding \
   "Activating Specific Issuer"
     # NOTE
     # ClusterIssuer is namespace independent
+    # However, it depends on **selfsigned-cacert**
 
 ## 2. Install MetalLB
 ## 2-1. Config MetalLB with L2 Mode
@@ -103,7 +151,7 @@ fi
 echo "MetalLB will reserve the following IP address ranges."
 echo "- $NETWORK_RANGE"
 cmdWithLoding \
-  "helm -n ${HOSTNAME_FOR_METALLB} install ${HOSTNAME_FOR_METALLB} metallb/metallb \
+  "helm -n ${HOSTNAME_FOR_METALLB} upgrade --install ${HOSTNAME_FOR_METALLB} metallb/metallb \
     --create-namespace \
     --wait \
     --timeout 180s \
@@ -162,11 +210,11 @@ cmdWithLoding \
     --timeout 300s \
     --set ingress.hostname=$FQDN_FOR_KEYCLOAK \
     --set ingress.extraTls\[0\].hosts\[0\]=$FQDN_FOR_KEYCLOAK \
-    --set ingress.extraTls\[0\].secretName=keycloak \
+    --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
     --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$FQDN_FOR_KEYCLOAK/auth \
     -f values_for_keycloak.yaml" \
-  "Activating ${HOSTNAME_FOR_KEYCLOAK}"
+  "Activating keycloak"
 ## 4-3. Setup TLSContext
 ##
 cat <<EOF | kubectl apply --timeout 90s --wait -f -
@@ -183,6 +231,9 @@ EOF
     # NOTE
     # Tentative solution to the problem
     # that TLSContext is not generated automatically from Ingress (v2.2.2)
+cmdWithLoding \
+  "sleep 20" \
+  "Activating keycloak"
 cmdWithLoding \
   "curl --fail --cacert ${ROOTCA_FILE} https://${FQDN_FOR_KEYCLOAK}/auth/ >/dev/null 2>&1" \
   "Checking keycloak"
