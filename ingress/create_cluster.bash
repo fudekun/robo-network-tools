@@ -46,7 +46,7 @@ data:
 EOF
 echo ""
 echo "In this cluster, **${FQDN_THIS_CLUSTER}** is used as the FQDN"
-echo ""
+echo -e "\033[32mok!\033[m cluster-info"
 
 ## 3. Install Weave-Net
 ##
