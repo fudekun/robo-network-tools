@@ -22,7 +22,7 @@ auth:
   adminUser: super-admin
   ## @param auth.existingSecret An already existing secret containing auth info
   existingSecret:
-    name: keycloak-specific-secrets
+    name: specific-secrets
     keyMapping:
       admin-password: admin-password
       management-password: management-password

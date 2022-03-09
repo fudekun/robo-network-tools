@@ -44,9 +44,9 @@ getNetworkInfo() {
 }
 
 getClusterName() {
-  kubectl -n rdbox-common get configmaps cluster-info -o json| jq -r ".data.name"
+  kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.name"
 }
 
 getBaseFQDN() {
-  kubectl -n rdbox-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
+  kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
 }

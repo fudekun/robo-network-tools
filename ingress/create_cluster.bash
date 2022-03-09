@@ -26,7 +26,7 @@ echo ""
 echo "---"
 echo "Installing cluster-info ..."
 cmdWithLoding \
-  "kubectl create namespace rdbox-common" \
+  "kubectl create namespace cluster-common" \
   "Getting Ready cluster-info"
 getNetworkInfo # Get the information needed to fill in the blanks below
 FQDN_THIS_CLUSTER="$CLUSTER_NAME"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
@@ -35,7 +35,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cluster-info
-  namespace: rdbox-common
+  namespace: cluster-common
 data:
   name: ${CLUSTER_NAME}
   domain: ${DNS_SERVICE}
