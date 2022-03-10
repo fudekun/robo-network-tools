@@ -24,10 +24,8 @@ showLoading() {
 }
 
 cmdWithLoding() {
-  local commands
-  local message
-  commands=$1
-  message=$2
+  local commands=$1
+  local message=$2
   eval "${commands} & showLoading '${message} '"
 }
 
@@ -49,4 +47,8 @@ getClusterName() {
 
 getBaseFQDN() {
   kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
+}
+
+getPresetGroupName() {
+  echo cluster-admim
 }

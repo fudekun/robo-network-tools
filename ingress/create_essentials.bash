@@ -32,7 +32,7 @@ cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_CERTMANAGER} upgrade --install ${HOSTNAME_FOR_CERTMANAGER} jetstack/cert-manager \
       --create-namespace \
       --wait \
-      --timeout 180s \
+      --timeout 600s \
       -f values_for_cert-manager-instance.yaml" \
   "Activating cert-manager"
 ## 1-2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
@@ -116,7 +116,7 @@ cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_METALLB} upgrade --install ${HOSTNAME_FOR_METALLB} metallb/metallb \
       --create-namespace \
       --wait \
-      --timeout 180s \
+      --timeout 600s \
       --set configInline.address-pools\[0\].addresses\[0\]=$NETWORK_RANGE \
       -f values_for_metallb.yaml" \
   "Activating metallb"
@@ -138,7 +138,7 @@ cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_AMBASSADOR} upgrade --install ${HOSTNAME_FOR_AMBASSADOR} edge-stack/edge-stack \
       --create-namespace \
       --wait \
-      --timeout 300s \
+      --timeout 600s \
       -f values_for_ambassador.yaml" \
   "Activating ambassador-Instance"
 
@@ -169,7 +169,7 @@ kubectl -n "$HOSTNAME_FOR_KEYCLOAK" create secret generic specific-secrets \
 cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_KEYCLOAK} upgrade --install ${HOSTNAME_FOR_KEYCLOAK} bitnami/keycloak \
       --wait \
-      --timeout 300s \
+      --timeout 600s \
       --set ingress.hostname=$FQDN_FOR_KEYCLOAK \
       --set ingress.extraTls\[0\].hosts\[0\]=$FQDN_FOR_KEYCLOAK \
       --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK \
@@ -190,7 +190,12 @@ cmdWithLoding \
   "Activating TLSContext"
 cmdWithLoding \
   "curl --fail --cacert ${ROOTCA_FILE} https://${FQDN_FOR_KEYCLOAK}/auth/ >/dev/null 2>&1" \
-  "Checking keycloak"
+  "Testing keycloak"
+## 4-4. Setup preset-entries
+##
+cmdWithLoding \
+  "source ./create_keycloak-entry.bash" \
+  "Activating Keycloak-entries"
 
 ## 99. Notify Verifier-Command
 ##

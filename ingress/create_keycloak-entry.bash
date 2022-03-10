@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euox pipefail
+set -euo pipefail
 
 ## References
 ## https://github.com/keycloak/keycloak-documentation/blob/main/server_development/topics/admin-rest-api.adoc
@@ -40,92 +40,24 @@ __createEntry() {
   local client_secret=$3
   local cluster_name=$4
   local preset_group_name
-  local operation_endpoint
-  preset_group_name=$(__getPresetGroupName "${cluster_name}")
-  operation_endpoint="$base_url/auth/admin/realms"
-  curl -fs -X POST "$operation_endpoint" \
-    -H "Authorization: bearer $access_token" \
-    -H "Content-Type: application/json" \
-    -d @- <<EOS
-    {
-      "id": "$cluster_name",
-      "realm": "$cluster_name",
-      "displayName": "$cluster_name",
-      "enabled": true,
-      "sslRequired": "external",
-      "registrationAllowed": false,
-      "loginWithEmailAllowed": false,
-      "duplicateEmailsAllowed": false,
-      "resetPasswordAllowed": false,
-      "editUsernameAllowed": false,
-      "bruteForceProtected": true,
-      "internationalizationEnabled": true,
-      "supportedLocales": [
-        "en",
-        "ja"
-      ],
-      "userManagedAccessAllowed": true,
-      "clients": [
-        {
-          "clientId": "ambassador",
-          "enabled": true,
-          "redirectUris": [
-            "http://localhost:8000",
-            "http://localhost:18000"
-          ],
-          "bearerOnly": false,
-          "publicClient": false,
-          "secret": "$client_secret",
-          "protocolMappers": [
-            {
-              "name": "roles",
-              "protocol": "openid-connect",
-              "protocolMapper": "oidc-usermodel-realm-role-mapper",
-              "consentRequired": false,
-              "config": {
-                "multivalued": "true",
-                "user.attribute": "foo",
-                "id.token.claim": "true",
-                "access.token.claim": "true",
-                "claim.name": "roles",
-                "jsonType.label": "String"
-              }
-            },
-            {
-              "name": "groups",
-              "protocol": "openid-connect",
-              "protocolMapper": "oidc-group-membership-mapper",
-              "consentRequired": false,
-              "config": {
-                "full.path": "false",
-                "id.token.claim": "true",
-                "access.token.claim": "true",
-                "userinfo.token.claim": "true",
-                "claim.name": "groups",
-                "jsonType.label": "String"
-              }
-            }
-          ],
-          "webOrigins": [
-            "*"
-          ]
-        }
-      ],
-      "groups": [
-        {
-          "name": "$preset_group_name"
-        }
-      ]
-    }
-EOS
-}
-
-__getPresetGroupName() {
-  local cluster_name=$1
-  echo "$cluster_name"-cluster-admim
+  local operation_endpoint_url
+  preset_group_name=$(getPresetGroupName)
+  operation_endpoint_url="$base_url/auth/admin/realms"
+  curl -fs -X POST "$operation_endpoint_url" \
+      -H "Authorization: bearer $access_token" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n -r -f values_for_keycloak-entry.jq.json \
+          --arg client_secret "$client_secret" \
+          --arg cluster_name "$cluster_name" \
+          --arg preset_group_name "$preset_group_name" \
+      )"
 }
 
 main() {
+  echo ""
+  echo "---"
+  echo "Inserting entry to keycloak ..."
+
   local base_url
   base_url=https://$(helm -n keycloak get values keycloak -o json | jq -r '.ingress.hostname')
 
@@ -144,26 +76,9 @@ main() {
     exit 1
   fi
 
-  local preset_group_name
-  preset_group_name=$(__getPresetGroupName "${cluster_name}")
-cat <<EOF | kubectl apply -f -
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: ${preset_group_name}-binding
-subjects:
-- kind: Group
-  name: ${preset_group_name}
-  apiGroup: rbac.authorization.k8s.io
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-EOF
+  kubectl apply -f values_for_cluster-admin.yaml
 }
 
 source ./create_common.bash
 main
-
-exit 0
+exit $?
