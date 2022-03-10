@@ -1,8 +1,8 @@
 #!/bin/bash
 
 showLoading() {
-  mypid=$!
-  loadingText=$1
+  local mypid=$!
+  local loadingText=$1
 
   echo -ne "    $loadingText\r"
 
@@ -18,17 +18,17 @@ showLoading() {
     sleep 0.5
   done
   wait $mypid
-  st=$?
+  local exit_status=$?
   echo -e "\033[32mok!\033[m $loadingText"
-  return "$st"
+  return "$exit_status"
 }
 
 cmdWithLoding() {
-  local command
+  local commands
   local message
-  command=$1
+  commands=$1
   message=$2
-  eval "${command} & showLoading '${message} '"
+  eval "${commands} & showLoading '${message} '"
 }
 
 getNetworkInfo() {

@@ -29,8 +29,7 @@ cmdWithLoding \
   "kubectl create namespace cluster-common" \
   "Getting Ready cluster-info"
 getNetworkInfo # Get the information needed to fill in the blanks below
-FQDN_THIS_CLUSTER="$CLUSTER_NAME"."$HOSTNAME_FOR_WCDNS_BASED_ON_IP"."$DNS_SERVICE"
-cat <<EOF | kubectl apply -f -
+cat <<EOF | kubectl apply --timeout 90s --wait -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -39,13 +38,13 @@ metadata:
 data:
   name: ${CLUSTER_NAME}
   domain: ${DNS_SERVICE}
-  base_fqdn: ${FQDN_THIS_CLUSTER}
+  base_fqdn: "${CLUSTER_NAME}.${HOSTNAME_FOR_WCDNS_BASED_ON_IP}.${DNS_SERVICE}"
   nic.name: ${NAME_DEFULT_NIC}
   nic.ip_v4: ${IP_DEFAULT_NIC}
   nic.ip_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
 EOF
 echo ""
-echo "In this cluster, **${FQDN_THIS_CLUSTER}** is used as the FQDN"
+echo "In this cluster, **$(getBaseFQDN)** is used as the base FQDN"
 echo -e "\033[32mok!\033[m cluster-info"
 
 ## 3. Install Weave-Net
@@ -58,7 +57,7 @@ cmdWithLoding \
   "kubectl wait --timeout=180s -n kube-system --for=condition=ready pod -l name=weave-net" \
   "Activating Weave-Net"
 
-## 4. Notify Verifier-Command
+## 99. Notify Verifier-Command
 ##
 echo ""
 echo "---"

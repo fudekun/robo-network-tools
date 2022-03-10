@@ -8,7 +8,7 @@ source ./create_common.bash
 
 ## 0. Initializing
 ##
-FQDN_THIS_CLUSTER=$(getBaseFQDN)
+BASE_FQDN=$(getBaseFQDN)
 flag="new-rootca" # or recycle(For Developpers)
 if [ $# -eq 1 ]; then
   flag=$1
@@ -30,10 +30,10 @@ echo "---"
 echo "Installing cert-manager ..."
 cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_CERTMANAGER} upgrade --install ${HOSTNAME_FOR_CERTMANAGER} jetstack/cert-manager \
-    --create-namespace \
-    --wait \
-    --timeout 180s \
-    -f values_for_cert-manager-instance.yaml" \
+      --create-namespace \
+      --wait \
+      --timeout 180s \
+      -f values_for_cert-manager-instance.yaml" \
   "Activating cert-manager"
 ## 1-2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
 ##
@@ -41,12 +41,12 @@ echo ""
 echo "---"
 echo "Setup RootCA and Specific Issuer ..."
 echo "Mode: $flag"
-HISTORY_DIR=${HISTORY_DIR:-.history.${FQDN_THIS_CLUSTER}}
-HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/selfsigned-ca.${FQDN_THIS_CLUSTER}.ca.yaml}
-ROOTCA_FILE=${ROOTCA_FILE:-${FQDN_THIS_CLUSTER}.ca.crt}
+HISTORY_DIR=${HISTORY_DIR:-.history.${BASE_FQDN}}
+HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/selfsigned-ca.${BASE_FQDN}.ca.yaml}
+ROOTCA_FILE=${ROOTCA_FILE:-${BASE_FQDN}.ca.crt}
 if [ "$flag" = "new-rootca" ]; then
   cmdWithLoding \
-    "source ./values_for_cert-manager-rootca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $FQDN_THIS_CLUSTER" \
+    "source ./values_for_cert-manager-rootca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $BASE_FQDN" \
     "Activating RootCA"
   echo ""
   count=1
@@ -114,11 +114,11 @@ echo "MetalLB will reserve the following IP address ranges."
 echo "- $NETWORK_RANGE"
 cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_METALLB} upgrade --install ${HOSTNAME_FOR_METALLB} metallb/metallb \
-    --create-namespace \
-    --wait \
-    --timeout 180s \
-    --set configInline.address-pools\[0\].addresses\[0\]=$NETWORK_RANGE \
-    -f values_for_metallb.yaml" \
+      --create-namespace \
+      --wait \
+      --timeout 180s \
+      --set configInline.address-pools\[0\].addresses\[0\]=$NETWORK_RANGE \
+      -f values_for_metallb.yaml" \
   "Activating metallb"
 
 ## 3. Install Ambassador Step1
@@ -136,17 +136,17 @@ cmdWithLoding \
   "Activating ambassador-CRD"
 cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_AMBASSADOR} upgrade --install ${HOSTNAME_FOR_AMBASSADOR} edge-stack/edge-stack \
-    --create-namespace \
-    --wait \
-    --timeout 300s \
-    -f values_for_ambassador.yaml" \
+      --create-namespace \
+      --wait \
+      --timeout 300s \
+      -f values_for_ambassador.yaml" \
   "Activating ambassador-Instance"
 
 ## 4. Install Keycloak
 ## 4-1. Config extra secrets
 ##
 HOSTNAME_FOR_KEYCLOAK=keycloak
-FQDN_FOR_KEYCLOAK=${HOSTNAME_FOR_KEYCLOAK}.${FQDN_THIS_CLUSTER}
+FQDN_FOR_KEYCLOAK=${HOSTNAME_FOR_KEYCLOAK}.${BASE_FQDN}
 echo ""
 echo "---"
 echo "Installing keycloak ..."
@@ -168,39 +168,31 @@ kubectl -n "$HOSTNAME_FOR_KEYCLOAK" create secret generic specific-secrets \
 ##
 cmdWithLoding \
   "helm -n ${HOSTNAME_FOR_KEYCLOAK} upgrade --install ${HOSTNAME_FOR_KEYCLOAK} bitnami/keycloak \
-    --wait \
-    --timeout 300s \
-    --set ingress.hostname=$FQDN_FOR_KEYCLOAK \
-    --set ingress.extraTls\[0\].hosts\[0\]=$FQDN_FOR_KEYCLOAK \
-    --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK \
-    --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
-    --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$FQDN_FOR_KEYCLOAK/auth \
-    -f values_for_keycloak.yaml" \
+      --wait \
+      --timeout 300s \
+      --set ingress.hostname=$FQDN_FOR_KEYCLOAK \
+      --set ingress.extraTls\[0\].hosts\[0\]=$FQDN_FOR_KEYCLOAK \
+      --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK \
+      --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
+      --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$FQDN_FOR_KEYCLOAK/auth \
+      -f values_for_keycloak.yaml" \
   "Activating keycloak"
 ## 4-3. Setup TLSContext
 ##
-cat <<EOF | kubectl apply --timeout 90s --wait -f -
-apiVersion: getambassador.io/v3alpha1
-kind: TLSContext
-metadata:
-  name: ${HOSTNAME_FOR_KEYCLOAK}
-  namespace: ${HOSTNAME_FOR_KEYCLOAK}
-spec:
-  hosts:
-    - ${FQDN_FOR_KEYCLOAK}
-  secret: ${HOSTNAME_FOR_KEYCLOAK}
-EOF
+cmdWithLoding \
+  "source ./values_for_tlscontext.yaml.bash $HOSTNAME_FOR_KEYCLOAK $FQDN_FOR_KEYCLOAK" \
+  "Activating TLSContext"
     # NOTE
     # Tentative solution to the problem
     # that TLSContext is not generated automatically from Ingress (v2.2.2)
 cmdWithLoding \
   "sleep 20" \
-  "Activating keycloak"
+  "Activating TLSContext"
 cmdWithLoding \
   "curl --fail --cacert ${ROOTCA_FILE} https://${FQDN_FOR_KEYCLOAK}/auth/ >/dev/null 2>&1" \
   "Checking keycloak"
 
-## 5. Notify Verifier-Command
+## 99. Notify Verifier-Command
 ##
 echo ""
 echo "---"

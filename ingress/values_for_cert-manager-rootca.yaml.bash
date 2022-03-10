@@ -33,5 +33,3 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
 EOF
-    # NOTE
-    # ClusterIssuer is namespace independent
