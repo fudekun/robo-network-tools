@@ -41,6 +41,12 @@ getNetworkInfo() {
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
 
+updateHelm() {
+  cmdWithLoding \
+    "helm repo update 1> /dev/null" \
+    "Updateing Helm"
+}
+
 getClusterName() {
   kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.name"
 }
