@@ -39,17 +39,40 @@ __createEntry() {
   local access_token=$2
   local client_secret=$3
   local cluster_name=$4
+  local password
   local preset_group_name
   local operation_endpoint_url
+  local cred_hash_array
+  local created_date
+  local salt
+  local hashed_salted_value
+  local hash_iterations
+  local fullname_array
+  password=$(kubectl -n keycloak get secrets "$(helm -n keycloak get values keycloak -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)
   preset_group_name=$(getPresetGroupName)
   operation_endpoint_url="$base_url/auth/admin/realms"
+  created_date=$(python3 -c 'import time; print(int(time.time() * 1000))')
+  cred_hash_array=()
+  while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(hashPasswordByPbkdf2Sha256 "$password")
+  salt=${cred_hash_array[0]}
+  hashed_salted_value=${cred_hash_array[1]}
+  hash_iterations=${cred_hash_array[2]}
+  IFS="-" read -r -a fullname_array <<< "$preset_group_name"
+  first_name=${fullname_array[1]}
+  last_name=${fullname_array[0]}
   curl -fs -X POST "$operation_endpoint_url" \
       -H "Authorization: bearer $access_token" \
       -H "Content-Type: application/json" \
-      -d "$(jq -n -r -f values_for_keycloak-entry.jq.json \
+      -d "$(jq -n -r -f values_for_keycloak-entry-realm.jq.json \
           --arg client_secret "$client_secret" \
           --arg cluster_name "$cluster_name" \
           --arg preset_group_name "$preset_group_name" \
+          --arg hash_iterations "$hash_iterations" \
+          --arg salt "$salt" \
+          --arg hashed_salted_value "$hashed_salted_value" \
+          --arg created_date "$created_date" \
+          --arg first_name "$first_name" \
+          --arg last_name "$last_name" \
       )"
 }
 

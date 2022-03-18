@@ -56,5 +56,26 @@ getBaseFQDN() {
 }
 
 getPresetGroupName() {
-  echo cluster-admim
+  # !! Must be a hyphen-delimited string !!
+  # e.g. *cluster-admim*
+  echo -n "cluster-admin"
+}
+
+hashPasswordByPbkdf2Sha256() {
+  local __password=$1
+  local __hash_iterations=27500
+  local __salt
+  local __hashed_salted_value
+  __salt=$(python3 -c 'import crypt; print(crypt.mksalt(crypt.METHOD_SHA256),end="")')
+  __salt=${__salt//[\r\n]\+/ }
+  # __salt=$(echo -e "import base64; print(base64.b64encode(b\"${__salt}\").decode(encoding=\"ascii\"),end=\"\")" | python3)
+  # __salt=${__salt//[\r\n]\+/ }
+  #__hashed_salted_value=$(python3 -c "import hashlib, crypt, base64; print(base64.b64encode(hashlib.pbkdf2_hmac(str('sha512'), byte($__password), byte($__salt), int($__hash_iterations))).decode(encoding='utf-8'))")
+  __hashed_salted_value=$(echo -e "import hashlib,crypt,base64; print(base64.b64encode(hashlib.pbkdf2_hmac(\"sha256\", b\"$__password\", b\"$__salt\", int($__hash_iterations), 512//8)).decode(\"ascii\"))" | python3)
+  __hashed_salted_value=${__hashed_salted_value//[\r\n]\+/ }
+  __salt=$(echo -e "import base64; print(base64.b64encode(b\"${__salt}\").decode(encoding=\"ascii\"),end=\"\")" | python3)
+  __salt=${__salt//[\r\n]\+/ }
+  echo "$__salt"
+  echo "$__hashed_salted_value"
+  echo "$__hash_iterations"
 }
