@@ -178,14 +178,14 @@ installAmbassador() {
 ## 4. Install Keycloak
 ##
 installKeycloak() {
-  ## 4-1. Config extra secrets
-  ##
   HOSTNAME_FOR_KEYCLOAK=${HOSTNAME_FOR_KEYCLOAK:-keycloak}
   export HOSTNAME_FOR_KEYCLOAK=$HOSTNAME_FOR_KEYCLOAK
   local __fqdn_for_keycloak=${HOSTNAME_FOR_KEYCLOAK}.${BASE_FQDN}
   echo ""
   echo "---"
   echo "Installing keycloak ..."
+  ## 4-1. Config extra secrets
+  ##
   cmdWithLoding \
     "kubectl create namespace ${HOSTNAME_FOR_KEYCLOAK}" \
     "Getting Ready keycloak"
@@ -196,10 +196,12 @@ installKeycloak() {
     --from-literal=postgresql-password="$(openssl rand -base64 32 | head -c 16)" \
     --from-literal=tls-keystore-password="$(openssl rand -base64 32 | head -c 16)" \
     --from-literal=tls-truestore-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | head -c 16)"
+    --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | head -c 16)" \
+    --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | head -c 16)"
       # NOTE
       # The postgresql-postgres-password is password for root user
       # The postgresql-password is password for the unprivileged user
+      # The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
   ## 4-2. Install Keycloak
   ##
   cmdWithLoding \
@@ -216,14 +218,14 @@ installKeycloak() {
   ## 4-3. Setup TLSContext
   ##
   cmdWithLoding \
-    "source ./values_for_tlscontext.yaml.bash $HOSTNAME_FOR_KEYCLOAK $__fqdn_for_keycloak" \
+    "source ./values_for_tlscontext.yaml.bash ${HOSTNAME_FOR_KEYCLOAK} ${__fqdn_for_keycloak} 1> /dev/null" \
     "Activating TLSContext"
       # NOTE
       # Tentative solution to the problem
       # that TLSContext is not generated automatically from Ingress (v2.2.2)
   cmdWithLoding \
     "sleep 20" \
-    "Activating TLSContext"
+    "Waiting TLSContext"
   cmdWithLoding \
     "curl --fail --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak}/auth/ >/dev/null 2>&1" \
     "Testing keycloak"

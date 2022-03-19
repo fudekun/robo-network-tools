@@ -43,8 +43,8 @@ __createEntry() {
   local rep_name=$1
   local BASE_URL=$2
   local access_token=$3
-  local client_secret=$4
-  local cluster_name=$5
+  local cluster_name=$4
+  local client_secret
   local password
   local preset_group_name
   local preset_cadmi_name
@@ -56,6 +56,7 @@ __createEntry() {
   local hash_iterations
   local fullname_array
   password=$(__getClusterAdminSecret "${rep_name}")
+  client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   preset_group_name=$(getPresetGroupName)
   preset_cadmi_name=$(getPresetClusterAdminName)
   ## For Userinfo
@@ -119,6 +120,11 @@ __getClusterAdminSecret() {
   kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode
 }
 
+__getClusterK8sSSOSecret() {
+  local rep_name=$1
+  kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 --decode
+}
+
 showVerifierCommand() {
   local rep_name=$1
   echo ""
@@ -167,11 +173,9 @@ main() {
 
   ## Insert entry
   ##
-  local client_secret
   local cluster_name
-  client_secret="$(openssl rand -base64 64 | head -c 32)"
   cluster_name=$(getClusterName)
-  if ! __createEntry "${rep_name}" "${BASE_URL}" "${access_token}" "${client_secret}" "${cluster_name}"; then
+  if ! __createEntry "${rep_name}" "${BASE_URL}" "${access_token}" "${cluster_name}"; then
     echo "Failed to create entry"
     exit 1
   fi
