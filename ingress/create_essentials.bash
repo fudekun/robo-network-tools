@@ -230,7 +230,7 @@ installKeycloak() {
   ## 4-4. Setup preset-entries
   ##
   cmdWithLoding \
-    "source ./create_keycloak-entry.bash 1> /dev/null" \
+    "source ./create_keycloak-entry.bash ${HOSTNAME_FOR_KEYCLOAK} 1> /dev/null" \
     "Activating Keycloak-entries"
   return $?
 }

@@ -55,6 +55,15 @@ getBaseFQDN() {
   kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
 }
 
+getPresetSuperAdminName() {
+  rep_name=$1
+  helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.adminUser'
+}
+
+getPresetClusterAdminName() {
+  getPresetGroupName
+}
+
 getPresetGroupName() {
   # !! Must be a hyphen-delimited string !!
   # e.g. *cluster-admim*
@@ -78,4 +87,8 @@ hashPasswordByPbkdf2Sha256() {
   echo "$__salt"
   echo "$__hashed_salted_value"
   echo "$__hash_iterations"
+}
+
+getEpochMillisec() {
+  python3 -c 'import time; print(int(time.time() * 1000))'
 }

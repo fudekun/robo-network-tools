@@ -64,7 +64,7 @@
   ],
   "users": [
     {
-      "username": $preset_group_name,
+      "username": $preset_cadmi_name,
       "firstName": $first_name,
       "lastName": $last_name,
       "enabled": true,
@@ -103,7 +103,7 @@
         "name": "admin",
         "composite": false,
         "clientRole": false,
-        "containerId": $preset_group_name,
+        "containerId": $cluster_name,
         "attributes": {
         }
       },
@@ -112,7 +112,7 @@
         "description": "${role_offline-access}",
         "composite": false,
         "clientRole": false,
-        "containerId": $preset_group_name,
+        "containerId": $cluster_name,
         "attributes": {
         }
       },
@@ -121,7 +121,7 @@
         "description": "${role_uma_authorization}",
         "composite": false,
         "clientRole": false,
-        "containerId": $preset_group_name,
+        "containerId": $cluster_name,
         "attributes": {
         }
       },
@@ -129,7 +129,7 @@
         "name": "user",
         "composite": false,
         "clientRole": false,
-        "containerId": $preset_group_name,
+        "containerId": $cluster_name,
         "attributes": {
         }
       }
@@ -141,7 +141,6 @@
 
   "clientScopes": [
     {
-      "id": "35bfd94e-681f-456a-bca0-0d0d8d986a96",
       "name": "address",
       "description": "OpenID Connect built-in scope: address",
       "protocol": "openid-connect",
