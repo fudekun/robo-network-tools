@@ -178,7 +178,7 @@ installAmbassador() {
         --timeout 600s \
         -f values_for_ambassador-instance.yaml" \
     "Activating ambassador-Instance"
-  ## 3-3. Create Private Key for ambassador-k8ssso
+  ## 3-3. Authenticate Ambassador Edge Stack with Kubernetes API
   ##
   ## References
   ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
