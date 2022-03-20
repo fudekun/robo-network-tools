@@ -71,10 +71,12 @@ __createEntry() {
   salt=${cred_hash_array[0]}
   hashed_salted_value=${cred_hash_array[1]}
   hash_iterations=${cred_hash_array[2]}
+    ## NOTE
     ## !!
     ## This Credentials is a deprecated JSON Schema
     ## >> Using deprecated 'credentials' format in JSON representation for user 'xxxxx'. It will be removed in future versions
     ## !!
+    ##
   ## Execute Admin REST API
   ##
   curl -fs -X POST "$operation_endpoint_url" \

@@ -59,6 +59,9 @@ installCertManager() {
   echo "---"
   echo "Setup RootCA and Specific Issuer ..."
   echo "Mode: $FLAG_SECRET_OPERATION"
+  cmdWithLoding \
+      "kubectl -n $HOSTNAME_FOR_CERTMANAGER apply -f values_for_cert-manager-caissuer.yaml" \
+      "Activating RootCA Issuer"
   if [ "$FLAG_SECRET_OPERATION" = "new-rootca" ]; then
     cmdWithLoding \
       "source ./values_for_cert-manager-rootca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $BASE_FQDN" \
@@ -190,14 +193,14 @@ installKeycloak() {
     "kubectl create namespace ${HOSTNAME_FOR_KEYCLOAK}" \
     "Getting Ready keycloak"
   kubectl -n "$HOSTNAME_FOR_KEYCLOAK" create secret generic specific-secrets \
-    --from-literal=admin-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=management-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=postgresql-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=tls-keystore-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=tls-truestore-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | head -c 16)" \
-    --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | head -c 16)"
+    --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+    --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
       # NOTE
       # The postgresql-postgres-password is password for root user
       # The postgresql-password is password for the unprivileged user
