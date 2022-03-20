@@ -60,14 +60,14 @@ installCertManager() {
   echo "Setup RootCA and Specific Issuer ..."
   echo "Mode: $FLAG_SECRET_OPERATION"
   cmdWithLoding \
-      "kubectl -n $HOSTNAME_FOR_CERTMANAGER apply -f values_for_cert-manager-caissuer.yaml" \
+      "kubectl -n $HOSTNAME_FOR_CERTMANAGER apply -f values_for_cert-manager-issuer-rootca.yaml" \
       "Activating RootCA Issuer"
   if [ "$FLAG_SECRET_OPERATION" = "new-rootca" ]; then
     cmdWithLoding \
       "source ./values_for_cert-manager-rootca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $BASE_FQDN" \
       "Activating RootCA"
-    count=1
-    while ! kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secret selfsigned-cacert 2>/dev/null; do
+    local count=1
+    while ! kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secret "$BASE_FQDN" 2>/dev/null; do
       # NOTE
       # Wait until RootCA is issued
       sleep 1
@@ -77,8 +77,8 @@ installCertManager() {
     done
     mkdir -p "$HISTORY_DIR"
     chmod 0700 "$HISTORY_DIR"
-    kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets selfsigned-cacert -o yaml > "$HISTORY_FILE"
-    kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets selfsigned-cacert -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
+    kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o yaml > "$HISTORY_FILE"
+    kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
       # NOTE
       # Save the History file and the RootCA
   elif [ "$FLAG_SECRET_OPERATION" = "recycle" ]; then
@@ -100,11 +100,12 @@ installCertManager() {
   ## 1-3. Setup Specific Issuer
   ##
   cmdWithLoding \
-    "kubectl apply -f values_for_cert-manager-issuer.yaml" \
+    "source ./values_for_cert-manager-issuer-subca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $BASE_FQDN" \
     "Activating Specific Issuer"
       # NOTE
       # ClusterIssuer is namespace independent
-      # However, it depends on **selfsigned-cacert**
+      # However, it depends on selfsigned-cacert
+      #                        (Name of $BASE_FQDN, like rdbox.rdbox.172-16-0-110.nip.io)
   return $?
 }
 
@@ -151,14 +152,16 @@ installMetalLB() {
 ## 3. Install Ambassador (Step1)
 ##
 installAmbassador() {
-  ## 3-1. Install Ambassador's CRD
-  ##
   HOSTNAME_FOR_AMBASSADOR=${HOSTNAME_FOR_AMBASSADOR:-ambassador}
+  SUFFIX_FOR_AMBASSADOR_K8SSSO=${SUFFIX_FOR_AMBASSADOR_K8SSSO:-k8ssso}
   export HOSTNAME_FOR_AMBASSADOR=$HOSTNAME_FOR_AMBASSADOR
-  local __aes_app_version
+  export SUFFIX_FOR_AMBASSADOR_K8SSSO=$SUFFIX_FOR_AMBASSADOR_K8SSSO
   echo ""
   echo "---"
   echo "Installing ambassador ..."
+  ## 3-1. Install Ambassador's CRD
+  ##
+  local __aes_app_version
   __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
   cmdWithLoding \
     "kubectl apply -f https://app.getambassador.io/yaml/edge-stack/${__aes_app_version}/aes-crds.yaml" \
@@ -173,8 +176,64 @@ installAmbassador() {
         --create-namespace \
         --wait \
         --timeout 600s \
-        -f values_for_ambassador.yaml" \
+        -f values_for_ambassador-instance.yaml" \
     "Activating ambassador-Instance"
+  ## 3-3. Create Private Key for ambassador-k8ssso
+  ##
+  ## References
+  ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
+  ##
+  ##
+  ## 1. Delete the openapi mapping from the Ambassador namespace
+  ##
+  if ! bash -c "kubectl delete -n ambassador ambassador-devportal-api"; then
+    echo "CRD(ambassador-devportal-api) is Not Found ...ok"
+  fi
+  ## 2. private key using root key of this clsters.
+  ##
+  local __hostname_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR}-${SUFFIX_FOR_AMBASSADOR_K8SSSO}
+  local __fqdn_for_ambassador_k8ssso=${__hostname_ambassador_k8ssso}.${BASE_FQDN}
+  local __private_key_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.key
+  local __server_cert_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.crt
+  cmdWithLoding \
+    "source ./values_for_ambassador-k8ssso-subca.yaml.bash ${HOSTNAME_FOR_AMBASSADOR} ${__fqdn_for_ambassador_k8ssso}" \
+    "Issueing Private Key for ambassador-k8ssso"
+  local count=1
+  while ! kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secret "${__fqdn_for_ambassador_k8ssso}" 2>/dev/null; do
+    # NOTE
+    # Wait until SubCA is issued
+    sleep 1
+    echo -ne "\r\033[K"
+    seq -s '.' 0 $count | tr -d '0-9'
+    count=$((count++))
+  done
+  kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json | jq -r '.data["tls.key"]' | base64 -d > "${__private_key_file}"
+  ## 3. Create a file a CNF and a certificate signing request with the CNF file.
+  ## 4. Same as above
+  ##
+  local __csr
+  __csr=$(source ./values_for_ambassador-k8ssso-csr.cnf.bash "${__hostname_ambassador_k8ssso}" "${__fqdn_for_ambassador_k8ssso}" "${__private_key_file}" | base64)
+  ## 5. Create and apply the following YAML for a CertificateSigningRequest.
+  ##
+  cmdWithLoding \
+    "source values_for_ambassador-k8ssso-csr.yaml.bash ${__hostname_ambassador_k8ssso} ${__csr}" \
+    "Activating CertificateSigningRequest"
+  ## 6. Confirmation
+  ##
+  cmdWithLoding \
+    "kubectl certificate approve ${__hostname_ambassador_k8ssso}" \
+    "Approving CertificateSigningRequest"
+  ## 7. Get the resulting certificate
+  ##
+  kubectl get csr "${__hostname_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" | base64 -d > "${__server_cert_file}"
+  ## 8. Create a TLS Secret using our private key and public certificate.
+  ##
+  cmdWithLoding \
+    "kubectl -n ${HOSTNAME_FOR_AMBASSADOR} create secret tls ${__hostname_ambassador_k8ssso} \
+      --cert ${__server_cert_file} \
+      --key ${__private_key_file} \
+    " \
+    "Exporting TLS Secret"
   return $?
 }
 
@@ -216,7 +275,7 @@ installKeycloak() {
         --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK \
         --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
         --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$__fqdn_for_keycloak/auth \
-        -f values_for_keycloak.yaml" \
+        -f values_for_keycloak-instance.yaml" \
     "Activating keycloak"
   ## 4-3. Setup TLSContext
   ##
@@ -274,6 +333,9 @@ main() {
   showVerifierCommand
   return $?
 }
+
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf $TEMP_DIR' EXIT
 
 source ./create_common.bash
 main "$@"

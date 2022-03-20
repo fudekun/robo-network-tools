@@ -11,18 +11,17 @@ metadata:
   name: "${__fqdn_this_cluster}"
   namespace: "${__hostname_for_this}"
 spec:
-  isCA: true
+  isCA: false
   commonName: "${__fqdn_this_cluster}"
   dnsNames:
     - "${__fqdn_this_cluster}"
-    - "*.${__fqdn_this_cluster}"
   duration: 87600h
   secretName: "${__fqdn_this_cluster}"
   privateKey:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: selfsigned-issuer
+    name: ca-issuer
     kind: ClusterIssuer
     group: cert-manager.io
 EOF

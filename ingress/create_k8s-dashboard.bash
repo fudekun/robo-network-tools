@@ -9,7 +9,7 @@ echo "Installing kubernetes-dashboard ..."
 ## create namespace (ambassador require a specific namespace.)
 kubectl create namespace rdbox-systems
 ## Add service-account
-kubectl -n rdbox-systems apply -f service-account.yaml
+kubectl -n rdbox-systems apply -f values_for_service-account.yaml
 
 helm repo update
 helm -n rdbox-systems install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard -f values_for_k8s-dashboard.yaml

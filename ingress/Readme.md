@@ -34,7 +34,7 @@ kubectl -n rdbox-systems create secret tls rdbox-common-tls --key=rdbox_common_c
 
 # Create Dashboard
 ## Add service-account
-kubectl -n rdbox-systems apply -f service-account.yaml
+kubectl -n rdbox-systems apply -f values_for_service-account.yaml
 
 helm -n rdbox-systems install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard -f values_for_kind.yaml
 
