@@ -29,7 +29,7 @@ metadata:
   labels:
     app.kubernetes.io/component: "$__hostname_for_this"
 spec:
-  hostname: $__fqdn_this_cluster
+  host: $__fqdn_this_cluster
   prefix: /
   allow_upgrade:
   - spdy/3.1
