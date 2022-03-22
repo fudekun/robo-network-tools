@@ -165,10 +165,10 @@ installAmbassador() {
   __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
   cmdWithLoding \
     "kubectl apply -f https://app.getambassador.io/yaml/edge-stack/${__aes_app_version}/aes-crds.yaml" \
-    "Installing ambassador-CRD"
+    "Installing ambassador (CRD)"
   cmdWithLoding \
     "kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system" \
-    "Activating ambassador-CRD"
+    "Activating ambassador (CRD)"
   ## 3-2. Install Ambassador Instance
   ##
   cmdWithLoding \
@@ -177,7 +177,7 @@ installAmbassador() {
         --wait \
         --timeout 600s \
         -f values_for_ambassador-instance.yaml" \
-    "Activating ambassador-Instance"
+    "Activating ambassador (Instance)"
   ## 3-3. Authenticate Ambassador Edge Stack with Kubernetes API
   ##
   ## References
@@ -196,8 +196,11 @@ installAmbassador() {
   local __private_key_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.key
   local __server_cert_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.crt
   cmdWithLoding \
-    "source ./values_for_ambassador-k8ssso-subca.yaml.bash ${HOSTNAME_FOR_AMBASSADOR} ${__fqdn_for_ambassador_k8ssso}" \
-    "Issueing Private Key for ambassador-k8ssso"
+    "source ./values_for_ambassador-k8ssso-subca.yaml.bash \
+      ${HOSTNAME_FOR_AMBASSADOR} \
+      ${__fqdn_for_ambassador_k8ssso} \
+    " \
+    "Issueing Private Key for ambassador (k8ssso)"
   local count=1
   while ! kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secret "${__fqdn_for_ambassador_k8ssso}" 2>/dev/null; do
     # NOTE
@@ -207,16 +210,24 @@ installAmbassador() {
     seq -s '.' 0 $count | tr -d '0-9'
     count=$((count++))
   done
-  kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json | jq -r '.data["tls.key"]' | base64 -d > "${__private_key_file}"
+  kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
+        | jq -r '.data["tls.key"]' \
+        | base64 -d > "${__private_key_file}"
   ## 3. Create a file a CNF and a certificate signing request with the CNF file.
   ## 4. Same as above
   ##
   local __csr
-  __csr=$(source ./values_for_ambassador-k8ssso-csr.cnf.bash "${__hostname_ambassador_k8ssso}" "${__fqdn_for_ambassador_k8ssso}" "${__private_key_file}" | base64)
+  __csr=$(source ./values_for_ambassador-k8ssso-csr.cnf.bash \
+          "${__hostname_ambassador_k8ssso}" \
+          "${__fqdn_for_ambassador_k8ssso}" \
+          "${__private_key_file}" \
+        | base64)
   ## 5. Create and apply the following YAML for a CertificateSigningRequest.
   ##
   cmdWithLoding \
-    "source values_for_ambassador-k8ssso-csr.yaml.bash ${__hostname_ambassador_k8ssso} ${__csr}" \
+    "source values_for_ambassador-k8ssso-csr.yaml.bash \
+      ${__hostname_ambassador_k8ssso} \
+      ${__csr}" \
     "Activating CertificateSigningRequest"
   ## 6. Confirmation
   ##
@@ -225,7 +236,8 @@ installAmbassador() {
     "Approving CertificateSigningRequest"
   ## 7. Get the resulting certificate
   ##
-  kubectl get csr "${__hostname_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" | base64 -d > "${__server_cert_file}"
+  kubectl get csr "${__hostname_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" \
+        | base64 -d > "${__server_cert_file}"
   ## 8. Create a TLS Secret using our private key and public certificate.
   ##
   cmdWithLoding \
@@ -234,6 +246,23 @@ installAmbassador() {
       --key ${__private_key_file} \
     " \
     "Exporting TLS Secret"
+  ## 9. Create a Mapping and TLSContext and RBAC for the Kube API.
+  ## 10. Same as above
+  ##
+  cmdWithLoding \
+    "source ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
+      ${__hostname_ambassador_k8ssso} \
+      ${__fqdn_for_ambassador_k8ssso} \
+      ${HOSTNAME_FOR_AMBASSADOR}" \
+    "Activating k8s SSO Endpoint"
+  ## 11. As a quick check
+  ##
+  cmdWithLoding \
+    "sleep 30" \
+    "During the verification of the RBAC"
+  if ! curl -kfsv https://"$__fqdn_for_ambassador_k8ssso"/api; then
+    exit 1
+  fi
   return $?
 }
 

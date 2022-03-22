@@ -34,15 +34,15 @@ kubectl -n cert-manager get secrets rdbox-selfsigned-ca-cert -o json | jq -r '.d
 ##
 cat <<EOF | openssl req -new -key "$private_key_file" -nodes -out "$csr_file" -config /dev/stdin
 [ req ]
-default_bits = 4096
+default_bits = 2048
 prompt = no
 default_md = sha256
 req_extensions = req_ext
 distinguished_name = dn
-[ alt_names ]
-DNS.1 = $this_fqdn
 [ req_ext ]
 subjectAltName = @alt_names
+[ alt_names ]
+DNS.1 = $this_fqdn
 [ dn ]
 CN = ambassador-kubeapi
 [ v3_ext ]

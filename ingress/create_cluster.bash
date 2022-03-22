@@ -52,8 +52,7 @@ data:
   nic.ip_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
 EOF
   local __status=$?
-  echo ""
-  echo "In this cluster, **$(getBaseFQDN)** is used as the base FQDN"
+  echo "  In this cluster, **$(getBaseFQDN)** is used as the base FQDN"
   echo -e "\033[32mok!\033[m cluster-info"
   return ${__status}
 }

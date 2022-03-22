@@ -12,10 +12,10 @@ metadata:
 spec:
   groups:
   - system:authenticated
+  signerName: kubernetes.io/kube-apiserver-client
   request: $__csr_base64
   usages:
   - digital signature
   - key encipherment
-  - server auth
   - client auth
 EOF
