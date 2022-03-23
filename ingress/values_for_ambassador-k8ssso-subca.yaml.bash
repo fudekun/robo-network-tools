@@ -11,7 +11,7 @@ metadata:
   name: "${__fqdn_this_cluster}"
   namespace: "${__hostname_for_this}"
 spec:
-  isCA: false
+  isCA: true
   commonName: "${__fqdn_this_cluster}"
   dnsNames:
     - "${__fqdn_this_cluster}"

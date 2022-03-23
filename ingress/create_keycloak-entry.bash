@@ -16,10 +16,10 @@ __getAccessToken() {
   local token_endpoint
   username=$(getPresetSuperAdminName "${rep_name}")
   password=$(__getSuperAdminSecret "${rep_name}")
-  token_endpoint=$(curl -s "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.mtls_endpoint_aliases.token_endpoint')
+  token_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.mtls_endpoint_aliases.token_endpoint')
   ## Execute Admin REST API
   ##
-  resp=$(curl -fs -X POST "$token_endpoint" \
+  resp=$(curl -fs --cacert "${ROOTCA_FILE}" -X POST "$token_endpoint" \
     -d "client_id=admin-cli" \
     -d "username=$username" \
     -d "password=$password" \
@@ -79,7 +79,7 @@ __createEntry() {
     ##
   ## Execute Admin REST API
   ##
-  curl -fs -X POST "$operation_endpoint_url" \
+  curl -fs --cacert "${ROOTCA_FILE}" -X POST "$operation_endpoint_url" \
       -H "Authorization: bearer $access_token" \
       -H "Content-Type: application/json" \
       -d "$(jq -n -r -f values_for_keycloak-entry-realm.jq.json \
@@ -103,10 +103,10 @@ __logoutSuperAdmin() {
   local BASE_URL=$1
   local REFLESH_TOKEN=$2
   local revoke_endpoint
-  revoke_endpoint=$(curl -s "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.end_session_endpoint')
+  revoke_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.end_session_endpoint')
   ## Execute Admin REST API
   ##
-  curl -fs -X POST "$revoke_endpoint" \
+  curl -fs --cacert "${ROOTCA_FILE}" -X POST "$revoke_endpoint" \
       -d "client_id=admin-cli" \
       -d "refresh_token=$REFLESH_TOKEN"
   echo "(Success logout)"
@@ -152,6 +152,7 @@ main() {
   echo "Inserting entry to keycloak ..."
 
   local rep_name=$1
+  ROOTCA_FILE=${ROOTCA_FILE:-$2}
 
   ## Build BASE_URL
   ##

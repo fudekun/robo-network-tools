@@ -29,13 +29,28 @@ metadata:
   labels:
     app.kubernetes.io/component: "$__hostname_for_this"
 spec:
-  host: $__fqdn_this_cluster
+  host: "$__fqdn_this_cluster"
   prefix: /
   allow_upgrade:
   - spdy/3.1
   service: https://kubernetes.default.svc
   timeout_ms: 0
   tls: "$__hostname_for_this"
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: "$__hostname_for_this"
+  namespace: "$__rep_name"
+  labels:
+    app.kubernetes.io/component: "$__hostname_for_this"
+spec:
+  hostname: "$__fqdn_this_cluster"
+  requestPolicy:
+    insecure:
+      action: Route
+  tlsSecret:
+    name: "$__hostname_for_this"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

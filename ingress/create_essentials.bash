@@ -257,12 +257,14 @@ installAmbassador() {
     "Activating k8s SSO Endpoint"
   ## 11. As a quick check
   ##
-  cmdWithLoding \
-    "sleep 30" \
-    "During the verification of the RBAC"
-  if ! curl -kfsv https://"$__fqdn_for_ambassador_k8ssso"/api; then
-    exit 1
-  fi
+  while ! curl -fs --cacert "$__server_cert_file" https://"$__fqdn_for_ambassador_k8ssso"/api | jq 2>/dev/null; do
+    # NOTE
+    # Wait until to startup the Host
+    sleep 1
+    echo -ne "\r\033[K"
+    seq -s '.' 0 $count | tr -d '0-9'
+    count=$((count++))
+  done
   return $?
 }
 
@@ -309,21 +311,29 @@ installKeycloak() {
   ## 4-3. Setup TLSContext
   ##
   cmdWithLoding \
-    "source ./values_for_tlscontext.yaml.bash ${HOSTNAME_FOR_KEYCLOAK} ${__fqdn_for_keycloak} 1> /dev/null" \
+    "source ./values_for_tlscontext.yaml.bash \
+        ${HOSTNAME_FOR_KEYCLOAK} \
+        ${__fqdn_for_keycloak} \
+      1> /dev/null" \
     "Activating TLSContext"
       # NOTE
       # Tentative solution to the problem
       # that TLSContext is not generated automatically from Ingress (v2.2.2)
+  while ! kubectl -n "$HOSTNAME_FOR_KEYCLOAK" get secret "$HOSTNAME_FOR_KEYCLOAK" 2>/dev/null; do
+    # NOTE
+    # Wait until SubCA is issued
+    sleep 1
+    echo -ne "\r\033[K"
+    seq -s '.' 0 $count | tr -d '0-9'
+    count=$((count++))
+  done
   cmdWithLoding \
-    "sleep 20" \
-    "Waiting TLSContext"
-  cmdWithLoding \
-    "curl --fail --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak}/auth/ >/dev/null 2>&1" \
+    "curl -fs --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak}/auth/ >/dev/null 2>&1" \
     "Testing keycloak"
   ## 4-4. Setup preset-entries
   ##
   cmdWithLoding \
-    "source ./create_keycloak-entry.bash ${HOSTNAME_FOR_KEYCLOAK} 1> /dev/null" \
+    "source ./create_keycloak-entry.bash ${HOSTNAME_FOR_KEYCLOAK} ${ROOTCA_FILE} 1> /dev/null" \
     "Activating Keycloak-entries"
   return $?
 }
