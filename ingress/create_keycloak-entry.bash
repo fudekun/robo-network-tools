@@ -187,6 +187,21 @@ main() {
   ##
   kubectl apply -f values_for_cluster-admin.yaml
 
+  ## Set Context
+  local client_secret
+  client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
+  cmdWithLoding \
+    "kubectl config set-credentials $(getContextName) \
+      --exec-api-version=client.authentication.k8s.io/v1beta1 \
+      --exec-command=kubectl \
+      --exec-arg=oidc-login \
+      --exec-arg=get-token \
+      --exec-arg=--oidc-issuer-url=${BASE_URL}/auth/realms/${cluster_name} \
+      --exec-arg=--oidc-client-id=ambassador \
+      --exec-arg=--oidc-client-secret=${client_secret} \
+    " \
+    "Setting Cluster Credentials"
+
   ## Notify Verifier-Command
   ##
   showVerifierCommand "${rep_name}"

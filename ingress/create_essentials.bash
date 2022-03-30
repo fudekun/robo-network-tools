@@ -8,6 +8,20 @@ set -euo pipefail
 ## 0. Initializing
 ##
 initializingEssentials() {
+  ## 0-1. Input Argument Checking
+  ##
+  checkingArgs() {
+    local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
+    local __base_fqdn
+    if [ $# -eq 1 ]; then
+      __flag_secret_operation=$1
+    fi
+    echo "Mode: $__flag_secret_operation"
+    __base_fqdn=$(getBaseFQDN)
+    export BASE_FQDN=$__base_fqdn
+    export FLAG_SECRET_OPERATION=$__flag_secret_operation
+    return $?
+  }
   echo ""
   echo "---"
   echo "Initializing essentials ..."
@@ -16,21 +30,6 @@ initializingEssentials() {
   checkingArgs "$@"
   ## 0-2. Update Helm
   updateHelm
-}
-
-## 0-1. Input Argument Checking
-##
-checkingArgs() {
-  local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
-  local __base_fqdn
-  if [ $# -eq 1 ]; then
-    __flag_secret_operation=$1
-  fi
-  echo "Mode: $__flag_secret_operation"
-  __base_fqdn=$(getBaseFQDN)
-  export BASE_FQDN=$__base_fqdn
-  export FLAG_SECRET_OPERATION=$__flag_secret_operation
-  return $?
 }
 
 ## 1. Install Cert-Manager
@@ -149,7 +148,7 @@ installMetalLB() {
   return $?
 }
 
-## 3. Install Ambassador (Step1)
+## 3. Install Ambassador
 ##
 installAmbassador() {
   HOSTNAME_FOR_AMBASSADOR=${HOSTNAME_FOR_AMBASSADOR:-ambassador}
@@ -192,6 +191,7 @@ installAmbassador() {
   ## 2. private key using root key of this clsters.
   ##
   local __hostname_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR}-${SUFFIX_FOR_AMBASSADOR_K8SSSO}
+  export HOSTNAME_AMBASSADOR_K8SSSO=${__hostname_ambassador_k8ssso}
   local __fqdn_for_ambassador_k8ssso=${__hostname_ambassador_k8ssso}.${BASE_FQDN}
   local __private_key_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.key
   local __server_cert_file=${TEMP_DIR}/${__hostname_ambassador_k8ssso}.crt
@@ -257,6 +257,7 @@ installAmbassador() {
     "Activating k8s SSO Endpoint"
   ## 11. As a quick check
   ##
+  local count=1
   while ! curl -fs --cacert "$__server_cert_file" https://"$__fqdn_for_ambassador_k8ssso"/api | jq 2>/dev/null; do
     # NOTE
     # Wait until to startup the Host
@@ -265,6 +266,14 @@ installAmbassador() {
     seq -s '.' 0 $count | tr -d '0-9'
     count=$((count++))
   done
+  ## 12. Set Context
+  cmdWithLoding \
+    "kubectl config set-cluster $(getContextName) \
+      --server=https://${__fqdn_for_ambassador_k8ssso} \
+      --certificate-authority=${__server_cert_file} \
+      --embed-certs \
+    " \
+    "Setting Cluster Context"
   return $?
 }
 
@@ -319,6 +328,7 @@ installKeycloak() {
       # NOTE
       # Tentative solution to the problem
       # that TLSContext is not generated automatically from Ingress (v2.2.2)
+  local count=1
   while ! kubectl -n "$HOSTNAME_FOR_KEYCLOAK" get secret "$HOSTNAME_FOR_KEYCLOAK" 2>/dev/null; do
     # NOTE
     # Wait until SubCA is issued
@@ -338,9 +348,54 @@ installKeycloak() {
   return $?
 }
 
+## 5. Install Filter
+##
+installFilter() {
+  local __hostname_ambassador_k8ssso=${HOSTNAME_AMBASSADOR_K8SSSO}
+    # ambassador-k8ssso
+  local __fqdn_for_ambassador_k8ssso=${__hostname_ambassador_k8ssso}.${BASE_FQDN}
+    # ambassador.rdbox.172-16-0-110.nip.io
+  local __hostname_for_ambassador=${HOSTNAME_FOR_AMBASSADOR}
+    # ambassador
+  local __hostname_for_keycloak=${HOSTNAME_FOR_KEYCLOAK}
+    # keycloak
+  local __fqdn_for_keycloak=${__hostname_for_keycloak}.${BASE_FQDN}
+    # keycloak.rdbox.172-16-0-110.nip.io
+  local __cluster_name
+  __cluster_name=$(getClusterName)
+    # rdbox
+  local __jwks_uri=http://${__hostname_for_keycloak}.${__hostname_for_keycloak}/auth/realms/${__cluster_name}/protocol/openid-connect/certs
+    # https://keycloak.rdbox.172-16-0-110.nip.io/auth/realms/rdbox/protocol/openid-connect/certs
+  echo ""
+  echo "---"
+  echo "Installing filter ..."
+  ## Install Filter
+  ##
+  cmdWithLoding \
+    "source ./values_for_ambassador-k8ssso-filter.yaml.bash \
+      ${__hostname_ambassador_k8ssso} \
+      ${__fqdn_for_ambassador_k8ssso} \
+      ${__hostname_for_ambassador} \
+      ${__jwks_uri} \
+      " \
+    "Activating filter"
+  ## Set Context
+  ##
+  local __ctx_name
+  __ctx_name=$(getContextName)
+  cmdWithLoding \
+    "kubectl config set-context ${__ctx_name} \
+      --cluster=${__ctx_name} \
+      --user=${__ctx_name} \
+    " \
+    "Setting Cluster Context"
+}
+
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
+  local __ctx_name
+  __ctx_name=$(getContextName)
   echo ""
   echo "---"
   echo "The basic network modules has been installed. Check its status by running:"
@@ -348,6 +403,9 @@ showVerifierCommand() {
   echo "  kubectl -n ${HOSTNAME_FOR_METALLB} get pod"
   echo "  kubectl -n ${HOSTNAME_FOR_AMBASSADOR} get pod"
   echo "  kubectl -n ${HOSTNAME_FOR_KEYCLOAK} get pod"
+  echo "---"
+  echo "Execute the following command to run kubectl with single sign-on:"
+  echo "  kubectl config use-context ${__ctx_name}"
   return $?
 }
 
@@ -361,12 +419,15 @@ main() {
   ## 2. Install MetalLB
   ##
   installMetalLB
-  ## 3. Install Ambassador (Step1)
+  ## 3. Install Ambassador
   ##
   installAmbassador
   ## 4. Install Keycloak
   ##
   installKeycloak
+  ## 5. Install Filter
+  ##
+  installFilter
   ## 99. Notify Verifier-Command
   ##
   showVerifierCommand

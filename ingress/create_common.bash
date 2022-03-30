@@ -47,6 +47,13 @@ updateHelm() {
     "Updateing Helm"
 }
 
+getContextName() {
+  local prefix=${1:-sso}
+  local context_name
+  context_name=${prefix}-$(getClusterName)
+  echo -e "$context_name"
+}
+
 getClusterName() {
   kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.name"
 }

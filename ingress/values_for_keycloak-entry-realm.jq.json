@@ -20,14 +20,14 @@
     "web-origins",
     "roles",
     "profile",
-    "email"
+    "email",
+    "groups"
   ],
   "defaultOptionalClientScopes": [
     "address",
     "phone",
     "offline_access",
-    "microprofile-jwt",
-    "groups"
+    "microprofile-jwt"
   ],
   "clients": [
     {
@@ -609,9 +609,8 @@
             "full.path": "false",
             "id.token.claim": "true",
             "access.token.claim": "true",
-            "userinfo.token.claim": "true",
             "claim.name": "groups",
-            "jsonType.label": "String"
+            "userinfo.token.claim": "true"
           }
         }
       ]
