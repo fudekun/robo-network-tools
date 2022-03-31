@@ -8,15 +8,31 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkingArgs() {
-  if [ $# != 2 ]; then
-    echo "\$1 Specify the cluster name (e.g. rdbox)"
-    echo "\$2 Specify the Domain name (e.g. Your Domain OR nip.io, sslip.io ...)"
+  if [ $# -lt 2 ]; then
+    echo "# Args"
+    echo "          \${1} Specify the cluster name  (e.g. rdbox)"
+    echo "          \${2} Specify the Domain name   (e.g. Your Domain OR nip.io, sslip.io ...)"
+    echo "(optional)\${3} Specify the Host name     (e.g. rdbox-master-00)"
+    echo ""
+    echo "# EnvironmentVariable"
+    echo "(recommend: Use automatic settings)"
+    echo "| Name                | e.g.                        |"
+    echo "| :------------------ | :-------------------------- |"
+    echo "| NAME_DEFULT_NIC     | en0                         |"
+    echo "| CLUSTER_WORKDIR     | \${HOME}/rdbox/\${1}        |"
     exit 1
   fi
-  CLUSTER_NAME="$1"
-  export CLUSTER_NAME
-  DNS_SERVICE="$2"
-  export DNS_SERVICE
+  CLUSTER_NAME=$(printf %q "$1")
+    # ExtrapolationValue
+  export CLUSTER_NAME=$CLUSTER_NAME
+  DOMAIN_NAME=$(printf %q "$2")
+    # ExtrapolationValue
+  export DOMAIN_NAME=$DOMAIN_NAME
+  if [ $# = 3 ]; then
+    HOST_NAME=$(printf %q "$3")
+      # ExtrapolationValue
+    export HOST_NAME=$HOST_NAME
+  fi
   return $?
 }
 
@@ -37,19 +53,32 @@ setupConfigMap() {
     "kubectl create namespace cluster-common" \
     "Getting Ready cluster-info"
   getNetworkInfo # Get the information needed to fill in the blanks below
+  HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+  CLUSTER_WORKDIR=${CLUSTER_WORKDIR:-${HOME}/rdbox/${CLUSTER_NAME}}
+  CLUSTER_WORKDIR=$(printf %q "$CLUSTER_WORKDIR")
+    # ExtrapolationValue
+  local LOGS_DIR=${CLUSTER_WORKDIR}/logs
+  local OUTPUTS_DIR=${CLUSTER_WORKDIR}/outputs
+  local TMPS_DIR=${CLUSTER_WORKDIR}/tmps
+  mkdir -p "${LOGS_DIR}" "${OUTPUTS_DIR}" "${TMPS_DIR}"
 cat <<EOF | kubectl apply --timeout 90s --wait -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cluster-info
-  namespace: cluster-common
+  name: ${CLUSTER_INFO_NAMENAME}
+  namespace: ${CLUSTER_INFO_NAMESPACE}
 data:
   name: ${CLUSTER_NAME}
-  domain: ${DNS_SERVICE}
-  base_fqdn: "${CLUSTER_NAME}.${HOSTNAME_FOR_WCDNS_BASED_ON_IP}.${DNS_SERVICE}"
+  host: ${HOST_NAME}
+  domain: ${DOMAIN_NAME}
+  base_fqdn: "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
   nic.name: ${NAME_DEFULT_NIC}
-  nic.ip_v4: ${IP_DEFAULT_NIC}
-  nic.ip_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+  nic.ipv4: ${IP_DEFAULT_NIC}
+  nic.ipv4_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+  workdir.base: ${CLUSTER_WORKDIR}
+  workdir.logs: ${LOGS_DIR}
+  workdir.outputs: ${OUTPUTS_DIR}
+  workdir.tmps: ${TMPS_DIR}
 EOF
   local __status=$?
   return ${__status}

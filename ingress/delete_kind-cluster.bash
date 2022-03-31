@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 
 deleteAll() {
   local __cluster_name

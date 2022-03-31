@@ -1,5 +1,12 @@
 #!/bin/bash
 
+## FIXED VALUE
+##
+CLUSTER_INFO_NAMENAME=cluster-info
+CLUSTER_INFO_NAMESPACE=cluster-common
+##
+##
+
 showLoading() {
   local mypid=$!
   local loadingText=$1
@@ -38,13 +45,14 @@ drawMaxColsSeparator() {
 }
 
 getNetworkInfo() {
-  NAME_DEFULT_NIC=$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')
+  NAME_DEFULT_NIC=${NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')}
+  NAME_DEFULT_NIC=$(printf %q "$NAME_DEFULT_NIC")
+    # ExtrapolationValue
   export NAME_DEFULT_NIC
   # shellcheck disable=SC2015
   IP_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
                     sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
   export IP_DEFAULT_NIC
-  #HOSTNAME_FOR_WCDNS_BASED_ON_IP=$(echo "$IP_DEFAULT_NIC" | awk -F. '{printf "%02x", $1}{printf "%02x", $2}{printf "%02x", $3}{printf "%02x", $4}')
   HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IP_DEFAULT_NIC//\./-}
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
@@ -63,11 +71,15 @@ getContextName() {
 }
 
 getClusterName() {
-  kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.name"
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r ".data.name"
 }
 
 getBaseFQDN() {
-  kubectl -n cluster-common get configmaps cluster-info -o json| jq -r ".data.base_fqdn"
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r ".data.base_fqdn"
+}
+
+getIPv4 () {
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic.ipv4"]'
 }
 
 getPresetSuperAdminName() {
