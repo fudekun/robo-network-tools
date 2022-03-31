@@ -8,17 +8,6 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkingArgs() {
-  header() {
-    echo ""
-    echo "---"
-    echo "# This is an advanced IT platform for robotics and IoT developers ..."
-    echo "            .___. "
-    echo "           /___/| "
-    echo "           |   |/ "
-    echo "           .---.  "
-    echo "           RDBOX  "
-    echo "- A Robotics Developers BOX -"
-  }
   if [ $# -lt 2 ]; then
     echo "# Args"
     echo "          \${1} Specify the cluster name  (e.g. rdbox)"
@@ -44,7 +33,6 @@ checkingArgs() {
       # ExtrapolationValue
     export HOST_NAME=$HOST_NAME
   fi
-  header
   return $?
 }
 
@@ -61,40 +49,43 @@ installKinD() {
 ## 2. SetUp ConfigMap
 ##
 setupConfigMap() {
+  __executer() {
+    kubectl create namespace cluster-common
+    getNetworkInfo # Get the information needed to fill in the blanks below
+    HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+    CLUSTER_WORKDIR=${CLUSTER_WORKDIR:-${HOME}/rdbox/${CLUSTER_NAME}}
+    CLUSTER_WORKDIR=$(printf %q "$CLUSTER_WORKDIR")
+      # ExtrapolationValue
+    local LOGS_DIR=${CLUSTER_WORKDIR}/logs
+    local OUTPUTS_DIR=${CLUSTER_WORKDIR}/outputs
+    local TMPS_DIR=${CLUSTER_WORKDIR}/tmps
+    mkdir -p "${LOGS_DIR}" "${OUTPUTS_DIR}" "${TMPS_DIR}"
+    cat <<EOF | kubectl apply --timeout 90s --wait -f -
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ${CLUSTER_INFO_NAMENAME}
+        namespace: ${CLUSTER_INFO_NAMESPACE}
+      data:
+        name: ${CLUSTER_NAME}
+        host: ${HOST_NAME}
+        domain: ${DOMAIN_NAME}
+        base_fqdn: "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
+        nic.name: ${NAME_DEFULT_NIC}
+        nic.ipv4: ${IP_DEFAULT_NIC}
+        nic.ipv4_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+        workdir.base: ${CLUSTER_WORKDIR}
+        workdir.logs: ${LOGS_DIR}
+        workdir.outputs: ${OUTPUTS_DIR}
+        workdir.tmps: ${TMPS_DIR}
+EOF
+    local __status=$?
+    return ${__status}
+  }
   echo ""
   echo "---"
   echo "## Installing cluster-info ..."
-  cmdWithLoding \
-    "kubectl create namespace cluster-common 1> /dev/null" \
-    "Getting Ready cluster-info"
-  getNetworkInfo # Get the information needed to fill in the blanks below
-  HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-  CLUSTER_WORKDIR=${CLUSTER_WORKDIR:-${HOME}/rdbox/${CLUSTER_NAME}}
-  CLUSTER_WORKDIR=$(printf %q "$CLUSTER_WORKDIR")
-    # ExtrapolationValue
-  local LOGS_DIR=${CLUSTER_WORKDIR}/logs
-  local OUTPUTS_DIR=${CLUSTER_WORKDIR}/outputs
-  local TMPS_DIR=${CLUSTER_WORKDIR}/tmps
-  mkdir -p "${LOGS_DIR}" "${OUTPUTS_DIR}" "${TMPS_DIR}"
-cat <<EOF | kubectl apply --timeout 90s --wait -f - 1> /dev/null
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ${CLUSTER_INFO_NAMENAME}
-  namespace: ${CLUSTER_INFO_NAMESPACE}
-data:
-  name: ${CLUSTER_NAME}
-  host: ${HOST_NAME}
-  domain: ${DOMAIN_NAME}
-  base_fqdn: "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
-  nic.name: ${NAME_DEFULT_NIC}
-  nic.ipv4: ${IP_DEFAULT_NIC}
-  nic.ipv4_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-  workdir.base: ${CLUSTER_WORKDIR}
-  workdir.logs: ${LOGS_DIR}
-  workdir.outputs: ${OUTPUTS_DIR}
-  workdir.tmps: ${TMPS_DIR}
-EOF
+  cmdWithIndent "__executer"
   local __status=$?
   return ${__status}
 }
@@ -104,6 +95,20 @@ EOF
 installWeaveNet() {
   bash ./create_weave.bash
   return $?
+}
+
+## xx. Header
+##
+header() {
+  echo ""
+  echo "---"
+  echo "# This is an advanced IT platform for robotics and IoT developers"
+  echo "            .___. "
+  echo "           /___/| "
+  echo "           |   |/ "
+  echo "           .---.  "
+  echo "           RDBOX  "
+  echo "- A Robotics Developers BOX -"
 }
 
 ## 99. Notify Verifier-Command
@@ -125,7 +130,9 @@ main() {
   installKinD
   ## 2. SetUp ConfigMap
   ##
-  setupConfigMap
+  cmdWithLoding \
+    "setupConfigMap" \
+    "Activating cluster-info"
   ## 3. Install Weave-Net
   ##
   cmdWithLoding \
@@ -138,5 +145,6 @@ main() {
 }
 
 source ./create_common.bash
+header "$@"
 main "$@"
 exit $?
