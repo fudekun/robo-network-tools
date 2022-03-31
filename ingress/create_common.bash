@@ -7,33 +7,54 @@ CLUSTER_INFO_NAMESPACE=cluster-common
 ##
 ##
 
+cleanupShowLoading() {
+    tput cnorm
+}
+
 showLoading() {
   local mypid=$!
   local loadingText=$1
-
-  echo -ne "    $loadingText\r"
-
+  tput civis
+  trap cleanupShowLoading EXIT
+  echo -ne "\r"
+  sleep 1
   while kill -0 $mypid 2>/dev/null; do
-    echo -ne ".   $loadingText\r"
-    sleep 0.5
-    echo -ne "..  $loadingText\r"
-    sleep 0.5
-    echo -ne "... $loadingText\r"
-    sleep 0.5
     echo -ne "\r\033[K"
     echo -ne "    $loadingText\r"
+    echo -ne " -  $loadingText\r"
+    sleep 0.5
+    echo -ne " \\  $loadingText\r"
+    sleep 0.5
+    echo -ne " |  $loadingText\r"
+    sleep 0.5
+    echo -ne " /  $loadingText\r"
     sleep 0.5
   done
+  tput cnorm
+  set +euo > /dev/null 2>&1
   wait $mypid
   local exit_status=$?
-  echo -e "\033[32mok!\033[m $loadingText"
+  if [ ${exit_status} = 0 ]; then
+    echo -e "\033[32mok!\033[m $loadingText"
+  else
+    echo -e "\033[31mng!\033[m $loadingText"
+  fi
+  set -euo > /dev/null 2>&1
   return "$exit_status"
 }
 
 cmdWithLoding() {
-  local commands=$1
-  local message=$2
+  local commands="$1"
+  local message="$2"
   eval "${commands} & showLoading '${message} '"
+}
+
+indent() { sed 's/^/    /'; }
+
+cmdWithIndent() {
+  local commands="$1"
+  esc=$(printf '\033')
+  eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDOUT]&${esc}[0m -> /' ; } 2>&1 | indent"
 }
 
 drawMaxColsSeparator() {

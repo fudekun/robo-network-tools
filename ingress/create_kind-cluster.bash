@@ -8,6 +8,17 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkingArgs() {
+  header() {
+    echo ""
+    echo "---"
+    echo "# This is an advanced IT platform for robotics and IoT developers ..."
+    echo "            .___. "
+    echo "           /___/| "
+    echo "           |   |/ "
+    echo "           .---.  "
+    echo "           RDBOX  "
+    echo "- A Robotics Developers BOX -"
+  }
   if [ $# -lt 2 ]; then
     echo "# Args"
     echo "          \${1} Specify the cluster name  (e.g. rdbox)"
@@ -33,12 +44,16 @@ checkingArgs() {
       # ExtrapolationValue
     export HOST_NAME=$HOST_NAME
   fi
+  header
   return $?
 }
 
 ## 1. Install KinD
 ##
 installKinD() {
+  echo ""
+  echo "---"
+  echo "## Creating K8s Cluster by KinD ..."
   kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
   return $?
 }
@@ -48,9 +63,9 @@ installKinD() {
 setupConfigMap() {
   echo ""
   echo "---"
-  echo "Installing cluster-info ..."
+  echo "## Installing cluster-info ..."
   cmdWithLoding \
-    "kubectl create namespace cluster-common" \
+    "kubectl create namespace cluster-common 1> /dev/null" \
     "Getting Ready cluster-info"
   getNetworkInfo # Get the information needed to fill in the blanks below
   HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
@@ -61,7 +76,7 @@ setupConfigMap() {
   local OUTPUTS_DIR=${CLUSTER_WORKDIR}/outputs
   local TMPS_DIR=${CLUSTER_WORKDIR}/tmps
   mkdir -p "${LOGS_DIR}" "${OUTPUTS_DIR}" "${TMPS_DIR}"
-cat <<EOF | kubectl apply --timeout 90s --wait -f -
+cat <<EOF | kubectl apply --timeout 90s --wait -f - 1> /dev/null
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -87,13 +102,7 @@ EOF
 ## 3. Install Weave-Net
 ##
 installWeaveNet() {
-  echo ""
-  echo "---"
-  echo "Installing Weave-Net ..."
-  kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-  cmdWithLoding \
-    "kubectl wait --timeout=180s -n kube-system --for=condition=ready pod -l name=weave-net" \
-    "Activating Weave-Net"
+  bash ./create_weave.bash
   return $?
 }
 
@@ -102,8 +111,8 @@ installWeaveNet() {
 showVerifierCommand() {
   echo ""
   echo "---"
-  echo "KinD-Cluster and Weave-Net has been installed. Check its status by running:"
-  echo "  kubectl get node -o wide"
+  echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
+  echo "    kubectl get node -o wide"
   return $?
 }
 
@@ -119,7 +128,9 @@ main() {
   setupConfigMap
   ## 3. Install Weave-Net
   ##
-  installWeaveNet
+  cmdWithLoding \
+    "bash ./create_weave.bash" \
+    "Activating Weave-Net"
   ## 99. Notify Verifier-Command
   ##
   showVerifierCommand
