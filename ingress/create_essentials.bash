@@ -42,6 +42,7 @@ installCertManager() {
   HISTORY_DIR=${HISTORY_DIR:-.history.${BASE_FQDN}}
   HISTORY_FILE=${HISTORY_FILE:-${HISTORY_DIR}/selfsigned-ca.${BASE_FQDN}.ca.yaml}
   ROOTCA_FILE=${ROOTCA_FILE:-${BASE_FQDN}.ca.crt}
+  export ROOTCA_FILE=${ROOTCA_FILE}
   echo ""
   echo "---"
   echo "Installing cert-manager ..."
@@ -65,14 +66,18 @@ installCertManager() {
     cmdWithLoding \
       "source ./values_for_cert-manager-rootca.yaml.bash $HOSTNAME_FOR_CERTMANAGER $BASE_FQDN" \
       "Activating RootCA"
-    local count=1
     while ! kubectl -n "$HOSTNAME_FOR_CERTMANAGER" get secret "$BASE_FQDN" 2>/dev/null; do
       # NOTE
       # Wait until RootCA is issued
-      sleep 1
+      echo -ne ".   waiting for the process to be completed\r"
+      sleep 0.5
+      echo -ne "..  waiting for the process to be completed\r"
+      sleep 0.5
+      echo -ne "... waiting for the process to be completed\r"
+      sleep 0.5
       echo -ne "\r\033[K"
-      seq -s '.' 0 $count | tr -d '0-9'
-      count=$((count++))
+      echo -ne "    waiting for the process to be completed\r"
+      sleep 0.5
     done
     mkdir -p "$HISTORY_DIR"
     chmod 0700 "$HISTORY_DIR"
@@ -201,14 +206,18 @@ installAmbassador() {
       ${__fqdn_for_ambassador_k8ssso} \
     " \
     "Issueing Private Key for ambassador (k8ssso)"
-  local count=1
   while ! kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secret "${__fqdn_for_ambassador_k8ssso}" 2>/dev/null; do
     # NOTE
     # Wait until SubCA is issued
-    sleep 1
+    echo -ne ".   waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "..  waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "... waiting for the process to be completed\r"
+    sleep 0.5
     echo -ne "\r\033[K"
-    seq -s '.' 0 $count | tr -d '0-9'
-    count=$((count++))
+    echo -ne "    waiting for the process to be completed\r"
+    sleep 0.5
   done
   kubectl -n "${HOSTNAME_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
         | jq -r '.data["tls.key"]' \
@@ -257,14 +266,18 @@ installAmbassador() {
     "Activating k8s SSO Endpoint"
   ## 11. As a quick check
   ##
-  local count=1
   while ! curl -fs --cacert "$__server_cert_file" https://"$__fqdn_for_ambassador_k8ssso"/api | jq 2>/dev/null; do
     # NOTE
     # Wait until to startup the Host
-    sleep 1
+    echo -ne ".   waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "..  waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "... waiting for the process to be completed\r"
+    sleep 0.5
     echo -ne "\r\033[K"
-    seq -s '.' 0 $count | tr -d '0-9'
-    count=$((count++))
+    echo -ne "    waiting for the process to be completed\r"
+    sleep 0.5
   done
   ## 12. Set Context
   cmdWithLoding \
@@ -328,14 +341,18 @@ installKeycloak() {
       # NOTE
       # Tentative solution to the problem
       # that TLSContext is not generated automatically from Ingress (v2.2.2)
-  local count=1
   while ! kubectl -n "$HOSTNAME_FOR_KEYCLOAK" get secret "$HOSTNAME_FOR_KEYCLOAK" 2>/dev/null; do
     # NOTE
     # Wait until SubCA is issued
-    sleep 1
+    echo -ne ".   waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "..  waiting for the process to be completed\r"
+    sleep 0.5
+    echo -ne "... waiting for the process to be completed\r"
+    sleep 0.5
     echo -ne "\r\033[K"
-    seq -s '.' 0 $count | tr -d '0-9'
-    count=$((count++))
+    echo -ne "    waiting for the process to be completed\r"
+    sleep 0.5
   done
   cmdWithLoding \
     "curl -fs --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak}/auth/ >/dev/null 2>&1" \
@@ -397,15 +414,35 @@ showVerifierCommand() {
   local __ctx_name
   __ctx_name=$(getContextName)
   echo ""
+  drawMaxColsSeparator "#" "34"
   echo "---"
   echo "The basic network modules has been installed. Check its status by running:"
   echo "  kubectl -n ${HOSTNAME_FOR_CERTMANAGER} get pod"
   echo "  kubectl -n ${HOSTNAME_FOR_METALLB} get pod"
   echo "  kubectl -n ${HOSTNAME_FOR_AMBASSADOR} get pod"
   echo "  kubectl -n ${HOSTNAME_FOR_KEYCLOAK} get pod"
+  echo ""
+  echo "---"
+  echo "Trust CA with your browser and operating system. Check its file:"
+  echo "  openssl x509 -in ${ROOTCA_FILE} -text"
+  echo "  ---"
+  echo "  This information is for reference to trust The CA file:"
+  echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
+  echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
+  echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
+  # ""
+  # ---
+  cat ./"${HOSTNAME_FOR_KEYCLOAK}".verifier_command.txt
+  # ""
+  echo ""
   echo "---"
   echo "Execute the following command to run kubectl with single sign-on:"
+  echo "  # Execute the following command"
+  echo "  # This will open your default browser, and execute the login operation"
   echo "  kubectl config use-context ${__ctx_name}"
+  echo "  kubectl get node          # whatever is okay, just choose the one you like"
+  echo ""
+  drawMaxColsSeparator "#" "34"
   return $?
 }
 

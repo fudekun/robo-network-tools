@@ -29,6 +29,14 @@ cmdWithLoding() {
   eval "${commands} & showLoading '${message} '"
 }
 
+drawMaxColsSeparator() {
+  local char=${1:-#}
+  local color=${2:-32}
+  local raw_separator
+  raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-3)) | tr -d '0-9')"
+  printf "\033[${color}m$%s\033[${color}m\n" "${raw_separator}"
+}
+
 getNetworkInfo() {
   NAME_DEFULT_NIC=$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')
   export NAME_DEFULT_NIC

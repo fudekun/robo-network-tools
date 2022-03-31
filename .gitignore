@@ -141,3 +141,5 @@ vendordiff.patch
 /sandbox
 *.ca.yaml
 /*/sandbox
+
+*.verifier_command.txt
