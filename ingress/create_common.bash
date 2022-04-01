@@ -20,7 +20,7 @@ showLoading() {
   sleep 1
   while kill -0 $mypid 2>/dev/null; do
     echo -ne "\r\033[K"
-    echo -ne "    $loadingText\r"
+    echo -ne "  $loadingText\r"
     echo -ne "\033[35m-\033[m  $loadingText\r"
     sleep 0.5
     echo -ne "\\  $loadingText\r"
@@ -31,15 +31,17 @@ showLoading() {
     sleep 0.5
   done
   tput cnorm
+    ## For To Get Return Code
   set +euo > /dev/null 2>&1
   wait $mypid
   local exit_status=$?
   if [ ${exit_status} = 0 ]; then
-    echo -e "\033[32mok!\033[m  $loadingText"
+    echo -e "\033[32mok\033[m $loadingText"
   else
-    echo -e "\033[31mng!\033[m  $loadingText"
+    echo -e "\033[31mng\033[m $loadingText"
   fi
   set -euo > /dev/null 2>&1
+    ## For To Get Return Code
   return "$exit_status"
 }
 
@@ -58,7 +60,7 @@ cmdWithIndent() {
   local mark="${2:-"YES"}" # YES or NO
   if [ "$mark" = "YES" ]; then
     esc=$(printf '\033')
-    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDOUT]&${esc}[0m -> /' ; } 2>&1 | indent"
+    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDERR]&${esc}[0m -> /' ; } 2>&1 | indent"
   else
     eval "${commands} 2>&1 | indent"
   fi
@@ -68,8 +70,14 @@ drawMaxColsSeparator() {
   local char=${1:-#}
   local color=${2:-32}
   local raw_separator
-  raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-0)) | tr -d '0-9')"
+  raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-1)) | tr -d '0-9')"
   printf "\033[${color}m%s\033[m\n" "${raw_separator}"
+}
+
+updateHelm() {
+  cmdWithLoding \
+    "helm repo update 1> /dev/null" \
+    "Updateing Helm"
 }
 
 getNetworkInfo() {
@@ -78,17 +86,15 @@ getNetworkInfo() {
     # ExtrapolationValue
   export NAME_DEFULT_NIC
   # shellcheck disable=SC2015
-  IP_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
+  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
                     sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-  export IP_DEFAULT_NIC
-  HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IP_DEFAULT_NIC//\./-}
+  export IPV4_DEFAULT_NIC
+  # shellcheck disable=SC2015
+  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
+                    sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
+  export IPV6_DEFAULT_NIC
+  HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
-}
-
-updateHelm() {
-  cmdWithLoding \
-    "helm repo update 1> /dev/null" \
-    "Updateing Helm"
 }
 
 getContextName() {
@@ -98,16 +104,20 @@ getContextName() {
   echo -e "$context_name"
 }
 
+getWorkdirOfScripts() {
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["workdir.scripts"]'
+}
+
 getClusterName() {
   kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r ".data.name"
 }
 
 getBaseFQDN() {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r ".data.base_fqdn"
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic0.base_fqdn"]'
 }
 
 getIPv4 () {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic.ipv4"]'
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic0.ipv4"]'
 }
 
 getPresetSuperAdminName() {

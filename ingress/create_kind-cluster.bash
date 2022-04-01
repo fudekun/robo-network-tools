@@ -16,10 +16,10 @@ checkingArgs() {
     echo ""
     echo "# EnvironmentVariable"
     echo "  (recommend: Use automatic settings)"
-    echo "| Name                | e.g.                        |"
-    echo "| :------------------ | :-------------------------- |"
-    echo "| NAME_DEFULT_NIC     | en0                         |"
-    echo "| CLUSTER_WORKDIR     | \${HOME}/rdbox/\${1}          |"
+    echo "| Name                     | e.g.                        |"
+    echo "| :----------------------  | :-------------------------- |"
+    echo "| NAME_DEFULT_NIC          | en0                         |"
+    echo "| WORKDIR_OF_WORK_BASE     | \${HOME}/rdbox/\${1}          |"
     exit 1
   fi
   CLUSTER_NAME=$(printf %q "$1")
@@ -33,7 +33,6 @@ checkingArgs() {
       # ExtrapolationValue
     export HOST_NAME=$HOST_NAME
   fi
-  header
   return $?
 }
 
@@ -41,7 +40,12 @@ checkingArgs() {
 ##
 installKinD() {
   __executer() {
-    kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
+    local __exist_cluster
+    if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME}  >/dev/null 2>&1"; then
+      kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
+    else
+      echo "already exist for a cluster with the name ${CLUSTER_NAME}"
+    fi
     return $?
   }
   echo ""
@@ -55,34 +59,44 @@ installKinD() {
 ##
 setupConfigMap() {
   __executer() {
-    kubectl create namespace cluster-common
-    getNetworkInfo # Get the information needed to fill in the blanks below
+    ## .1 If the Namespace already exists, recreate it
+    ##
+    if ! bash -c "kubectl delete namespace ${CLUSTER_INFO_NAMESPACE} >/dev/null 2>&1"; then
+      echo "The ${CLUSTER_INFO_NAMENAME}.${CLUSTER_INFO_NAMESPACE} is Not Found"
+    fi
+    kubectl create namespace "${CLUSTER_INFO_NAMESPACE}"
+    getNetworkInfo
+      # These returning value are passed by EXPORT
     HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-    CLUSTER_WORKDIR=${CLUSTER_WORKDIR:-${HOME}/rdbox/${CLUSTER_NAME}}
-    CLUSTER_WORKDIR=$(printf %q "$CLUSTER_WORKDIR")
+      # If no value is declared, WDNS will create a hostname following the general naming conventions.
+    WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/rdbox/${CLUSTER_NAME}}
+    WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
       # ExtrapolationValue
-    local LOGS_DIR=${CLUSTER_WORKDIR}/logs
-    local OUTPUTS_DIR=${CLUSTER_WORKDIR}/outputs
-    local TMPS_DIR=${CLUSTER_WORKDIR}/tmps
-    mkdir -p "${LOGS_DIR}" "${OUTPUTS_DIR}" "${TMPS_DIR}"
+    local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
+    local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
+    local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
+    mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}"
     cat <<EOF | kubectl apply --timeout 90s --wait -f -
       apiVersion: v1
       kind: ConfigMap
       metadata:
-        name: ${CLUSTER_INFO_NAMENAME}
-        namespace: ${CLUSTER_INFO_NAMESPACE}
+        name:      "${CLUSTER_INFO_NAMENAME}"
+        namespace: "${CLUSTER_INFO_NAMESPACE}"
       data:
         name: ${CLUSTER_NAME}
-        host: ${HOST_NAME}
-        domain: ${DOMAIN_NAME}
-        base_fqdn: "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
-        nic.name: ${NAME_DEFULT_NIC}
-        nic.ipv4: ${IP_DEFAULT_NIC}
-        nic.ipv4_hyphen: ${HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-        workdir.base: ${CLUSTER_WORKDIR}
-        workdir.logs: ${LOGS_DIR}
-        workdir.outputs: ${OUTPUTS_DIR}
-        workdir.tmps: ${TMPS_DIR}
+        nic0.name:         "${NAME_DEFULT_NIC}"
+        nic0.host:         "${HOST_NAME}"
+        nic0.domain:       "${DOMAIN_NAME}"
+        nic0.base_fqdn:    "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
+        nic0.ipv4:         "${IPV4_DEFAULT_NIC}"
+        nic0.ipv4_hyphen:  "${HOSTNAME_FOR_WCDNS_BASED_ON_IP}"
+        nic0.ipv6:         "${IPV6_DEFAULT_NIC}"
+        workdir.work_base:   "${WORKDIR_OF_WORK_BASE}"
+        workdir.logs:        "${__workdir_of_logs}"
+        workdir.outputs:     "${__workdir_of_outputs}"
+        workdir.tmps:        "${__workdir_of_tmps}"
+        workdir.scripts:     "${WORKDIR_OF_SCRIPTS_BASE}"
+
 EOF
     return $?
   }
@@ -96,7 +110,7 @@ EOF
 ## 3. Install Weave-Net
 ##
 installWeaveNet() {
-  bash ./create_weave.bash
+  bash "$(getWorkdirOfScripts)/create_weave.bash"
   return $?
 }
 
@@ -154,7 +168,11 @@ main() {
   return $?
 }
 
-source ./create_common.bash
-#header "$@"
+## Set the base directory for RDBOX scripts!!
+##
+export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+  # Values can also be inserted externally
+source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+header "$@"
 main "$@"
 exit $?
