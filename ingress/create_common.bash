@@ -83,7 +83,7 @@ updateHelm() {
 getNetworkInfo() {
   NAME_DEFULT_NIC=${NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')}
   NAME_DEFULT_NIC=$(printf %q "$NAME_DEFULT_NIC")
-    # ExtrapolationValue
+    # EXTRAPOLATION
   export NAME_DEFULT_NIC
   # shellcheck disable=SC2015
   IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \

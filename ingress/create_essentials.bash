@@ -5,37 +5,47 @@ set -euo pipefail
 ## Execute essentials(module) configuration
 ###############################################################################
 
-## 0. Initializing
+## 0. Input Argument Checking
 ##
-initializingEssentials() {
-  ## 0-1. Input Argument Checking
-  ##
-  checkingArgs() {
-    local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
-    local __base_fqdn
-    if [ $# -eq 1 ]; then
-      __flag_secret_operation=$1
-    fi
-    echo "Mode: $__flag_secret_operation"
-    __base_fqdn=$(getBaseFQDN)
-    export BASE_FQDN=$__base_fqdn
-    export FLAG_SECRET_OPERATION=$__flag_secret_operation
-    return $?
-  }
+checkArgs() {
+  if [ "$1" = "help" ]; then
+    echo "# Args"
+    echo "(opt)\${1} Specify if a previously generated self-signed certificate is to be reused"
+    echo ""
+    echo "# EnvironmentVariable"
+    echo "  (recommend: Use automatic settings)"
+    echo "| Name                          | e.g.                        |"
+    echo "| :---------------------------- | :-------------------------- |"
+    echo "| NAMESPACE_FOR_CERTMANAGER     | cert-manager                |"
+    echo "| HOSTNAME_FOR_CERTMANAGER_MAIN | cert-manager                |"
+    exit 1
+  fi
+  local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
+  local __base_fqdn
+  if [ $# -eq 1 ]; then
+    __flag_secret_operation=$1
+  fi
+  echo "Mode: $__flag_secret_operation"
+  __base_fqdn=$(getBaseFQDN)
+  export BASE_FQDN=$__base_fqdn
+  export FLAG_SECRET_OPERATION=$__flag_secret_operation
+  return $?
+}
+
+## 1. Initialize
+##
+initializeEssentials() {
   echo ""
   echo "---"
   echo "## Initializing essentials ..."
-  ## 0-1. Input Argument Checking
-  ##
-  checkingArgs "$@"
-  ## 0-2. Update Helm
+  ## 1. Update Helm
   updateHelm
 }
 
-## 1. Install Cert-Manager
+## 2. Install Cert-Manager
 ##
 installCertManager() {
-  ## 1-1. Install Cert-Manager
+  ## 1. Install Cert-Manager
   ##
   NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER:-cert-manager}
   export NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER}
@@ -56,7 +66,7 @@ installCertManager() {
         --timeout 600s \
         -f values_for_cert-manager-instance.yaml" \
     "Activating cert-manager"
-  ## 1-2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
+  ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
   ##
   echo ""
   echo "---"
@@ -104,7 +114,7 @@ installCertManager() {
     fi
   fi
   echo -e "\033[32mok!\033[m Activating RootCA"
-  ## 1-3. Setup Specific Issuer
+  ## 3. Setup Specific Issuer
   ##
   cmdWithLoding \
     "source ./values_for_cert-manager-issuer-subca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
@@ -116,10 +126,10 @@ installCertManager() {
   return $?
 }
 
-## 2. Install MetalLB
+## 3. Install MetalLB
 ##
 installMetalLB() {
-  ## 2-1. Config MetalLB with L2 Mode
+  ## 1. Config MetalLB with L2 Mode
   ##
   NAMESPACE_FOR_METALLB=${NAMESPACE_FOR_METALLB:-metallb}
   export NAMESPACE_FOR_METALLB=$NAMESPACE_FOR_METALLB
@@ -145,8 +155,8 @@ installMetalLB() {
     echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
     exit 1
   fi
-  echo "MetalLB will reserve the following IP address ranges."
-  echo "- $__docker_network_range"
+  ## 2. Install MetalLB Instance
+  ##
   cmdWithLoding \
     "helm -n ${NAMESPACE_FOR_METALLB} upgrade --install ${HOSTNAME_FOR_METALLB_MAIN} metallb/metallb \
         --create-namespace \
@@ -158,7 +168,7 @@ installMetalLB() {
   return $?
 }
 
-## 3. Install Ambassador
+## 4. Install Ambassador
 ##
 installAmbassador() {
   NAMESPACE_FOR_AMBASSADOR=${NAMESPACE_FOR_AMBASSADOR:-ambassador}
@@ -170,7 +180,7 @@ installAmbassador() {
   echo ""
   echo "---"
   echo "## Installing ambassador ..."
-  ## 3-1. Install Ambassador's CRD
+  ## 1. Install Ambassador's CRD
   ##
   local __aes_app_version
   __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
@@ -180,7 +190,7 @@ installAmbassador() {
   cmdWithLoding \
     "kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system" \
     "Activating ambassador (CRD)"
-  ## 3-2. Install Ambassador Instance
+  ## 2. Install Ambassador Instance
   ##
   cmdWithLoding \
     "helm -n ${NAMESPACE_FOR_AMBASSADOR} upgrade --install ${HOSTNAME_FOR_AMBASSADOR_MAIN} edge-stack/edge-stack \
@@ -189,7 +199,7 @@ installAmbassador() {
         --timeout 600s \
         -f values_for_ambassador-instance.yaml" \
     "Activating ambassador (Instance)"
-  ## 3-3. Authenticate Ambassador Edge Stack with Kubernetes API
+  ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
   ##
   ## References
   ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
@@ -297,7 +307,7 @@ installAmbassador() {
   return $?
 }
 
-## 4. Install Keycloak
+## 5. Install Keycloak
 ##
 installKeycloak() {
   NAMESPACE_FOR_KEYCLOAK=${NAMESPACE_FOR_KEYCLOAK:-keycloak}
@@ -308,7 +318,7 @@ installKeycloak() {
   echo ""
   echo "---"
   echo "## Installing keycloak ..."
-  ## 4-1. Config extra secrets
+  ## 1. Config extra secrets
   ##
   cmdWithLoding \
     "kubectl create namespace ${NAMESPACE_FOR_KEYCLOAK}" \
@@ -326,7 +336,7 @@ installKeycloak() {
       # The postgresql-postgres-password is password for root user
       # The postgresql-password is password for the unprivileged user
       # The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
-  ## 4-2. Install Keycloak
+  ## 2. Install Keycloak
   ##
   cmdWithLoding \
     "helm -n ${NAMESPACE_FOR_KEYCLOAK} upgrade --install ${HOSTNAME_FOR_KEYCLOAK_MAIN} bitnami/keycloak \
@@ -339,7 +349,7 @@ installKeycloak() {
         --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$__fqdn_for_keycloak_main/auth \
         -f values_for_keycloak-instance.yaml" \
     "Activating keycloak"
-  ## 4-3. Setup TLSContext
+  ## 3. Setup TLSContext
   ##
   cmdWithLoding \
     "source ./values_for_tlscontext.yaml.bash \
@@ -366,7 +376,7 @@ installKeycloak() {
   cmdWithLoding \
     "curl -fs --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1" \
     "Testing keycloak"
-  ## 4-4. Setup preset-entries
+  ## 4. Setup preset-entries
   ##
   cmdWithLoding \
     "source ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${ROOTCA_FILE} 1> /dev/null" \
@@ -374,7 +384,7 @@ installKeycloak() {
   return $?
 }
 
-## 5. Install Filter
+## 6. Install Filter
 ##
 installFilter() {
   local __fqdn_for_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.${BASE_FQDN}
@@ -389,7 +399,7 @@ installFilter() {
   echo ""
   echo "---"
   echo "## Installing filter ..."
-  ## Install Filter
+  ## 1. Install Filter
   ##
   cmdWithLoding \
     "source ./values_for_ambassador-k8ssso-filter.yaml.bash \
@@ -399,7 +409,7 @@ installFilter() {
       ${__jwks_uri} \
       " \
     "Activating filter"
-  ## Set Context
+  ## 2. Set Context
   ##
   local __ctx_name
   __ctx_name=$(getContextName)
@@ -449,22 +459,25 @@ showVerifierCommand() {
 }
 
 main() {
-  ## 0. Initializing
+  ## 0. Input Argument Checking
   ##
-  initializingEssentials "$@"
-  ## 1. Install Cert-Manager
+  checkArgs "$@"
+  ## 1. Initializing
+  ##
+  initializeEssentials "$@"
+  ## 2. Install Cert-Manager
   ##
   installCertManager
-  ## 2. Install MetalLB
+  ## 3. Install MetalLB
   ##
   installMetalLB
-  ## 3. Install Ambassador
+  ## 4. Install Ambassador
   ##
   installAmbassador
-  ## 4. Install Keycloak
+  ## 5. Install Keycloak
   ##
   installKeycloak
-  ## 5. Install Filter
+  ## 6. Install Filter
   ##
   installFilter
   ## 99. Notify Verifier-Command

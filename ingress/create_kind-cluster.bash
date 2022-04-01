@@ -7,8 +7,8 @@ set -euo pipefail
 
 ## 0. Input Argument Checking
 ##
-checkingArgs() {
-  if [ $# -lt 2 ]; then
+checkArgs() {
+  if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"
     echo "     \${1} Specify the cluster name  (e.g. rdbox)"
     echo "     \${2} Specify the Domain name   (e.g. Your Domain OR nip.io, sslip.io ...)"
@@ -23,14 +23,14 @@ checkingArgs() {
     exit 1
   fi
   CLUSTER_NAME=$(printf %q "$1")
-    # ExtrapolationValue
+    # EXTRAPOLATION
   export CLUSTER_NAME=$CLUSTER_NAME
   DOMAIN_NAME=$(printf %q "$2")
-    # ExtrapolationValue
+    # EXTRAPOLATION
   export DOMAIN_NAME=$DOMAIN_NAME
   if [ $# = 3 ]; then
     HOST_NAME=$(printf %q "$3")
-      # ExtrapolationValue
+      # EXTRAPOLATION
     export HOST_NAME=$HOST_NAME
   fi
   return $?
@@ -71,7 +71,7 @@ setupConfigMap() {
       # If no value is declared, WDNS will create a hostname following the general naming conventions.
     WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/rdbox/${CLUSTER_NAME}}
     WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
-      # ExtrapolationValue
+      # EXTRAPOLATION
     local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
     local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
     local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
@@ -146,7 +146,7 @@ showVerifierCommand() {
 main() {
   ## 0. Input Argument Checking
   ##
-  checkingArgs "$@"
+  checkArgs "$@"
   ## 1. Install KinD
   ##
   cmdWithLoding \
@@ -173,6 +173,6 @@ main() {
 export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
   # Values can also be inserted externally
 source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
-header "$@"
+# header "$@"
 main "$@"
 exit $?
