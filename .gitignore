@@ -143,3 +143,5 @@ vendordiff.patch
 /*/sandbox
 
 *.verifier_command.txt
+
+*.log
