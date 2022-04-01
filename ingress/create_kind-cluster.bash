@@ -125,7 +125,7 @@ showVerifierCommand() {
   echo "    kubectl get node -o wide"
   echo ""
   echo "FINISH $(getIso8601String)"
-  drawMaxColsSeparator "-" "39"
+  drawMaxColsSeparator "*" "39"
   return $?
 }
 

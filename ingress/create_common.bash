@@ -35,9 +35,9 @@ showLoading() {
   wait $mypid
   local exit_status=$?
   if [ ${exit_status} = 0 ]; then
-    echo -e "\033[32mok!\033[m $loadingText"
+    echo -e "\033[32mok!\033[m  $loadingText"
   else
-    echo -e "\033[31mng!\033[m $loadingText"
+    echo -e "\033[31mng!\033[m  $loadingText"
   fi
   set -euo > /dev/null 2>&1
   return "$exit_status"
