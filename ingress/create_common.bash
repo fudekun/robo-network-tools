@@ -21,13 +21,13 @@ showLoading() {
   while kill -0 $mypid 2>/dev/null; do
     echo -ne "\r\033[K"
     echo -ne "    $loadingText\r"
-    echo -ne " -  $loadingText\r"
+    echo -ne "\033[35m-\033[m  $loadingText\r"
     sleep 0.5
-    echo -ne " \\  $loadingText\r"
+    echo -ne "\\  $loadingText\r"
     sleep 0.5
-    echo -ne " |  $loadingText\r"
+    echo -ne "\033[33m|\033[m  $loadingText\r"
     sleep 0.5
-    echo -ne " /  $loadingText\r"
+    echo -ne "\033[32m/\033[m  $loadingText\r"
     sleep 0.5
   done
   tput cnorm
@@ -49,20 +49,27 @@ cmdWithLoding() {
   eval "${commands} & showLoading '${message} '"
 }
 
-indent() { sed 's/^/    /'; }
+indent() {
+  sed 's/^/    /';
+}
 
 cmdWithIndent() {
   local commands="$1"
-  esc=$(printf '\033')
-  eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDOUT]&${esc}[0m -> /' ; } 2>&1 | indent"
+  local mark="${2:-"YES"}" # YES or NO
+  if [ "$mark" = "YES" ]; then
+    esc=$(printf '\033')
+    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDOUT]&${esc}[0m -> /' ; } 2>&1 | indent"
+  else
+    eval "${commands} 2>&1 | indent"
+  fi
 }
 
 drawMaxColsSeparator() {
   local char=${1:-#}
   local color=${2:-32}
   local raw_separator
-  raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-3)) | tr -d '0-9')"
-  printf "\033[${color}m$%s\033[${color}m\n" "${raw_separator}"
+  raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-0)) | tr -d '0-9')"
+  printf "\033[${color}m%s\033[m\n" "${raw_separator}"
 }
 
 getNetworkInfo() {
@@ -139,4 +146,8 @@ hashPasswordByPbkdf2Sha256() {
 
 getEpochMillisec() {
   python3 -c 'import time; print(int(time.time() * 1000))'
+}
+
+getIso8601String() {
+  date '+%Y-%m-%dT%H:%M:%S%z'
 }

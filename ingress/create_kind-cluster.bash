@@ -10,16 +10,16 @@ set -euo pipefail
 checkingArgs() {
   if [ $# -lt 2 ]; then
     echo "# Args"
-    echo "          \${1} Specify the cluster name  (e.g. rdbox)"
-    echo "          \${2} Specify the Domain name   (e.g. Your Domain OR nip.io, sslip.io ...)"
-    echo "(optional)\${3} Specify the Host name     (e.g. rdbox-master-00)"
+    echo "     \${1} Specify the cluster name  (e.g. rdbox)"
+    echo "     \${2} Specify the Domain name   (e.g. Your Domain OR nip.io, sslip.io ...)"
+    echo "(opt)\${3} Specify the Host name     (e.g. rdbox-master-00)"
     echo ""
     echo "# EnvironmentVariable"
-    echo "(recommend: Use automatic settings)"
+    echo "  (recommend: Use automatic settings)"
     echo "| Name                | e.g.                        |"
     echo "| :------------------ | :-------------------------- |"
     echo "| NAME_DEFULT_NIC     | en0                         |"
-    echo "| CLUSTER_WORKDIR     | \${HOME}/rdbox/\${1}        |"
+    echo "| CLUSTER_WORKDIR     | \${HOME}/rdbox/\${1}          |"
     exit 1
   fi
   CLUSTER_NAME=$(printf %q "$1")
@@ -33,16 +33,21 @@ checkingArgs() {
       # ExtrapolationValue
     export HOST_NAME=$HOST_NAME
   fi
+  header
   return $?
 }
 
 ## 1. Install KinD
 ##
 installKinD() {
+  __executer() {
+    kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
+    return $?
+  }
   echo ""
   echo "---"
   echo "## Creating K8s Cluster by KinD ..."
-  kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
+  cmdWithIndent "__executer"
   return $?
 }
 
@@ -79,15 +84,13 @@ setupConfigMap() {
         workdir.outputs: ${OUTPUTS_DIR}
         workdir.tmps: ${TMPS_DIR}
 EOF
-    local __status=$?
-    return ${__status}
+    return $?
   }
   echo ""
   echo "---"
   echo "## Installing cluster-info ..."
   cmdWithIndent "__executer"
-  local __status=$?
-  return ${__status}
+  return $?
 }
 
 ## 3. Install Weave-Net
@@ -100,6 +103,8 @@ installWeaveNet() {
 ## xx. Header
 ##
 header() {
+  echo "START $(getIso8601String)"
+  drawMaxColsSeparator "=" "39"
   echo ""
   echo "---"
   echo "# This is an advanced IT platform for robotics and IoT developers"
@@ -118,6 +123,9 @@ showVerifierCommand() {
   echo "---"
   echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
+  echo ""
+  echo "FINISH $(getIso8601String)"
+  drawMaxColsSeparator "-" "39"
   return $?
 }
 
@@ -127,7 +135,9 @@ main() {
   checkingArgs "$@"
   ## 1. Install KinD
   ##
-  installKinD
+  cmdWithLoding \
+    "installKinD" \
+    "Activating K8s Cluster by KinD"
   ## 2. SetUp ConfigMap
   ##
   cmdWithLoding \
@@ -145,6 +155,6 @@ main() {
 }
 
 source ./create_common.bash
-header "$@"
+#header "$@"
 main "$@"
 exit $?

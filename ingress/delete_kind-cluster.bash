@@ -3,6 +3,7 @@
 deleteAll() {
   local __cluster_name
   __cluster_name=$(getClusterName)
+  __cluster_name=${__cluster_name:-rdbox}
   local __ctx_name
   __ctx_name=$(getContextName)
   kubectl config use-context kind-"${__cluster_name}"

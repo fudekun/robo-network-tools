@@ -414,7 +414,6 @@ showVerifierCommand() {
   local __ctx_name
   __ctx_name=$(getContextName)
   echo ""
-  drawMaxColsSeparator "#" "34"
   echo "---"
   echo "The basic network modules has been installed. Check its status by running:"
   echo "  kubectl -n ${HOSTNAME_FOR_CERTMANAGER} get pod"
