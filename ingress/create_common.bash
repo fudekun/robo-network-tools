@@ -12,17 +12,17 @@ cleanupShowLoading() {
 }
 
 showHeader() {
-  echo "[START][$(getIso8601DayTime)][$(basename "$0")]"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]: START"
   drawMaxColsSeparator "=" "39"
   echo ""
   echo "---"
   echo "# This is an advanced IT platform for robotics and IoT developers"
-  echo "            .___. "
-  echo "           /___/| "
-  echo "           |   |/ "
-  echo "           .---.  "
-  echo "           RDBOX  "
-  echo "- A Robotics Developers BOX -"
+  echo "#            .___. "
+  echo "#           /___/| "
+  echo "#           |   |/ "
+  echo "#           .---.  "
+  echo "#           RDBOX  "
+  echo "# - A Robotics Developers BOX -"
 }
 
 showLoading() {

@@ -124,7 +124,7 @@ showVerifierCommand() {
   echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
   echo ""
-  echo "[SUCCESS][$(getIso8601DayTime)][$(basename "$0")]"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]: SUCCESS"
   drawMaxColsSeparator "*" "39"
   return $?
 }
