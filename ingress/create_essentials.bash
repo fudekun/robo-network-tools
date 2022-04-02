@@ -298,7 +298,7 @@ installAmbassador() {
   done
   ## 12. Set Context
   cmdWithLoding \
-    "kubectl config set-cluster $(getContextName) \
+    "kubectl config set-cluster $(getContextName4Kubectl) \
       --server=https://${__fqdn_for_ambassador_k8ssso} \
       --certificate-authority=${__server_cert_file} \
       --embed-certs \
@@ -412,7 +412,7 @@ installFilter() {
   ## 2. Set Context
   ##
   local __ctx_name
-  __ctx_name=$(getContextName)
+  __ctx_name=$(getContextName4Kubectl)
   cmdWithLoding \
     "kubectl config set-context ${__ctx_name} \
       --cluster=${__ctx_name} \
@@ -425,7 +425,7 @@ installFilter() {
 ##
 showVerifierCommand() {
   local __ctx_name
-  __ctx_name=$(getContextName)
+  __ctx_name=$(getContextName4Kubectl)
   echo ""
   echo "---"
   echo "## The basic network modules has been installed. Check its status by running:"

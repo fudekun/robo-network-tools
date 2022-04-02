@@ -67,7 +67,7 @@ __createEntry() {
   ## For Credentials
   created_date=$(getEpochMillisec)
   cred_hash_array=()
-  while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(hashPasswordByPbkdf2Sha256 "$password")
+  while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(getHashedPasswordByPbkdf2Sha256 "$password")
   salt=${cred_hash_array[0]}
   hashed_salted_value=${cred_hash_array[1]}
   hash_iterations=${cred_hash_array[2]}
@@ -191,7 +191,7 @@ main() {
   local client_secret
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   cmdWithLoding \
-    "kubectl config set-credentials $(getContextName) \
+    "kubectl config set-credentials $(getContextName4Kubectl) \
       --exec-api-version=client.authentication.k8s.io/v1beta1 \
       --exec-command=kubectl \
       --exec-arg=oidc-login \

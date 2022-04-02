@@ -69,12 +69,13 @@ setupConfigMap() {
       # These returning value are passed by EXPORT
     HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
       # If no value is declared, WDNS will create a hostname following the general naming conventions.
-    WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/rdbox/${CLUSTER_NAME}}
+    WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${CLUSTER_NAME}}
     WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
       # EXTRAPOLATION
     local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
     local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
     local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
+    local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
     mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}"
     cat <<EOF | kubectl apply --timeout 90s --wait -f -
       apiVersion: v1
@@ -95,6 +96,7 @@ setupConfigMap() {
         workdir.logs:        "${__workdir_of_logs}"
         workdir.outputs:     "${__workdir_of_outputs}"
         workdir.tmps:        "${__workdir_of_tmps}"
+        workdir.confs:       "${__workdir_of_confs}"
         workdir.scripts:     "${WORKDIR_OF_SCRIPTS_BASE}"
 
 EOF
@@ -114,22 +116,6 @@ installWeaveNet() {
   return $?
 }
 
-## xx. Header
-##
-header() {
-  echo "START $(getIso8601String)"
-  drawMaxColsSeparator "=" "39"
-  echo ""
-  echo "---"
-  echo "# This is an advanced IT platform for robotics and IoT developers"
-  echo "            .___. "
-  echo "           /___/| "
-  echo "           |   |/ "
-  echo "           .---.  "
-  echo "           RDBOX  "
-  echo "- A Robotics Developers BOX -"
-}
-
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
@@ -138,7 +124,7 @@ showVerifierCommand() {
   echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
   echo ""
-  echo "FINISH $(getIso8601String)"
+  echo "[SUCCESS][$(getIso8601DayTime)][$(basename "$0")]"
   drawMaxColsSeparator "*" "39"
   return $?
 }
@@ -173,6 +159,6 @@ main() {
 export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
   # Values can also be inserted externally
 source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
-# header "$@"
+showHeader
 main "$@"
 exit $?

@@ -11,6 +11,20 @@ cleanupShowLoading() {
     tput cnorm
 }
 
+showHeader() {
+  echo "[START][$(getIso8601DayTime)][$(basename "$0")]"
+  drawMaxColsSeparator "=" "39"
+  echo ""
+  echo "---"
+  echo "# This is an advanced IT platform for robotics and IoT developers"
+  echo "            .___. "
+  echo "           /___/| "
+  echo "           |   |/ "
+  echo "           .---.  "
+  echo "           RDBOX  "
+  echo "- A Robotics Developers BOX -"
+}
+
 showLoading() {
   local mypid=$!
   local loadingText=$1
@@ -51,7 +65,7 @@ cmdWithLoding() {
   eval "${commands} & showLoading '${message} '"
 }
 
-indent() {
+showIndent() {
   sed 's/^/    /';
 }
 
@@ -60,9 +74,9 @@ cmdWithIndent() {
   local mark="${2:-"YES"}" # YES or NO
   if [ "$mark" = "YES" ]; then
     esc=$(printf '\033')
-    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDERR]&${esc}[0m -> /' ; } 2>&1 | indent"
+    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDERR]&${esc}[0m -> /' ; } 2>&1 | showIndent"
   else
-    eval "${commands} 2>&1 | indent"
+    eval "${commands} 2>&1 | showIndent"
   fi
 }
 
@@ -97,7 +111,7 @@ getNetworkInfo() {
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
 
-getContextName() {
+getContextName4Kubectl() {
   local prefix=${1:-sso}
   local context_name
   context_name=${prefix}-$(getClusterName)
@@ -135,7 +149,7 @@ getPresetGroupName() {
   echo -n "cluster-admin"
 }
 
-hashPasswordByPbkdf2Sha256() {
+getHashedPasswordByPbkdf2Sha256() {
   local __password=$1
   local __hash_iterations=27500
   local __salt
@@ -158,6 +172,6 @@ getEpochMillisec() {
   python3 -c 'import time; print(int(time.time() * 1000))'
 }
 
-getIso8601String() {
+getIso8601DayTime() {
   date '+%Y-%m-%dT%H:%M:%S%z'
 }
