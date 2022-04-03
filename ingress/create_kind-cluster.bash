@@ -98,8 +98,14 @@ setupConfigMap() {
         workdir.tmps:        "${__workdir_of_tmps}"
         workdir.confs:       "${__workdir_of_confs}"
         workdir.scripts:     "${WORKDIR_OF_SCRIPTS_BASE}"
-
 EOF
+    kubectl -n "${CLUSTER_INFO_NAMESPACE}" patch configmap "${CLUSTER_INFO_NAMENAME}" \
+      --type merge \
+      --patch "$(kubectl -n "${CLUSTER_INFO_NAMESPACE}" create configmap "${CLUSTER_INFO_NAMENAME}" \
+                  --dry-run=client \
+                  --output=json \
+                  --from-env-file=confs/essentials.env \
+                )"
     return $?
   }
   echo ""
