@@ -16,10 +16,10 @@ checkArgs() {
     echo ""
     echo "# EnvironmentVariable"
     echo "  (recommend: Use automatic settings)"
-    echo "| Name                     | e.g.                        |"
-    echo "| :----------------------  | :-------------------------- |"
-    echo "| NAME_DEFULT_NIC          | en0                         |"
-    echo "| WORKDIR_OF_WORK_BASE     | \${HOME}/rdbox/\${1}          |"
+    echo "| Name                    | e.g.                       |"
+    echo "| ----------------------  | -------------------------- |"
+    echo "| NAME_DEFULT_NIC         | en0                        |"
+    echo "| WORKDIR_OF_WORK_BASE    | \${HOME}/rdbox/\${1}         |"
     exit 1
   fi
   CLUSTER_NAME=$(printf %q "$1")

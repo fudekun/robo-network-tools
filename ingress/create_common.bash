@@ -155,6 +155,16 @@ getDirNameFor() {
   __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
 
+getFullpathOfRootCA() {
+  local __rootca_dir
+  local __base_fqdn
+  __rootca_dir=$(getDirNameFor outputs)/ca
+  __base_fqdn=$(getBaseFQDN)
+  mkdir -p "$__rootca_dir"
+  chmod 0700 "$__rootca_dir"
+  echo -ne "${__rootca_dir}"/"${__base_fqdn}".ca.crt
+}
+
 getPresetSuperAdminName() {
   rep_name=$1
   helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.adminUser'

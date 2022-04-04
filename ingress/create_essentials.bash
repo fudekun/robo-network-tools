@@ -17,10 +17,9 @@ checkArgs() {
       echo ""
       echo "# EnvironmentVariable"
       echo "  (recommend: Use automatic settings)"
-      echo "| Name                          | e.g.                        |"
-      echo "| :---------------------------- | :-------------------------- |"
-      echo "| NAMESPACE_FOR_CERTMANAGER     | cert-manager                |"
-      echo "| HOSTNAME_FOR_CERTMANAGER_MAIN | cert-manager                |"
+      echo "| Name                         | e.g.                        |"
+      echo "| ---------------------------- | --------------------------  |"
+      echo "|                              |                             |"
       exit 1
     else
       __flag_secret_operation=$1
@@ -54,7 +53,6 @@ installCertManager() {
   __hostname_for_certmanager_main_from_cm=$(getHostName "cert_manager" "main")
   HOSTNAME_FOR_CERTMANAGER_MAIN=${__hostname_for_certmanager_main_from_cm:-$NAMESPACE_FOR_CERTMANAGER}
   export HOSTNAME_FOR_CERTMANAGER_MAIN=$HOSTNAME_FOR_CERTMANAGER_MAIN
-    ## Environment Variable
   echo ""
   echo "---"
   echo "## Installing cert-manager ..."
@@ -68,13 +66,11 @@ installCertManager() {
   ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
   ##
   local __history_dir
+  local __history_file
+  local __rootca_file
   __history_dir=$(getDirNameFor outputs)/.history.${BASE_FQDN}
-  local __history_file=${__history_dir}/selfsigned-ca.${BASE_FQDN}.ca.yaml
-  #export __history_file=$__history_file
-  local __rootca_dir
-  __rootca_dir=$(getDirNameFor outputs)/ca
-  ROOTCA_FILE=${__rootca_dir}/${BASE_FQDN}.ca.crt
-  export ROOTCA_FILE=${ROOTCA_FILE}
+  __history_file=${__history_dir}/selfsigned-ca.${BASE_FQDN}.ca.yaml
+  __rootca_file=$(getFullpathOfRootCA)
   echo ""
   echo "---"
   echo "## Setup RootCA and Specific Issuer ..."
@@ -99,10 +95,10 @@ installCertManager() {
       echo -ne "    waiting for the process to be completed\r"
       sleep 0.5
     done
-    mkdir -p "$__history_dir" "$__rootca_dir"
-    chmod 0700 "$__history_dir" "$__rootca_dir"
+    mkdir -p "$__history_dir"
+    chmod 0700 "$__history_dir"
     kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o yaml > "$__history_file"
-    kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
+    kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o json | jq -r '.data["ca.crt"]' | base64 -d > "$__rootca_file"
       # NOTE
       # Save the History file and the RootCA
   elif [ "$FLAG_SECRET_OPERATION" = "recycle" ]; then
@@ -386,13 +382,15 @@ installKeycloak() {
     echo -ne "    waiting for the process to be completed\r"
     sleep 0.5
   done
+  local __rootca_file
+  __rootca_file=$(getFullpathOfRootCA)
   cmdWithLoding \
-    "curl -fs --cacert ${ROOTCA_FILE} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1" \
+    "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1" \
     "Testing keycloak"
   ## 4. Setup preset-entries
   ##
   cmdWithLoding \
-    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${ROOTCA_FILE} 1> /dev/null" \
+    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${__rootca_file} 1> /dev/null" \
     "Activating Keycloak-entries"
   return $?
 }
@@ -438,27 +436,22 @@ installFilter() {
 ##
 showVerifierCommand() {
   local __ctx_name
+  local __rootca_file
   __ctx_name=$(getContextName4Kubectl)
-  echo ""
-  echo "---"
-  echo "## The basic network modules has been installed. Check its status by running:"
-  echo "  kubectl -n ${NAMESPACE_FOR_CERTMANAGER} get pod"
-  echo "  kubectl -n ${NAMESPACE_FOR_METALLB} get pod"
-  echo "  kubectl -n ${NAMESPACE_FOR_AMBASSADOR} get pod"
-  echo "  kubectl -n ${NAMESPACE_FOR_KEYCLOAK} get pod"
+  __rootca_file=$(getFullpathOfRootCA)
   echo ""
   echo "---"
   echo "## Trust CA with your browser and operating system. Check its file:"
-  echo "  openssl x509 -in ${ROOTCA_FILE} -text"
+  echo "  openssl x509 -in ${__rootca_file} -text"
   echo "  ---"
   echo "  This information is for reference to trust The CA file:"
   echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
   echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
-  # ""
-  # ---
+  # echo ""
+  # echo "---""
   cat ./"${NAMESPACE_FOR_KEYCLOAK}".verifier_command.txt
-  # ""
+  # echo ""
   echo ""
   echo "---"
   echo "## Execute the following command to run kubectl with single sign-on:"
