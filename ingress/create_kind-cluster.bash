@@ -76,7 +76,8 @@ setupConfigMap() {
     local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
     local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
     local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
-    mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}"
+    mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+    rsync -a "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
     cat <<EOF | kubectl apply --timeout 90s --wait -f -
       apiVersion: v1
       kind: ConfigMap
@@ -104,7 +105,7 @@ EOF
       --patch "$(kubectl -n "${CLUSTER_INFO_NAMESPACE}" create configmap "${CLUSTER_INFO_NAMENAME}" \
                   --dry-run=client \
                   --output=json \
-                  --from-env-file=confs/essentials.env \
+                  --from-env-file="${__workdir_of_confs}"/essentials.env.properties \
                 )"
     return $?
   }

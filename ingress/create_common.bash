@@ -8,7 +8,7 @@ CLUSTER_INFO_NAMESPACE=cluster-common
 ##
 
 cleanupShowLoading() {
-    tput cnorm
+  tput cnorm
 }
 
 showHeader() {
@@ -118,20 +118,41 @@ getContextName4Kubectl() {
   echo -e "$context_name"
 }
 
+__getClusterinfoFromConfigmap() {
+  local __item=$1
+  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r "${__item}"
+}
+
 getWorkdirOfScripts() {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["workdir.scripts"]'
+  __getClusterinfoFromConfigmap ".data[\"workdir.scripts\"]"
 }
 
 getClusterName() {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r ".data.name"
+  __getClusterinfoFromConfigmap ".data.name"
 }
 
 getBaseFQDN() {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic0.base_fqdn"]'
+  __getClusterinfoFromConfigmap ".data[\"nic0.base_fqdn\"]"
 }
 
 getIPv4 () {
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r '.data["nic0.ipv4"]'
+  __getClusterinfoFromConfigmap ".data[\"nic0.ipv4\"]"
+}
+
+getNamespaceName() {
+  local __namespace=$1
+  __getClusterinfoFromConfigmap ".data[\"namespace.${__namespace}\"]"
+}
+
+getHostName() {
+  local __namespace=$1
+  local __host=$2
+  __getClusterinfoFromConfigmap ".data[\"${__namespace}.hostname.${__host}\"]"
+}
+
+getDirNameFor() {
+  local __purpose=$1
+  __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
 
 getPresetSuperAdminName() {

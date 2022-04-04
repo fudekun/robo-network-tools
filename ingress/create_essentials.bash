@@ -8,22 +8,23 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
-  if [ "$1" = "help" ]; then
-    echo "# Args"
-    echo "(opt)\${1} Specify if a previously generated self-signed certificate is to be reused"
-    echo ""
-    echo "# EnvironmentVariable"
-    echo "  (recommend: Use automatic settings)"
-    echo "| Name                          | e.g.                        |"
-    echo "| :---------------------------- | :-------------------------- |"
-    echo "| NAMESPACE_FOR_CERTMANAGER     | cert-manager                |"
-    echo "| HOSTNAME_FOR_CERTMANAGER_MAIN | cert-manager                |"
-    exit 1
-  fi
   local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
   local __base_fqdn
   if [ $# -eq 1 ]; then
-    __flag_secret_operation=$1
+    if [ "$1" = "help" ]; then
+      echo "# Args"
+      echo "(opt)\${1} Specify if a previously generated self-signed certificate is to be reused"
+      echo ""
+      echo "# EnvironmentVariable"
+      echo "  (recommend: Use automatic settings)"
+      echo "| Name                          | e.g.                        |"
+      echo "| :---------------------------- | :-------------------------- |"
+      echo "| NAMESPACE_FOR_CERTMANAGER     | cert-manager                |"
+      echo "| HOSTNAME_FOR_CERTMANAGER_MAIN | cert-manager                |"
+      exit 1
+    else
+      __flag_secret_operation=$1
+    fi
   fi
   echo "Mode: $__flag_secret_operation"
   __base_fqdn=$(getBaseFQDN)
@@ -47,15 +48,13 @@ initializeEssentials() {
 installCertManager() {
   ## 1. Install Cert-Manager
   ##
-  NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER:-cert-manager}
+  NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER:-$(getNamespaceName "cert_manager")}
   export NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER}
-  HOSTNAME_FOR_CERTMANAGER_MAIN=${HOSTNAME_FOR_CERTMANAGER_MAIN:-$NAMESPACE_FOR_CERTMANAGER}
+  local __hostname_for_certmanager_main_from_cm
+  __hostname_for_certmanager_main_from_cm=$(getHostName "cert_manager" "main")
+  HOSTNAME_FOR_CERTMANAGER_MAIN=${__hostname_for_certmanager_main_from_cm:-$NAMESPACE_FOR_CERTMANAGER}
   export HOSTNAME_FOR_CERTMANAGER_MAIN=$HOSTNAME_FOR_CERTMANAGER_MAIN
     ## Environment Variable
-  local __history_dir=".history.${BASE_FQDN}"
-  local __history_file=${__history_dir}/selfsigned-ca.${BASE_FQDN}.ca.yaml
-  ROOTCA_FILE=${ROOTCA_FILE:-${BASE_FQDN}.ca.crt}
-  export ROOTCA_FILE=${ROOTCA_FILE}
   echo ""
   echo "---"
   echo "## Installing cert-manager ..."
@@ -68,6 +67,14 @@ installCertManager() {
     "Activating cert-manager"
   ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
   ##
+  local __history_dir
+  __history_dir=$(getDirNameFor outputs)/.history.${BASE_FQDN}
+  local __history_file=${__history_dir}/selfsigned-ca.${BASE_FQDN}.ca.yaml
+  #export __history_file=$__history_file
+  local __rootca_dir
+  __rootca_dir=$(getDirNameFor outputs)/ca
+  ROOTCA_FILE=${__rootca_dir}/${BASE_FQDN}.ca.crt
+  export ROOTCA_FILE=${ROOTCA_FILE}
   echo ""
   echo "---"
   echo "## Setup RootCA and Specific Issuer ..."
@@ -77,7 +84,7 @@ installCertManager() {
       "Activating RootCA Issuer"
   if [ "$FLAG_SECRET_OPERATION" = "new-rootca" ]; then
     cmdWithLoding \
-      "source ./values_for_cert-manager-rootca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
+      "bash ./values_for_cert-manager-rootca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
       "Activating RootCA"
     while ! kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secret "$BASE_FQDN" 2>/dev/null; do
       # NOTE
@@ -92,8 +99,8 @@ installCertManager() {
       echo -ne "    waiting for the process to be completed\r"
       sleep 0.5
     done
-    mkdir -p "$__history_dir"
-    chmod 0700 "$__history_dir"
+    mkdir -p "$__history_dir" "$__rootca_dir"
+    chmod 0700 "$__history_dir" "$__rootca_dir"
     kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o yaml > "$__history_file"
     kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o json | jq -r '.data["ca.crt"]' | base64 -d > "$ROOTCA_FILE"
       # NOTE
@@ -117,7 +124,7 @@ installCertManager() {
   ## 3. Setup Specific Issuer
   ##
   cmdWithLoding \
-    "source ./values_for_cert-manager-issuer-subca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
+    "bash ./values_for_cert-manager-issuer-subca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
     "Activating Specific Issuer"
       # NOTE
       # ClusterIssuer is namespace independent
@@ -131,9 +138,11 @@ installCertManager() {
 installMetalLB() {
   ## 1. Config MetalLB with L2 Mode
   ##
-  NAMESPACE_FOR_METALLB=${NAMESPACE_FOR_METALLB:-metallb}
+  NAMESPACE_FOR_METALLB=${NAMESPACE_FOR_METALLB:-$(getNamespaceName "metallb")}
   export NAMESPACE_FOR_METALLB=$NAMESPACE_FOR_METALLB
-  HOSTNAME_FOR_METALLB_MAIN=${HOSTNAME_FOR_METALLB_MAIN:-$NAMESPACE_FOR_CERTMANAGER}
+  local __hostname_for_metallb_main_from_cm
+  __hostname_for_metallb_main_from_cm=$(getHostName "metallb" "main")
+  HOSTNAME_FOR_METALLB_MAIN=${__hostname_for_certmanager_main_from_cm:-$NAMESPACE_FOR_CERTMANAGER}
   export HOSTNAME_FOR_METALLB_MAIN=$HOSTNAME_FOR_METALLB_MAIN
   local __docker_network_ip
   local __docker_network_prefix
@@ -171,12 +180,12 @@ installMetalLB() {
 ## 4. Install Ambassador
 ##
 installAmbassador() {
-  NAMESPACE_FOR_AMBASSADOR=${NAMESPACE_FOR_AMBASSADOR:-ambassador}
+  NAMESPACE_FOR_AMBASSADOR=${NAMESPACE_FOR_AMBASSADOR:-$(getNamespaceName "ambassador")}
   export NAMESPACE_FOR_AMBASSADOR=$NAMESPACE_FOR_AMBASSADOR
-  HOSTNAME_FOR_AMBASSADOR_MAIN=${HOSTNAME_FOR_AMBASSADOR_MAIN:-$NAMESPACE_FOR_CERTMANAGER}
+  local __hostname_for_ambassador_main_from_cm
+  __hostname_for_ambassador_main_from_cm=$(getHostName "ambassador" "main")
+  HOSTNAME_FOR_AMBASSADOR_MAIN=${__hostname_for_ambassador_main_from_cm:-$NAMESPACE_FOR_AMBASSADOR}
   export HOSTNAME_FOR_AMBASSADOR_MAIN=$HOSTNAME_FOR_AMBASSADOR_MAIN
-  SUFFIX_FOR_AMBASSADOR_K8SSSO=${SUFFIX_FOR_AMBASSADOR_K8SSSO:-k8ssso}
-  export SUFFIX_FOR_AMBASSADOR_K8SSSO=$SUFFIX_FOR_AMBASSADOR_K8SSSO
   echo ""
   echo "---"
   echo "## Installing ambassador ..."
@@ -212,13 +221,15 @@ installAmbassador() {
   # fi
   ## 2. private key using root key of this clsters.
   ##
-  HOSTNAME_FOR_AMBASSADOR_K8SSSO=${HOSTNAME_FOR_AMBASSADOR_MAIN}-${SUFFIX_FOR_AMBASSADOR_K8SSSO}
+  local __hostname_for_ambassador_k8ssso_from_cm
+  __hostname_for_ambassador_k8ssso_from_cm=$(getHostName "ambassador" "k8ssso")
+  HOSTNAME_FOR_AMBASSADOR_K8SSSO=${__hostname_for_ambassador_k8ssso_from_cm}
   export HOSTNAME_FOR_AMBASSADOR_K8SSSO=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}
   local __fqdn_for_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.${BASE_FQDN}
   local __private_key_file=${TEMP_DIR}/${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.key
   local __server_cert_file=${TEMP_DIR}/${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.crt
   cmdWithLoding \
-    "source ./values_for_ambassador-k8ssso-subca.yaml.bash \
+    "bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
       ${NAMESPACE_FOR_AMBASSADOR} \
       ${__fqdn_for_ambassador_k8ssso} \
     " \
@@ -243,7 +254,7 @@ installAmbassador() {
   ## 4. Same as above
   ##
   local __csr
-  __csr=$(source ./values_for_ambassador-k8ssso-csr.cnf.bash \
+  __csr=$(bash ./values_for_ambassador-k8ssso-csr.cnf.bash \
           "${HOSTNAME_FOR_AMBASSADOR_K8SSSO}" \
           "${__fqdn_for_ambassador_k8ssso}" \
           "${__private_key_file}" \
@@ -251,7 +262,7 @@ installAmbassador() {
   ## 5. Create and apply the following YAML for a CertificateSigningRequest.
   ##
   cmdWithLoding \
-    "source values_for_ambassador-k8ssso-csr.yaml.bash \
+    "bash values_for_ambassador-k8ssso-csr.yaml.bash \
       ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
       ${__csr}" \
     "Activating CertificateSigningRequest"
@@ -276,7 +287,7 @@ installAmbassador() {
   ## 10. Same as above
   ##
   cmdWithLoding \
-    "source ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
+    "bash ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
       ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
       ${__fqdn_for_ambassador_k8ssso} \
       ${NAMESPACE_FOR_AMBASSADOR}" \
@@ -310,9 +321,11 @@ installAmbassador() {
 ## 5. Install Keycloak
 ##
 installKeycloak() {
-  NAMESPACE_FOR_KEYCLOAK=${NAMESPACE_FOR_KEYCLOAK:-keycloak}
+  NAMESPACE_FOR_KEYCLOAK=${NAMESPACE_FOR_KEYCLOAK:-$(getNamespaceName "keycloak")}
   export NAMESPACE_FOR_KEYCLOAK=$NAMESPACE_FOR_KEYCLOAK
-  HOSTNAME_FOR_KEYCLOAK_MAIN=${HOSTNAME_FOR_KEYCLOAK_MAIN:-$NAMESPACE_FOR_KEYCLOAK}
+  local __hostname_for_ambassador_k8ssso_from_cm
+  __hostname_for_ambassador_k8ssso_from_cm=$(getHostName "keycloak" "main")
+  HOSTNAME_FOR_KEYCLOAK_MAIN=${__hostname_for_ambassador_k8ssso_from_cm:-$NAMESPACE_FOR_KEYCLOAK}
   export HOSTNAME_FOR_KEYCLOAK_MAIN=$HOSTNAME_FOR_KEYCLOAK_MAIN
   local __fqdn_for_keycloak_main=${HOSTNAME_FOR_KEYCLOAK_MAIN}.${BASE_FQDN}
   echo ""
@@ -352,7 +365,7 @@ installKeycloak() {
   ## 3. Setup TLSContext
   ##
   cmdWithLoding \
-    "source ./values_for_tlscontext.yaml.bash \
+    "bash ./values_for_tlscontext.yaml.bash \
         ${NAMESPACE_FOR_KEYCLOAK} \
         ${__fqdn_for_keycloak_main} \
       1> /dev/null" \
@@ -379,7 +392,7 @@ installKeycloak() {
   ## 4. Setup preset-entries
   ##
   cmdWithLoding \
-    "source ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${ROOTCA_FILE} 1> /dev/null" \
+    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${ROOTCA_FILE} 1> /dev/null" \
     "Activating Keycloak-entries"
   return $?
 }
@@ -402,7 +415,7 @@ installFilter() {
   ## 1. Install Filter
   ##
   cmdWithLoding \
-    "source ./values_for_ambassador-k8ssso-filter.yaml.bash \
+    "bash ./values_for_ambassador-k8ssso-filter.yaml.bash \
       ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
       ${__fqdn_for_ambassador_k8ssso} \
       ${NAMESPACE_FOR_AMBASSADOR} \
