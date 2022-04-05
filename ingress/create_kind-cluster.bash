@@ -8,6 +8,7 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
+  printf "Args: %s\n" "$*"
   if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"
     echo "     \${1} Specify the cluster name  (e.g. rdbox)"
@@ -39,7 +40,7 @@ checkArgs() {
 ## 1. Install KinD
 ##
 installKinD() {
-  __executer() {
+  __executor() {
     local __exist_cluster
     if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME}  >/dev/null 2>&1"; then
       kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
@@ -51,14 +52,14 @@ installKinD() {
   echo ""
   echo "---"
   echo "## Creating K8s Cluster by KinD ..."
-  cmdWithIndent "__executer"
+  cmdWithIndent "__executor"
   return $?
 }
 
 ## 2. SetUp ConfigMap
 ##
 setupConfigMap() {
-  __executer() {
+  __executor() {
     ## .1 If the Namespace already exists, recreate it
     ##
     if ! bash -c "kubectl delete namespace ${CLUSTER_INFO_NAMESPACE} >/dev/null 2>&1"; then
@@ -66,12 +67,14 @@ setupConfigMap() {
     fi
     kubectl create namespace "${CLUSTER_INFO_NAMESPACE}"
     getNetworkInfo
-      # These returning value are passed by EXPORT
+      ### NOTE
+      ### These returning value are passed by EXPORT
     HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
-      # If no value is declared, WDNS will create a hostname following the general naming conventions.
+      ### NOTE
+      ### If no value is declared, WDNS will create a hostname following the general naming conventions.
     WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${CLUSTER_NAME}}
     WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
-      # EXTRAPOLATION
+      ### EXTRAPOLATION
     local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
     local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
     local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
@@ -112,7 +115,7 @@ EOF
   echo ""
   echo "---"
   echo "## Installing cluster-info ..."
-  cmdWithIndent "__executer"
+  cmdWithIndent "__executor"
   return $?
 }
 

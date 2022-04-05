@@ -8,27 +8,25 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
-  local __flag_secret_operation="new-rootca" # or recycle(For Developpers)
-  local __base_fqdn
+  printf "Args: %s\n" "$*"
   if [ $# -eq 1 ]; then
     if [ "$1" = "help" ]; then
       echo "# Args"
-      echo "(opt)\${1} Specify if a previously generated self-signed certificate is to be reused"
+      echo "None"
       echo ""
       echo "# EnvironmentVariable"
       echo "  (recommend: Use automatic settings)"
-      echo "| Name                         | e.g.                        |"
-      echo "| ---------------------------- | --------------------------  |"
-      echo "|                              |                             |"
+      echo "| Name                         | e.g.                            |"
+      echo "| ---------------------------- | ------------------------------- |"
+      echo "| TYPE_OF_SECRET_OPERATION     | (default) new-rootca or recycle |"
       exit 1
     else
       __flag_secret_operation=$1
     fi
   fi
-  echo "Mode: $__flag_secret_operation"
+  local __base_fqdn
   __base_fqdn=$(getBaseFQDN)
   export BASE_FQDN=$__base_fqdn
-  export FLAG_SECRET_OPERATION=$__flag_secret_operation
   return $?
 }
 
@@ -45,131 +43,139 @@ initializeEssentials() {
 ## 2. Install Cert-Manager
 ##
 installCertManager() {
-  ## 1. Install Cert-Manager
-  ##
-  NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER:-$(getNamespaceName "cert_manager")}
-  export NAMESPACE_FOR_CERTMANAGER=${NAMESPACE_FOR_CERTMANAGER}
-  local __hostname_for_certmanager_main_from_cm
-  __hostname_for_certmanager_main_from_cm=$(getHostName "cert_manager" "main")
-  HOSTNAME_FOR_CERTMANAGER_MAIN=${__hostname_for_certmanager_main_from_cm:-$NAMESPACE_FOR_CERTMANAGER}
-  export HOSTNAME_FOR_CERTMANAGER_MAIN=$HOSTNAME_FOR_CERTMANAGER_MAIN
-  echo ""
-  echo "---"
-  echo "## Installing cert-manager ..."
-  cmdWithLoding \
-    "helm -n ${NAMESPACE_FOR_CERTMANAGER} upgrade --install ${HOSTNAME_FOR_CERTMANAGER_MAIN} jetstack/cert-manager \
+  __executor() {
+    __issueNewSecrets() {
+      local __namespace_for_certmanager="$1"
+      local __base_fqdn="$2"
+      local __rootca_file
+      __rootca_file=$(getFullpathOfRootCA)
+      bash ./values_for_cert-manager-rootca.yaml.bash "$__namespace_for_certmanager" "$__base_fqdn"
+        ### NOTE
+        ### Can be changed to authenticated secret
+      watiForSuccessOfCommand \
+        "kubectl -n $__namespace_for_certmanager get secret $__base_fqdn"
+        ### NOTE
+        ### Wait until RootCA is issued
+      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o yaml \
+        > "$__history_file"
+        ### NOTE
+        ### Save the History file
+      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o json \
+        | jq -r '.data["ca.crt"]' \
+        | base64 -d \
+        > "$__rootca_file"
+        ### NOTE
+        ### Save the RootCA
+      return $?
+    }
+    __issueSecrets() {
+      local __namespace_for_certmanager="$1"
+      local __base_fqdn="$2"
+      local __history_file
+      __history_file=$(getFullpathOfHistory)
+      kubectl -n "$__namespace_for_certmanager" apply -f values_for_cert-manager-issuer-rootca.yaml
+      if [ "$TYPE_OF_SECRET_OPERATION" = "new-rootca" ]; then
+        __issueNewSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
+      elif [ "$TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
+        if [ -e "$__history_file" ]; then
+          kubectl -n "$__namespace_for_certmanager" apply -f "$__history_file"
+        else
+          echo "No history file found. Please generate a new RootCA."
+          exit 1
+        fi
+      else
+        echo "Please generate a new RootCA."
+        exit 1
+      fi
+      return $?
+    }
+    local __namespace_for_certmanager
+    local __hostname_for_certmanager_main
+    local __base_fqdn
+    ## 1. Install Cert-Manager
+    ##
+    __namespace_for_certmanager=$(getNamespaceName "cert_manager")
+    __hostname_for_certmanager_main=$(getHostName "cert_manager" "main")
+    __base_fqdn=$(getBaseFQDN)
+    echo "### Installing with helm ..."
+    helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
         --create-namespace \
         --wait \
         --timeout 600s \
-        -f values_for_cert-manager-instance.yaml" \
-    "Activating cert-manager"
-  ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
-  ##
-  local __history_dir
-  local __history_file
-  local __rootca_file
-  __history_dir=$(getDirNameFor outputs)/.history.${BASE_FQDN}
-  __history_file=${__history_dir}/selfsigned-ca.${BASE_FQDN}.ca.yaml
-  __rootca_file=$(getFullpathOfRootCA)
+        -f values_for_cert-manager-instance.yaml \
+    ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
+    ##
+    echo "### Setting RootCA ..."
+    __issueSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
+      ### NOTE
+      ### Use the environment variable "TYPE_OF_SECRET_OPERATION" to switch
+      ### between issuing a new certificate or using a past certificate.
+    ## 3. Setup Specific Issuer
+    ##
+    echo "### Setting Specific Issuer ..."
+    bash ./values_for_cert-manager-issuer-subca.yaml.bash "${__namespace_for_certmanager}" "${__base_fqdn}"
+      ### NOTE
+      ### ClusterIssuer is namespace independent
+      ### However, it depends on selfsigned-cacert
+      ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
+    return $?
+  }
   echo ""
   echo "---"
-  echo "## Setup RootCA and Specific Issuer ..."
-  echo "Mode: $FLAG_SECRET_OPERATION"
-  cmdWithLoding \
-      "kubectl -n $NAMESPACE_FOR_CERTMANAGER apply -f values_for_cert-manager-issuer-rootca.yaml" \
-      "Activating RootCA Issuer"
-  if [ "$FLAG_SECRET_OPERATION" = "new-rootca" ]; then
-    cmdWithLoding \
-      "bash ./values_for_cert-manager-rootca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
-      "Activating RootCA"
-    while ! kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secret "$BASE_FQDN" 2>/dev/null; do
-      # NOTE
-      # Wait until RootCA is issued
-      echo -ne ".   waiting for the process to be completed\r"
-      sleep 0.5
-      echo -ne "..  waiting for the process to be completed\r"
-      sleep 0.5
-      echo -ne "... waiting for the process to be completed\r"
-      sleep 0.5
-      echo -ne "\r\033[K"
-      echo -ne "    waiting for the process to be completed\r"
-      sleep 0.5
-    done
-    mkdir -p "$__history_dir"
-    chmod 0700 "$__history_dir"
-    kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o yaml > "$__history_file"
-    kubectl -n "$NAMESPACE_FOR_CERTMANAGER" get secrets "$BASE_FQDN" -o json | jq -r '.data["ca.crt"]' | base64 -d > "$__rootca_file"
-      # NOTE
-      # Save the History file and the RootCA
-  elif [ "$FLAG_SECRET_OPERATION" = "recycle" ]; then
-    if [ -e "$__history_file" ]; then
-      kubectl -n "$NAMESPACE_FOR_CERTMANAGER" apply -f "$__history_file"
-    else
-      echo "No history file found. Please generate a new RootCA."
-      exit 1
-    fi
-  else
-    if [ -e "$__history_file" ]; then
-      kubectl -n "$NAMESPACE_FOR_CERTMANAGER" apply -f "$__history_file"
-    else
-      echo "No history file found. Please generate a new RootCA."
-      exit 1
-    fi
-  fi
-  echo -e "\033[32mok!\033[m Activating RootCA"
-  ## 3. Setup Specific Issuer
-  ##
-  cmdWithLoding \
-    "bash ./values_for_cert-manager-issuer-subca.yaml.bash $NAMESPACE_FOR_CERTMANAGER $BASE_FQDN" \
-    "Activating Specific Issuer"
-      # NOTE
-      # ClusterIssuer is namespace independent
-      # However, it depends on selfsigned-cacert
-      #                        (Name of $BASE_FQDN, like rdbox.rdbox.172-16-0-110.nip.io)
+  echo "## Installing cert-manager ..."
+  cmdWithIndent "__executor"
   return $?
 }
 
 ## 3. Install MetalLB
 ##
 installMetalLB() {
-  ## 1. Config MetalLB with L2 Mode
-  ##
-  NAMESPACE_FOR_METALLB=${NAMESPACE_FOR_METALLB:-$(getNamespaceName "metallb")}
-  export NAMESPACE_FOR_METALLB=$NAMESPACE_FOR_METALLB
-  local __hostname_for_metallb_main_from_cm
-  __hostname_for_metallb_main_from_cm=$(getHostName "metallb" "main")
-  HOSTNAME_FOR_METALLB_MAIN=${__hostname_for_certmanager_main_from_cm:-$NAMESPACE_FOR_CERTMANAGER}
-  export HOSTNAME_FOR_METALLB_MAIN=$HOSTNAME_FOR_METALLB_MAIN
-  local __docker_network_ip
-  local __docker_network_prefix
-  local __docker_network_range
-  echo ""
-  echo "---"
-  echo "Installing metallb ..."
-  __docker_network_ip=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
-  __docker_network_prefix=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
-  if [ "$__docker_network_prefix" -le 16 ]; then
-    __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s-%s.%s.%s", $1, $2, "255.200", $1, $2, "255.250"}')
-  elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
-    __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
-  else
-    echo ""
-    echo "---"
-    echo "WARN: Your Docker network configuration is not expected;"
-    echo "- You will need to execute the MetalLB configuration yourself."
-    echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
-    exit 1
-  fi
-  ## 2. Install MetalLB Instance
-  ##
-  cmdWithLoding \
-    "helm -n ${NAMESPACE_FOR_METALLB} upgrade --install ${HOSTNAME_FOR_METALLB_MAIN} metallb/metallb \
+  __executor() {
+    __getNetworkRangeForVirtualHost() {
+      local __docker_network_ip
+      local __docker_network_prefix
+      local __docker_network_range
+      __docker_network_ip=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
+      __docker_network_prefix=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
+      if [ "$__docker_network_prefix" -le 16 ]; then
+        __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s-%s.%s.%s", $1, $2, "255.200", $1, $2, "255.250"}')
+      elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
+        __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
+      else
+        echo ""
+        echo "---"
+        echo "WARN: Your Docker network configuration is not expected;"
+        echo "- You will need to execute the MetalLB configuration yourself."
+        echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
+        exit 1
+      fi
+      echo -ne "$__docker_network_range"
+      return $?
+    }
+    local __namespace_for_metallb
+    local __hostname_for_metallb
+    local __docker_network_range
+    ## 1. Get ConfigValue MetalLB with L2 Mode
+    ##
+    echo "### Calculating ConfigValue ..."
+    __docker_network_range=$(__getNetworkRangeForVirtualHost)
+    ## 2. Install MetalLB Instance
+    ##
+    echo "### Installing with helm ..."
+    __namespace_for_metallb=$(getNamespaceName "metallb")
+    __hostname_for_metallb_main=$(getHostName "metallb" "main")
+    helm -n "${__namespace_for_metallb}" upgrade --install "${__hostname_for_metallb_main}" metallb/metallb \
         --create-namespace \
         --wait \
         --timeout 600s \
-        --set configInline.address-pools\[0\].addresses\[0\]=$__docker_network_range \
-        -f values_for_metallb.yaml" \
-    "Activating metallb"
+        --set configInline.address-pools\[0\].addresses\[0\]="$__docker_network_range" \
+        -f values_for_metallb.yaml
+    return $?
+  }
+  echo ""
+  echo "---"
+  echo "## Installing metallb ..."
+  cmdWithIndent "__executor"
   return $?
 }
 
@@ -199,10 +205,11 @@ installAmbassador() {
   ##
   cmdWithLoding \
     "helm -n ${NAMESPACE_FOR_AMBASSADOR} upgrade --install ${HOSTNAME_FOR_AMBASSADOR_MAIN} edge-stack/edge-stack \
-        --create-namespace \
-        --wait \
-        --timeout 600s \
-        -f values_for_ambassador-instance.yaml" \
+      --create-namespace \
+      --wait \
+      --timeout 600s \
+      -f values_for_ambassador-instance.yaml \
+    " \
     "Activating ambassador (Instance)"
   ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
   ##
@@ -230,19 +237,9 @@ installAmbassador() {
       ${__fqdn_for_ambassador_k8ssso} \
     " \
     "Issueing Private Key for ambassador (k8ssso)"
-  while ! kubectl -n "${NAMESPACE_FOR_AMBASSADOR}" get secret "${__fqdn_for_ambassador_k8ssso}" 2>/dev/null; do
+  watiForSuccessOfCommand "kubectl -n ${NAMESPACE_FOR_AMBASSADOR} get secret ${__fqdn_for_ambassador_k8ssso}"
     # NOTE
     # Wait until SubCA is issued
-    echo -ne ".   waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "..  waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "... waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "\r\033[K"
-    echo -ne "    waiting for the process to be completed\r"
-    sleep 0.5
-  done
   kubectl -n "${NAMESPACE_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
         | jq -r '.data["tls.key"]' \
         | base64 -d > "${__private_key_file}"
@@ -290,19 +287,9 @@ installAmbassador() {
     "Activating k8s SSO Endpoint"
   ## 11. As a quick check
   ##
-  while ! curl -fs --cacert "$__server_cert_file" https://"$__fqdn_for_ambassador_k8ssso"/api | jq 2>/dev/null; do
+  watiForSuccessOfCommand "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
     # NOTE
     # Wait until to startup the Host
-    echo -ne ".   waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "..  waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "... waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "\r\033[K"
-    echo -ne "    waiting for the process to be completed\r"
-    sleep 0.5
-  done
   ## 12. Set Context
   cmdWithLoding \
     "kubectl config set-cluster $(getContextName4Kubectl) \
@@ -349,14 +336,15 @@ installKeycloak() {
   ##
   cmdWithLoding \
     "helm -n ${NAMESPACE_FOR_KEYCLOAK} upgrade --install ${HOSTNAME_FOR_KEYCLOAK_MAIN} bitnami/keycloak \
-        --wait \
-        --timeout 600s \
-        --set ingress.hostname=$__fqdn_for_keycloak_main \
-        --set ingress.extraTls\[0\].hosts\[0\]=$__fqdn_for_keycloak_main \
-        --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK_MAIN \
-        --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
-        --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$__fqdn_for_keycloak_main/auth \
-        -f values_for_keycloak-instance.yaml" \
+      --wait \
+      --timeout 600s \
+      --set ingress.hostname=$__fqdn_for_keycloak_main \
+      --set ingress.extraTls\[0\].hosts\[0\]=$__fqdn_for_keycloak_main \
+      --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK_MAIN \
+      --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
+      --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$__fqdn_for_keycloak_main/auth \
+      -f values_for_keycloak-instance.yaml \
+    " \
     "Activating keycloak"
   ## 3. Setup TLSContext
   ##
@@ -364,24 +352,14 @@ installKeycloak() {
     "bash ./values_for_tlscontext.yaml.bash \
         ${NAMESPACE_FOR_KEYCLOAK} \
         ${__fqdn_for_keycloak_main} \
-      1> /dev/null" \
+    " \
     "Activating TLSContext"
       # NOTE
       # Tentative solution to the problem
       # that TLSContext is not generated automatically from Ingress (v2.2.2)
-  while ! kubectl -n "$NAMESPACE_FOR_KEYCLOAK" get secret "$HOSTNAME_FOR_KEYCLOAK_MAIN" 2>/dev/null; do
+  watiForSuccessOfCommand "kubectl -n ${NAMESPACE_FOR_KEYCLOAK} get secret ${HOSTNAME_FOR_KEYCLOAK_MAIN}"
     # NOTE
     # Wait until SubCA is issued
-    echo -ne ".   waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "..  waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "... waiting for the process to be completed\r"
-    sleep 0.5
-    echo -ne "\r\033[K"
-    echo -ne "    waiting for the process to be completed\r"
-    sleep 0.5
-  done
   local __rootca_file
   __rootca_file=$(getFullpathOfRootCA)
   cmdWithLoding \
@@ -390,7 +368,7 @@ installKeycloak() {
   ## 4. Setup preset-entries
   ##
   cmdWithLoding \
-    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${__rootca_file} 1> /dev/null" \
+    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${__rootca_file}" \
     "Activating Keycloak-entries"
   return $?
 }
@@ -473,10 +451,14 @@ main() {
   initializeEssentials "$@"
   ## 2. Install Cert-Manager
   ##
-  installCertManager
+  cmdWithLoding \
+    "installCertManager" \
+    "Activating cert-manager"
   ## 3. Install MetalLB
   ##
-  installMetalLB
+  cmdWithLoding \
+    "installMetalLB" \
+    "Activating metallb"
   ## 4. Install Ambassador
   ##
   installAmbassador

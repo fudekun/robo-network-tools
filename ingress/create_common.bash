@@ -4,8 +4,10 @@
 ##
 CLUSTER_INFO_NAMENAME=cluster-info
 CLUSTER_INFO_NAMESPACE=cluster-common
+NUM_INDENT=4
 ##
 ##
+__RAW_INDENT=$(for _ in $(eval "echo {1..$NUM_INDENT}"); do echo -ne " "; done)
 
 cleanupShowLoading() {
   tput cnorm
@@ -66,7 +68,7 @@ cmdWithLoding() {
 }
 
 showIndent() {
-  sed 's/^/    /';
+  sed "s/^/${__RAW_INDENT}/";
 }
 
 cmdWithIndent() {
@@ -74,7 +76,7 @@ cmdWithIndent() {
   local mark="${2:-"YES"}" # YES or NO
   if [ "$mark" = "YES" ]; then
     esc=$(printf '\033')
-    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${esc}[31m[STDERR]&${esc}[0m -> /' ; } 2>&1 | showIndent"
+    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${__RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
   else
     eval "${commands} 2>&1 | showIndent"
   fi
@@ -92,6 +94,19 @@ updateHelm() {
   cmdWithLoding \
     "helm repo update 1> /dev/null" \
     "Updateing Helm"
+}
+
+watiForSuccessOfCommand() {
+  local commands="$1"
+  local __count=0
+  while ! eval "${commands}  2>/dev/null"; do
+    if [ $__count -gt 300 ]; then
+      return 1
+    fi
+    sleep 1
+    __count=$((__count++))
+  done
+  echo ""
 }
 
 getNetworkInfo() {
@@ -156,13 +171,23 @@ getDirNameFor() {
 }
 
 getFullpathOfRootCA() {
-  local __rootca_dir
+  local __dir
   local __base_fqdn
-  __rootca_dir=$(getDirNameFor outputs)/ca
+  __dir=$(getDirNameFor outputs)/ca
   __base_fqdn=$(getBaseFQDN)
-  mkdir -p "$__rootca_dir"
-  chmod 0700 "$__rootca_dir"
-  echo -ne "${__rootca_dir}"/"${__base_fqdn}".ca.crt
+  mkdir -p "$__dir"
+  chmod 0700 "$__dir"
+  echo -ne "${__dir}"/"${__base_fqdn}".ca.crt
+}
+
+getFullpathOfHistory() {
+  local __dir
+  local __base_fqdn
+  __base_fqdn=$(getBaseFQDN)
+  __dir=$(getDirNameFor outputs)/.history.${__base_fqdn}
+  mkdir -p "$__dir"
+  chmod 0700 "$__dir"
+  echo -ne "${__dir}"/selfsigned-ca."${__base_fqdn}".ca.yaml
 }
 
 getPresetSuperAdminName() {
