@@ -71,7 +71,7 @@ installCertManager() {
       local __base_fqdn="$2"
       local __history_file
       __history_file=$(getFullpathOfHistory)
-      kubectl -n "$__namespace_for_certmanager" apply -f values_for_cert-manager-issuer-rootca.yaml
+      kubectl apply -f values_for_cert-manager-issuer-rootca.yaml
       TYPE_OF_SECRET_OPERATION=${TYPE_OF_SECRET_OPERATION:-"new-rootca"}
       if [ "$TYPE_OF_SECRET_OPERATION" = "new-rootca" ]; then
         __issueNewSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"

@@ -288,7 +288,7 @@ spec:
 #   name: ambassador-admin
 #   namespace: ambassador
 #   annotations:
-#     cert-manager.io/cluster-issuer: rdbox-ca-issuer
+#     cert-manager.io/cluster-issuer: cluster-issuer-subca
 #     kubernetes.io/ingress.class: ambassador
 # spec:
 #   rules:

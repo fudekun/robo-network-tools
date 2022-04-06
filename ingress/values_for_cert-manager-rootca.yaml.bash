@@ -22,7 +22,7 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: selfsigned-issuer
+    name: cluster-issuer-rootca
     kind: ClusterIssuer
     group: cert-manager.io
 EOF

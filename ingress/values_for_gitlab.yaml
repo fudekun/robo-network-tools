@@ -33,7 +33,7 @@ global:
   ## https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: rdbox-ca-issuer
+      cert-manager.io/cluster-issuer: cluster-issuer-subca
     configureCertmanager: false
     enabled: true
     tls:
