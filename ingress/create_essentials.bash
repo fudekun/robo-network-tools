@@ -53,17 +53,15 @@ installCertManager() {
         ### NOTE
         ### Can be changed to authenticated secret
       watiForSuccessOfCommand \
-        "kubectl -n $__namespace_for_certmanager get secret $__base_fqdn"
+        "kubectl -n $__namespace_for_certmanager get secrets $__base_fqdn"
         ### NOTE
         ### Wait until RootCA is issued
-      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o yaml \
-        > "$__history_file"
+      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o yaml > "$__history_file"
         ### NOTE
         ### Save the History file
-      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o json \
-        | jq -r '.data["ca.crt"]' \
-        | base64 -d \
-        > "$__rootca_file"
+      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o json | \
+        jq -r '.data["ca.crt"]' | \
+        base64 -d > "$__rootca_file"
         ### NOTE
         ### Save the RootCA
       return $?
@@ -98,14 +96,16 @@ installCertManager() {
     __namespace_for_certmanager=$(getNamespaceName "cert_manager")
     __hostname_for_certmanager_main=$(getHostName "cert_manager" "main")
     __base_fqdn=$(getBaseFQDN)
+    echo ""
     echo "### Installing with helm ..."
     helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
         --create-namespace \
         --wait \
         --timeout 600s \
-        -f values_for_cert-manager-instance.yaml \
+        -f values_for_cert-manager-instance.yaml
     ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
     ##
+    echo ""
     echo "### Setting RootCA ..."
     __issueSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
       ### NOTE
@@ -113,6 +113,7 @@ installCertManager() {
       ### between issuing a new certificate or using a past certificate.
     ## 3. Setup Specific Issuer
     ##
+    echo ""
     echo "### Setting Specific Issuer ..."
     bash ./values_for_cert-manager-issuer-subca.yaml.bash "${__namespace_for_certmanager}" "${__base_fqdn}"
       ### NOTE
@@ -143,8 +144,6 @@ installMetalLB() {
       elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
         __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
       else
-        echo ""
-        echo "---"
         echo "WARN: Your Docker network configuration is not expected;"
         echo "- You will need to execute the MetalLB configuration yourself."
         echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
@@ -157,10 +156,12 @@ installMetalLB() {
     local __docker_network_range
     ## 1. Get ConfigValue MetalLB with L2 Mode
     ##
+    echo ""
     echo "### Calculating ConfigValue ..."
     __docker_network_range=$(__getNetworkRangeForVirtualHost)
     ## 2. Install MetalLB Instance
     ##
+    echo ""
     echo "### Installing with helm ..."
     __namespace_for_metallb=$(getNamespaceName "metallb")
     __hostname_for_metallb_main=$(getHostName "metallb" "main")
@@ -191,11 +192,13 @@ installAmbassador() {
     __namespace_for_ambassador=$(getNamespaceName "ambassador")
     __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
     __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
+    echo ""
     echo "### Activating a CRD of the ambassador ..."
     kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__aes_app_version}"/aes-crds.yaml
     kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
     ## 2. Install Ambassador Instance
     ##
+    echo ""
     echo "### Installing with helm ..."
     helm -n "${__namespace_for_ambassador}" upgrade --install "${__hostname_for_ambassador_main}" edge-stack/edge-stack \
         --create-namespace \
@@ -225,12 +228,13 @@ installAmbassador() {
     __fqdn_for_ambassador_k8ssso=${__hostname_for_ambassador_k8ssso}.${__base_fqdn}
     __private_key_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.key
     __server_cert_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.crt
+    echo ""
     echo "### Issueing Private Key for ambassador ..."
     bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
         "${__namespace_for_ambassador}" \
         "${__fqdn_for_ambassador_k8ssso}"
     watiForSuccessOfCommand \
-        "kubectl -n ${__namespace_for_ambassador} get secret ${__fqdn_for_ambassador_k8ssso}"
+      "kubectl -n ${__namespace_for_ambassador} get secrets ${__fqdn_for_ambassador_k8ssso}"
       ### NOTE
       ### Wait until SubCA is issued
     kubectl -n "${__namespace_for_ambassador}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json | \
@@ -241,6 +245,7 @@ installAmbassador() {
     ## 3. Create a file a CNF and a certificate signing request with the CNF file.
     ## 4. Same as above
     ##
+    echo ""
     echo "### Activating CertificateSigningRequest ..."
     local __csr
     __csr=$(bash ./values_for_ambassador-k8ssso-csr.cnf.bash \
@@ -254,10 +259,12 @@ installAmbassador() {
         "${__csr}"
     ## 6. Confirmation
     ##
+    echo ""
     echo "### Approving CertificateSigningRequest ..."
     kubectl certificate approve "${__hostname_for_ambassador_k8ssso}"
     ## 7. Get the resulting certificate
     ##
+    echo ""
     echo "### Exporting TLS Secret ..."
     kubectl get csr "${__hostname_for_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" | \
         base64 -d > "${__server_cert_file}"
@@ -269,6 +276,7 @@ installAmbassador() {
     ## 9. Create a Mapping and TLSContext and RBAC for the Kube API.
     ## 10. Same as above
     ##
+    echo ""
     echo "### Activating k8s SSO Endpoint ..."
     bash ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
         "${__hostname_for_ambassador_k8ssso}" \
@@ -276,10 +284,12 @@ installAmbassador() {
         "${__namespace_for_ambassador}"
     ## 11. As a quick check
     ##
-    watiForSuccessOfCommand "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
+    watiForSuccessOfCommand \
+      "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
       ### NOTE
       ### Wait until to startup the Host
     ## 12. Set Context
+    echo ""
     echo "### Setting Cluster Context ..."
     kubectl config set-cluster "$(getContextName4Kubectl)" \
         --server=https://"${__fqdn_for_ambassador_k8ssso}" \
@@ -308,6 +318,7 @@ installKeycloak() {
     __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
     ## 1. Config extra secrets
     ##
+    echo ""
     echo "### Setting Config of keycloak ..."
     kubectl create namespace "${__namespace_for_keycloak}"
     kubectl -n "${__namespace_for_keycloak}" create secret generic specific-secrets \
@@ -325,6 +336,7 @@ installKeycloak() {
         ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
     ## 2. Install Keycloak
     ##
+    echo ""
     echo "### Installing with helm ..."
     helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
       --wait \
@@ -337,6 +349,7 @@ installKeycloak() {
       -f values_for_keycloak-instance.yaml
     ## 3. Setup TLSContext
     ##
+    echo ""
     echo "### Activating the TLSContext ..."
     bash ./values_for_tlscontext.yaml.bash \
       "${__namespace_for_keycloak}" \
@@ -345,16 +358,18 @@ installKeycloak() {
         ### Tentative solution to the problem
         ### that TLSContext is not generated automatically from Ingress (v2.2.2)
     watiForSuccessOfCommand \
-      "kubectl -n ${__namespace_for_keycloak} get secret ${__hostname_for_keycloak_main}"
+      "kubectl -n ${__namespace_for_keycloak} get secrets ${__hostname_for_keycloak_main}"
         ### NOTE
         ### Wait until SubCA is issued
     local __rootca_file
     __rootca_file=$(getFullpathOfRootCA)
+    echo ""
     echo "### Testing to access the endpoint ..."
     watiForSuccessOfCommand \
       "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1"
     ## 4. Setup preset-entries
     ##
+    echo ""
     echo "### Activating essential entries of the keycloak ..."
     bash ./create_keycloak-entry.bash "${__namespace_for_keycloak}" "${__rootca_file}"
     return $?
@@ -393,6 +408,7 @@ installFilter() {
     __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
     ## 1. Install Filter
     ##
+    echo ""
     echo "### Applying the filter for Impersonate-Group/User ..."
     bash ./values_for_ambassador-k8ssso-filter.yaml.bash \
         "${__hostname_for_ambassador_k8ssso}" \
@@ -425,11 +441,10 @@ showVerifierCommand() {
   __ctx_name=$(getContextName4Kubectl)
   __rootca_file=$(getFullpathOfRootCA)
   __namespace_for_keycloak=$(getNamespaceName "keycloak")
-  drawMaxColsSeparator "#" "34"
   echo ""
-  echo "---"
-  echo "\033[SUCCESSFUL Termination\033[m"
-  echo "\033[33mUsage:\033[m"
+  drawMaxColsSeparator "#" "32"
+  echo -e "\033[32mSUCCESS Termination\033[m"
+  echo -e "\033[32mUsage:\033[m"
   echo ""
   echo "---"
   echo "## Trust CA with your browser and operating system. Check its file:"
@@ -451,7 +466,7 @@ showVerifierCommand() {
   echo "  kubectl config use-context ${__ctx_name}"
   echo "  kubectl get node          # whatever is okay, just choose the one you like"
   echo ""
-  drawMaxColsSeparator "#" "34"
+  drawMaxColsSeparator "#" "32"
   return $?
 }
 

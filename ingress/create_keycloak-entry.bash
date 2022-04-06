@@ -185,6 +185,7 @@ main() {
   ## Set Context
   local client_secret
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
+  echo ""
   echo "### Setting Cluster Context ..."
   kubectl config set-credentials "$(getContextName4Kubectl)" \
       --exec-api-version=client.authentication.k8s.io/v1beta1 \
