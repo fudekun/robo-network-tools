@@ -109,7 +109,6 @@ __logoutSuperAdmin() {
   curl -fs --cacert "${ROOTCA_FILE}" -X POST "$revoke_endpoint" \
       -d "client_id=admin-cli" \
       -d "refresh_token=$REFLESH_TOKEN"
-  echo "(Success logout)"
 }
 
 __getSuperAdminSecret() {
@@ -132,14 +131,14 @@ showVerifierCommand() {
   local base_url=${2:-https://$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.ingress.hostname')}
   echo ""
   echo "---"
-  echo "The basic keycloak entry has been inserted. Check its status by running:"
+  echo "## The basic keycloak entry has been inserted. Check its status by running:"
   echo "  ---"
-  echo "  # For all realms"
+  echo "  ### For all realms"
   echo "  ${base_url}/auth/admin"
   echo "    echo Username: \$(helm -n ${rep_name} get values ${rep_name} -o json | jq -r '.auth.adminUser')"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.admin-password}' | base64 --decode)"
   echo "  ---"
-  echo "  # For this k8s cluster only (ClusterName: $(getClusterName))"
+  echo "  ### For this k8s cluster only (ClusterName: $(getClusterName))"
   echo "  ${base_url}/auth/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
   echo "    echo Username: $(getPresetClusterAdminName "${rep_name}")"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
@@ -147,10 +146,6 @@ showVerifierCommand() {
 }
 
 main() {
-  echo ""
-  echo "---"
-  echo "Inserting entry to keycloak ..."
-
   local rep_name=$1
   ROOTCA_FILE=${ROOTCA_FILE:-$2}
 
@@ -190,17 +185,15 @@ main() {
   ## Set Context
   local client_secret
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
-  cmdWithLoding \
-    "kubectl config set-credentials $(getContextName4Kubectl) \
+  echo "### Setting Cluster Context ..."
+  kubectl config set-credentials "$(getContextName4Kubectl)" \
       --exec-api-version=client.authentication.k8s.io/v1beta1 \
       --exec-command=kubectl \
       --exec-arg=oidc-login \
       --exec-arg=get-token \
-      --exec-arg=--oidc-issuer-url=${BASE_URL}/auth/realms/${cluster_name} \
+      --exec-arg=--oidc-issuer-url="${BASE_URL}"/auth/realms/"${cluster_name}" \
       --exec-arg=--oidc-client-id=ambassador \
-      --exec-arg=--oidc-client-secret=${client_secret} \
-    " \
-    "Setting Cluster Credentials"
+      --exec-arg=--oidc-client-secret="${client_secret}"
 
   ## Notify Verifier-Command
   ##
@@ -209,6 +202,10 @@ main() {
   return $?
 }
 
-source ./create_common.bash
+## Set the base directory for RDBOX scripts!!
+##
+export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+  # Values can also be inserted externally
+source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 main "$@"
 exit $?

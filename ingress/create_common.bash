@@ -97,9 +97,9 @@ updateHelm() {
 }
 
 watiForSuccessOfCommand() {
-  local commands="$1"
+  local __cmds="$1"
   local __count=0
-  while ! eval "${commands}  2>/dev/null"; do
+  while ! eval "${__cmds} 2>/dev/null"; do
     if [ $__count -gt 300 ]; then
       return 1
     fi
@@ -107,10 +107,11 @@ watiForSuccessOfCommand() {
     __count=$((__count++))
   done
   echo ""
+  return 0
 }
 
 getNetworkInfo() {
-  NAME_DEFULT_NIC=${NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v ":" | awk '{print $4}')}
+  NAME_DEFULT_NIC=${NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
   NAME_DEFULT_NIC=$(printf %q "$NAME_DEFULT_NIC")
     # EXTRAPOLATION
   export NAME_DEFULT_NIC

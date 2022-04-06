@@ -18,7 +18,7 @@ checkArgs() {
       echo "  (recommend: Use automatic settings)"
       echo "| Name                         | e.g.                            |"
       echo "| ---------------------------- | ------------------------------- |"
-      echo "| TYPE_OF_SECRET_OPERATION     | (default) new-rootca or recycle |"
+      echo "| TYPE_OF_SECRET_OPERATION     | (default)new-rootca or recycle  |"
       exit 1
     else
       __flag_secret_operation=$1
@@ -74,6 +74,7 @@ installCertManager() {
       local __history_file
       __history_file=$(getFullpathOfHistory)
       kubectl -n "$__namespace_for_certmanager" apply -f values_for_cert-manager-issuer-rootca.yaml
+      TYPE_OF_SECRET_OPERATION=${TYPE_OF_SECRET_OPERATION:-"new-rootca"}
       if [ "$TYPE_OF_SECRET_OPERATION" = "new-rootca" ]; then
         __issueNewSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
       elif [ "$TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
@@ -153,7 +154,6 @@ installMetalLB() {
       return $?
     }
     local __namespace_for_metallb
-    local __hostname_for_metallb
     local __docker_network_range
     ## 1. Get ConfigValue MetalLB with L2 Mode
     ##
@@ -182,232 +182,238 @@ installMetalLB() {
 ## 4. Install Ambassador
 ##
 installAmbassador() {
-  NAMESPACE_FOR_AMBASSADOR=${NAMESPACE_FOR_AMBASSADOR:-$(getNamespaceName "ambassador")}
-  export NAMESPACE_FOR_AMBASSADOR=$NAMESPACE_FOR_AMBASSADOR
-  local __hostname_for_ambassador_main_from_cm
-  __hostname_for_ambassador_main_from_cm=$(getHostName "ambassador" "main")
-  HOSTNAME_FOR_AMBASSADOR_MAIN=${__hostname_for_ambassador_main_from_cm:-$NAMESPACE_FOR_AMBASSADOR}
-  export HOSTNAME_FOR_AMBASSADOR_MAIN=$HOSTNAME_FOR_AMBASSADOR_MAIN
+  __executor() {
+    local __namespace_for_ambassador
+    local __hostname_for_ambassador_main
+    local __aes_app_version
+    ## 1. Install Ambassador's CRD
+    ##
+    __namespace_for_ambassador=$(getNamespaceName "ambassador")
+    __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
+    __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
+    echo "### Activating a CRD of the ambassador ..."
+    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__aes_app_version}"/aes-crds.yaml
+    kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
+    ## 2. Install Ambassador Instance
+    ##
+    echo "### Installing with helm ..."
+    helm -n "${__namespace_for_ambassador}" upgrade --install "${__hostname_for_ambassador_main}" edge-stack/edge-stack \
+        --create-namespace \
+        --wait \
+        --timeout 600s \
+        -f values_for_ambassador-instance.yaml
+    ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
+    ##
+    ## References
+    ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
+    ##
+    ##
+    ## 1. Delete the openapi mapping from the Ambassador namespace
+    ##
+    # if ! bash -c "kubectl delete -n ${__namespace_for_ambassador} ambassador-devportal-api"; then
+    #   echo "CRD(ambassador-devportal-api) is Not Found ...ok"
+    # fi
+    ## 2. private key using root key of this clsters.
+    ##
+    local __base_fqdn
+    local __hostname_for_ambassador_k8ssso
+    local __fqdn_for_ambassador_k8ssso
+    local __private_key_file
+    local __server_cert_file
+    __base_fqdn=$(getBaseFQDN)
+    __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
+    __fqdn_for_ambassador_k8ssso=${__hostname_for_ambassador_k8ssso}.${__base_fqdn}
+    __private_key_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.key
+    __server_cert_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.crt
+    echo "### Issueing Private Key for ambassador ..."
+    bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
+        "${__namespace_for_ambassador}" \
+        "${__fqdn_for_ambassador_k8ssso}"
+    watiForSuccessOfCommand \
+        "kubectl -n ${__namespace_for_ambassador} get secret ${__fqdn_for_ambassador_k8ssso}"
+      ### NOTE
+      ### Wait until SubCA is issued
+    kubectl -n "${__namespace_for_ambassador}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json | \
+        jq -r '.data["tls.key"]' | \
+        base64 -d > "${__private_key_file}"
+      ### NOTE
+      ### As a temporary file to issue CSRs
+    ## 3. Create a file a CNF and a certificate signing request with the CNF file.
+    ## 4. Same as above
+    ##
+    echo "### Activating CertificateSigningRequest ..."
+    local __csr
+    __csr=$(bash ./values_for_ambassador-k8ssso-csr.cnf.bash \
+        "${__hostname_for_ambassador_k8ssso}" \
+        "${__fqdn_for_ambassador_k8ssso}" \
+        "${__private_key_file}" | base64)
+    ## 5. Create and apply the following YAML for a CertificateSigningRequest.
+    ##
+    bash ./values_for_ambassador-k8ssso-csr.yaml.bash \
+        "${__hostname_for_ambassador_k8ssso}" \
+        "${__csr}"
+    ## 6. Confirmation
+    ##
+    echo "### Approving CertificateSigningRequest ..."
+    kubectl certificate approve "${__hostname_for_ambassador_k8ssso}"
+    ## 7. Get the resulting certificate
+    ##
+    echo "### Exporting TLS Secret ..."
+    kubectl get csr "${__hostname_for_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" | \
+        base64 -d > "${__server_cert_file}"
+    ## 8. Create a TLS Secret using our private key and public certificate.
+    ##
+    kubectl -n "${__namespace_for_ambassador}" create secret tls "${__hostname_for_ambassador_k8ssso}" \
+        --cert "${__server_cert_file}" \
+        --key "${__private_key_file}"
+    ## 9. Create a Mapping and TLSContext and RBAC for the Kube API.
+    ## 10. Same as above
+    ##
+    echo "### Activating k8s SSO Endpoint ..."
+    bash ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
+        "${__hostname_for_ambassador_k8ssso}" \
+        "${__fqdn_for_ambassador_k8ssso}" \
+        "${__namespace_for_ambassador}"
+    ## 11. As a quick check
+    ##
+    watiForSuccessOfCommand "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
+      ### NOTE
+      ### Wait until to startup the Host
+    ## 12. Set Context
+    echo "### Setting Cluster Context ..."
+    kubectl config set-cluster "$(getContextName4Kubectl)" \
+        --server=https://"${__fqdn_for_ambassador_k8ssso}" \
+        --certificate-authority="${__server_cert_file}" \
+        --embed-certs
+    return $?
+  }
   echo ""
   echo "---"
   echo "## Installing ambassador ..."
-  ## 1. Install Ambassador's CRD
-  ##
-  local __aes_app_version
-  __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
-  cmdWithLoding \
-    "kubectl apply -f https://app.getambassador.io/yaml/edge-stack/${__aes_app_version}/aes-crds.yaml" \
-    "Installing ambassador (CRD)"
-  cmdWithLoding \
-    "kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system" \
-    "Activating ambassador (CRD)"
-  ## 2. Install Ambassador Instance
-  ##
-  cmdWithLoding \
-    "helm -n ${NAMESPACE_FOR_AMBASSADOR} upgrade --install ${HOSTNAME_FOR_AMBASSADOR_MAIN} edge-stack/edge-stack \
-      --create-namespace \
-      --wait \
-      --timeout 600s \
-      -f values_for_ambassador-instance.yaml \
-    " \
-    "Activating ambassador (Instance)"
-  ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
-  ##
-  ## References
-  ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
-  ##
-  ##
-  ## 1. Delete the openapi mapping from the Ambassador namespace
-  ##
-  # if ! bash -c "kubectl delete -n ${NAMESPACE_FOR_AMBASSADOR} ambassador-devportal-api"; then
-  #   echo "CRD(ambassador-devportal-api) is Not Found ...ok"
-  # fi
-  ## 2. private key using root key of this clsters.
-  ##
-  local __hostname_for_ambassador_k8ssso_from_cm
-  __hostname_for_ambassador_k8ssso_from_cm=$(getHostName "ambassador" "k8ssso")
-  HOSTNAME_FOR_AMBASSADOR_K8SSSO=${__hostname_for_ambassador_k8ssso_from_cm}
-  export HOSTNAME_FOR_AMBASSADOR_K8SSSO=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}
-  local __fqdn_for_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.${BASE_FQDN}
-  local __private_key_file=${TEMP_DIR}/${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.key
-  local __server_cert_file=${TEMP_DIR}/${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.crt
-  cmdWithLoding \
-    "bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
-      ${NAMESPACE_FOR_AMBASSADOR} \
-      ${__fqdn_for_ambassador_k8ssso} \
-    " \
-    "Issueing Private Key for ambassador (k8ssso)"
-  watiForSuccessOfCommand "kubectl -n ${NAMESPACE_FOR_AMBASSADOR} get secret ${__fqdn_for_ambassador_k8ssso}"
-    # NOTE
-    # Wait until SubCA is issued
-  kubectl -n "${NAMESPACE_FOR_AMBASSADOR}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
-        | jq -r '.data["tls.key"]' \
-        | base64 -d > "${__private_key_file}"
-  ## 3. Create a file a CNF and a certificate signing request with the CNF file.
-  ## 4. Same as above
-  ##
-  local __csr
-  __csr=$(bash ./values_for_ambassador-k8ssso-csr.cnf.bash \
-          "${HOSTNAME_FOR_AMBASSADOR_K8SSSO}" \
-          "${__fqdn_for_ambassador_k8ssso}" \
-          "${__private_key_file}" \
-        | base64)
-  ## 5. Create and apply the following YAML for a CertificateSigningRequest.
-  ##
-  cmdWithLoding \
-    "bash values_for_ambassador-k8ssso-csr.yaml.bash \
-      ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
-      ${__csr}" \
-    "Activating CertificateSigningRequest"
-  ## 6. Confirmation
-  ##
-  cmdWithLoding \
-    "kubectl certificate approve ${HOSTNAME_FOR_AMBASSADOR_K8SSSO}" \
-    "Approving CertificateSigningRequest"
-  ## 7. Get the resulting certificate
-  ##
-  kubectl get csr "${HOSTNAME_FOR_AMBASSADOR_K8SSSO}" -o jsonpath="{.status.certificate}" \
-        | base64 -d > "${__server_cert_file}"
-  ## 8. Create a TLS Secret using our private key and public certificate.
-  ##
-  cmdWithLoding \
-    "kubectl -n ${NAMESPACE_FOR_AMBASSADOR} create secret tls ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
-      --cert ${__server_cert_file} \
-      --key ${__private_key_file} \
-    " \
-    "Exporting TLS Secret"
-  ## 9. Create a Mapping and TLSContext and RBAC for the Kube API.
-  ## 10. Same as above
-  ##
-  cmdWithLoding \
-    "bash ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
-      ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
-      ${__fqdn_for_ambassador_k8ssso} \
-      ${NAMESPACE_FOR_AMBASSADOR}" \
-    "Activating k8s SSO Endpoint"
-  ## 11. As a quick check
-  ##
-  watiForSuccessOfCommand "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
-    # NOTE
-    # Wait until to startup the Host
-  ## 12. Set Context
-  cmdWithLoding \
-    "kubectl config set-cluster $(getContextName4Kubectl) \
-      --server=https://${__fqdn_for_ambassador_k8ssso} \
-      --certificate-authority=${__server_cert_file} \
-      --embed-certs \
-    " \
-    "Setting Cluster Context"
+  cmdWithIndent "__executor"
   return $?
 }
 
 ## 5. Install Keycloak
 ##
 installKeycloak() {
-  NAMESPACE_FOR_KEYCLOAK=${NAMESPACE_FOR_KEYCLOAK:-$(getNamespaceName "keycloak")}
-  export NAMESPACE_FOR_KEYCLOAK=$NAMESPACE_FOR_KEYCLOAK
-  local __hostname_for_ambassador_k8ssso_from_cm
-  __hostname_for_ambassador_k8ssso_from_cm=$(getHostName "keycloak" "main")
-  HOSTNAME_FOR_KEYCLOAK_MAIN=${__hostname_for_ambassador_k8ssso_from_cm:-$NAMESPACE_FOR_KEYCLOAK}
-  export HOSTNAME_FOR_KEYCLOAK_MAIN=$HOSTNAME_FOR_KEYCLOAK_MAIN
-  local __fqdn_for_keycloak_main=${HOSTNAME_FOR_KEYCLOAK_MAIN}.${BASE_FQDN}
+  __executor() {
+    local __base_fqdn
+    local __namespace_for_keycloak
+    local __hostname_for_keycloak_main
+    local __fqdn_for_keycloak_main
+    __base_fqdn=$(getBaseFQDN)
+    __namespace_for_keycloak=$(getNamespaceName "keycloak")
+    __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
+    __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
+    ## 1. Config extra secrets
+    ##
+    echo "### Setting Config of keycloak ..."
+    kubectl create namespace "${__namespace_for_keycloak}"
+    kubectl -n "${__namespace_for_keycloak}" create secret generic specific-secrets \
+      --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+        ### NOTE
+        ### The postgresql-postgres-password is password for root user
+        ### The postgresql-password is password for the unprivileged user
+        ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
+    ## 2. Install Keycloak
+    ##
+    echo "### Installing with helm ..."
+    helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
+      --wait \
+      --timeout 600s \
+      --set ingress.hostname="${__fqdn_for_keycloak_main}" \
+      --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
+      --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
+      --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
+      --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}/auth" \
+      -f values_for_keycloak-instance.yaml
+    ## 3. Setup TLSContext
+    ##
+    echo "### Activating the TLSContext ..."
+    bash ./values_for_tlscontext.yaml.bash \
+      "${__namespace_for_keycloak}" \
+      "${__fqdn_for_keycloak_main}"
+        ### NOTE
+        ### Tentative solution to the problem
+        ### that TLSContext is not generated automatically from Ingress (v2.2.2)
+    watiForSuccessOfCommand \
+      "kubectl -n ${__namespace_for_keycloak} get secret ${__hostname_for_keycloak_main}"
+        ### NOTE
+        ### Wait until SubCA is issued
+    local __rootca_file
+    __rootca_file=$(getFullpathOfRootCA)
+    echo "### Testing to access the endpoint ..."
+    watiForSuccessOfCommand \
+      "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1"
+    ## 4. Setup preset-entries
+    ##
+    echo "### Activating essential entries of the keycloak ..."
+    bash ./create_keycloak-entry.bash "${__namespace_for_keycloak}" "${__rootca_file}"
+    return $?
+  }
   echo ""
   echo "---"
   echo "## Installing keycloak ..."
-  ## 1. Config extra secrets
-  ##
-  cmdWithLoding \
-    "kubectl create namespace ${NAMESPACE_FOR_KEYCLOAK}" \
-    "Getting Ready keycloak"
-  kubectl -n "$NAMESPACE_FOR_KEYCLOAK" create secret generic specific-secrets \
-    --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-    --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
-      # NOTE
-      # The postgresql-postgres-password is password for root user
-      # The postgresql-password is password for the unprivileged user
-      # The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
-  ## 2. Install Keycloak
-  ##
-  cmdWithLoding \
-    "helm -n ${NAMESPACE_FOR_KEYCLOAK} upgrade --install ${HOSTNAME_FOR_KEYCLOAK_MAIN} bitnami/keycloak \
-      --wait \
-      --timeout 600s \
-      --set ingress.hostname=$__fqdn_for_keycloak_main \
-      --set ingress.extraTls\[0\].hosts\[0\]=$__fqdn_for_keycloak_main \
-      --set ingress.extraTls\[0\].secretName=$HOSTNAME_FOR_KEYCLOAK_MAIN \
-      --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
-      --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://$__fqdn_for_keycloak_main/auth \
-      -f values_for_keycloak-instance.yaml \
-    " \
-    "Activating keycloak"
-  ## 3. Setup TLSContext
-  ##
-  cmdWithLoding \
-    "bash ./values_for_tlscontext.yaml.bash \
-        ${NAMESPACE_FOR_KEYCLOAK} \
-        ${__fqdn_for_keycloak_main} \
-    " \
-    "Activating TLSContext"
-      # NOTE
-      # Tentative solution to the problem
-      # that TLSContext is not generated automatically from Ingress (v2.2.2)
-  watiForSuccessOfCommand "kubectl -n ${NAMESPACE_FOR_KEYCLOAK} get secret ${HOSTNAME_FOR_KEYCLOAK_MAIN}"
-    # NOTE
-    # Wait until SubCA is issued
-  local __rootca_file
-  __rootca_file=$(getFullpathOfRootCA)
-  cmdWithLoding \
-    "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1" \
-    "Testing keycloak"
-  ## 4. Setup preset-entries
-  ##
-  cmdWithLoding \
-    "bash ./create_keycloak-entry.bash ${NAMESPACE_FOR_KEYCLOAK} ${__rootca_file}" \
-    "Activating Keycloak-entries"
+  cmdWithIndent "__executor"
   return $?
 }
 
 ## 6. Install Filter
 ##
 installFilter() {
-  local __fqdn_for_ambassador_k8ssso=${HOSTNAME_FOR_AMBASSADOR_K8SSSO}.${BASE_FQDN}
-    # ambassador-k8ssso.rdbox.172-16-0-110.nip.io
-  local __fqdn_for_keycloak_main=${NAMESPACE_FOR_KEYCLOAK}.${BASE_FQDN}
-    # keycloak.rdbox.172-16-0-110.nip.io
-  local __cluster_name
-  __cluster_name=$(getClusterName)
-    # rdbox
-  local __jwks_uri=http://${HOSTNAME_FOR_KEYCLOAK_MAIN}.${NAMESPACE_FOR_KEYCLOAK}/auth/realms/${__cluster_name}/protocol/openid-connect/certs
-    # https://keycloak.rdbox.172-16-0-110.nip.io/auth/realms/rdbox/protocol/openid-connect/certs
+  __executor() {
+    local __base_fqdn
+    __base_fqdn=$(getBaseFQDN)
+    local __namespace_for_keycloak
+    __namespace_for_keycloak=$(getNamespaceName "keycloak")
+    local __hostname_for_keycloak_main
+    __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
+    local __cluster_name
+    __cluster_name=$(getClusterName)
+      # rdbox
+    local __namespace_for_ambassador
+      # ambassador
+    local __hostname_for_ambassador_k8ssso
+      # ambassador-k8ssso
+    local __fqdn_for_ambassador_k8ssso=${__hostname_for_ambassador_k8ssso}.${__base_fqdn}
+      # ambassador-k8ssso.rdbox.172-16-0-110.nip.io
+    local __fqdn_for_keycloak_main=${__namespace_for_keycloak}.${__base_fqdn}
+      # keycloak.rdbox.172-16-0-110.nip.io
+    local __jwks_uri=http://${__hostname_for_keycloak_main}.${__namespace_for_keycloak}/auth/realms/${__cluster_name}/protocol/openid-connect/certs
+      # https://keycloak.rdbox.172-16-0-110.nip.io/auth/realms/rdbox/protocol/openid-connect/certs
+    __namespace_for_ambassador=$(getNamespaceName "ambassador")
+    __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
+    ## 1. Install Filter
+    ##
+    echo "### Applying the filter for Impersonate-Group/User ..."
+    bash ./values_for_ambassador-k8ssso-filter.yaml.bash \
+        "${__hostname_for_ambassador_k8ssso}" \
+        "${__fqdn_for_ambassador_k8ssso}" \
+        "${__namespace_for_ambassador}" \
+        "${__jwks_uri}"
+    ## 2. Set Context
+    ##
+    local __ctx_name
+    __ctx_name=$(getContextName4Kubectl)
+    echo "Setting Cluster Context ..."
+    kubectl config set-context "${__ctx_name}" \
+        --cluster="${__ctx_name}" \
+        --user="${__ctx_name}"
+    return $?
+  }
   echo ""
   echo "---"
   echo "## Installing filter ..."
-  ## 1. Install Filter
-  ##
-  cmdWithLoding \
-    "bash ./values_for_ambassador-k8ssso-filter.yaml.bash \
-      ${HOSTNAME_FOR_AMBASSADOR_K8SSSO} \
-      ${__fqdn_for_ambassador_k8ssso} \
-      ${NAMESPACE_FOR_AMBASSADOR} \
-      ${__jwks_uri} \
-      " \
-    "Activating filter"
-  ## 2. Set Context
-  ##
-  local __ctx_name
-  __ctx_name=$(getContextName4Kubectl)
-  cmdWithLoding \
-    "kubectl config set-context ${__ctx_name} \
-      --cluster=${__ctx_name} \
-      --user=${__ctx_name} \
-    " \
-    "Setting Cluster Context"
+  cmdWithIndent "__executor"
+  return $?
 }
 
 ## 99. Notify Verifier-Command
@@ -415,26 +421,33 @@ installFilter() {
 showVerifierCommand() {
   local __ctx_name
   local __rootca_file
+  local __namespace_for_keycloak
   __ctx_name=$(getContextName4Kubectl)
   __rootca_file=$(getFullpathOfRootCA)
+  __namespace_for_keycloak=$(getNamespaceName "keycloak")
+  drawMaxColsSeparator "#" "34"
+  echo ""
+  echo "---"
+  echo "\033[SUCCESSFUL Termination\033[m"
+  echo "\033[33mUsage:\033[m"
   echo ""
   echo "---"
   echo "## Trust CA with your browser and operating system. Check its file:"
   echo "  openssl x509 -in ${__rootca_file} -text"
   echo "  ---"
-  echo "  This information is for reference to trust The CA file:"
+  echo "  ### This information is for reference to trust The CA file:"
   echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
   echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
   # echo ""
   # echo "---""
-  cat ./"${NAMESPACE_FOR_KEYCLOAK}".verifier_command.txt
+  cat ./"${__namespace_for_keycloak}".verifier_command.txt
   # echo ""
   echo ""
   echo "---"
   echo "## Execute the following command to run kubectl with single sign-on:"
-  echo "  # Execute the following command"
-  echo "  # This will open your default browser, and execute the login operation"
+  echo "  ### Execute the following command"
+  echo "  ### This will open your default browser, and execute the login operation"
   echo "  kubectl config use-context ${__ctx_name}"
   echo "  kubectl get node          # whatever is okay, just choose the one you like"
   echo ""
@@ -461,13 +474,19 @@ main() {
     "Activating metallb"
   ## 4. Install Ambassador
   ##
-  installAmbassador
+  cmdWithLoding \
+    "installAmbassador" \
+    "Activating ambassador"
   ## 5. Install Keycloak
   ##
-  installKeycloak
+  cmdWithLoding \
+    "installKeycloak" \
+    "Activating keycloak"
   ## 6. Install Filter
   ##
-  installFilter
+  cmdWithLoding \
+    "installFilter" \
+    "Activating filter"
   ## 99. Notify Verifier-Command
   ##
   showVerifierCommand
@@ -477,6 +496,11 @@ main() {
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
-source ./create_common.bash
+## Set the base directory for RDBOX scripts!!
+##
+export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+  # Values can also be inserted externally
+source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+showHeader
 main "$@"
 exit $?
