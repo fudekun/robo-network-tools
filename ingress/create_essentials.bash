@@ -91,8 +91,8 @@ installCertManager() {
     local __base_fqdn
     ## 1. Install Cert-Manager
     ##
-    __namespace_for_certmanager=$(getNamespaceName "cert_manager")
-    __hostname_for_certmanager_main=$(getHostName "cert_manager" "main")
+    __namespace_for_certmanager=$(getNamespaceName "cert-manager")
+    __hostname_for_certmanager_main=$(getHostName "cert-manager" "main")
     __base_fqdn=$(getBaseFQDN)
     echo ""
     echo "### Installing with helm ..."

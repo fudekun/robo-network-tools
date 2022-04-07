@@ -5,6 +5,12 @@ apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: cluster-issuer-selfsigned-{{ .Release.Name }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: jetstack/cert-manager
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1alpha1
+    rdbox.local/chart: {{ include "common.names.chart" . }}
 spec:
   selfSigned: {}
 {{ end }}
