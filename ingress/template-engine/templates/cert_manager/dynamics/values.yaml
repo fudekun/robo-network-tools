@@ -1,0 +1,7 @@
+##
+{{if (default .Values.global.dynamics false)}}
+global:
+  baseFqdn: {{ .Values.baseFqdn }}
+certManager:
+  isSelfsigned: {{ .Values.isSelfsigned }}
+{{ end }}

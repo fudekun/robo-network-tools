@@ -1,0 +1,11 @@
+##
+{{if (default .Values.global.manifests false)}}
+{{if (default .Values.certManager.isSelfsigned false)}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: cluster-issuer-selfsigned-{{ .Release.Name }}
+spec:
+  selfSigned: {}
+{{ end }}
+{{ end }}

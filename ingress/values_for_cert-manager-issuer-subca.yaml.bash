@@ -8,7 +8,7 @@ cat <<EOF | kubectl apply --timeout 90s --wait -f -
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: cluster-issuer-subca
+  name: cluster-issuer-ca.${__fqdn_this_cluster}
 spec:
   ca:
     secretName: "$__fqdn_this_cluster"

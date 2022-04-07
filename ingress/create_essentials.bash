@@ -20,8 +20,6 @@ checkArgs() {
       echo "| ---------------------------- | ------------------------------- |"
       echo "| TYPE_OF_SECRET_OPERATION     | (default)new-rootca or recycle  |"
       exit 1
-    else
-      __flag_secret_operation=$1
     fi
   fi
   local __base_fqdn
@@ -339,12 +337,14 @@ installKeycloak() {
     ##
     echo ""
     echo "### Installing with helm ..."
+    local __cluster_issuer=cluster-issuer-ca."${__fqdn_for_keycloak_main}"
     helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
       --create-namespace \
       --wait \
       --timeout 600s \
       --set ingress.hostname="${__fqdn_for_keycloak_main}" \
       --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
+      --set ingress.annotations.cert-manager.io/cluster-issuer="${__cluster_issuer}" \
       --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
       --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
       --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}/auth" \

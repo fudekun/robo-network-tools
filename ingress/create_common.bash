@@ -121,7 +121,7 @@ initializeWorkdirOfWorkbase() {
   local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
   local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
   mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
-  rsync -a "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
+  rsync -au "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
   echo "${WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 

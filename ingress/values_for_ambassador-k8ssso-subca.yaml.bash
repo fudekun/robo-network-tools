@@ -21,7 +21,7 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: cluster-issuer-subca
+    name: cluster-issuer-ca.${__fqdn_this_cluster}
     kind: ClusterIssuer
     group: cert-manager.io
 EOF
