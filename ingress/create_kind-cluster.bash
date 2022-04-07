@@ -8,7 +8,7 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
-  printf "Args: %s\n" "$*"
+  printf "# ARGS\n  - %s\n" "$*"
   if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"
     echo "     \${1} Specify the cluster name  (e.g. rdbox)"
@@ -130,11 +130,13 @@ installWeaveNet() {
 ##
 showVerifierCommand() {
   echo ""
+  echo "# USAGE"
   echo "---"
   echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
   echo ""
-  echo "[$(getIso8601DayTime)][$(basename "$0")]: SUCCESS"
+  echo "# SUCCESS"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]"
   drawMaxColsSeparator "*" "39"
   return $?
 }

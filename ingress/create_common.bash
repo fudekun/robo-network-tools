@@ -14,11 +14,12 @@ cleanupShowLoading() {
 }
 
 showHeader() {
-  echo "[$(getIso8601DayTime)][$(basename "$0")]: START"
   drawMaxColsSeparator "=" "39"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]"
+  echo "# START"
   echo ""
   echo "---"
-  echo "This is an advanced IT platform for robotics and IoT developers"
+  echo "- This is an advanced IT platform for robotics and IoT developers -"
   echo "           .___. "
   echo "          /___/| "
   echo "          |   |/ "
@@ -38,13 +39,13 @@ showLoading() {
     echo -ne "\r\033[K"
     echo -ne "  $loadingText\r"
     echo -ne "\033[35m-\033[m  $loadingText\r"
-    sleep 0.5
+    sleep 0.25
     echo -ne "\\  $loadingText\r"
-    sleep 0.5
+    sleep 0.25
     echo -ne "\033[33m|\033[m  $loadingText\r"
-    sleep 0.5
+    sleep 0.25
     echo -ne "\033[32m/\033[m  $loadingText\r"
-    sleep 0.5
+    sleep 0.25
   done
   tput cnorm
     ## For To Get Return Code
@@ -108,6 +109,20 @@ watiForSuccessOfCommand() {
   done
   echo ""
   return 0
+}
+
+initializeWorkdirOfWorkbase() {
+  local __cluster_name="$1"
+  WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
+  WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
+    ### EXTRAPOLATION
+  local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
+  local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
+  local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
+  local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
+  mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  rsync -a "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
+  echo "${WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
 getNetworkInfo() {

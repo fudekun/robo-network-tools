@@ -159,6 +159,7 @@ installMetalLB() {
     echo ""
     echo "### Calculating ConfigValue ..."
     __docker_network_range=$(__getNetworkRangeForVirtualHost)
+    echo "${__docker_network_range}"
     ## 2. Install MetalLB Instance
     ##
     echo ""
@@ -339,6 +340,7 @@ installKeycloak() {
     echo ""
     echo "### Installing with helm ..."
     helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
+      --create-namespace \
       --wait \
       --timeout 600s \
       --set ingress.hostname="${__fqdn_for_keycloak_main}" \
@@ -442,10 +444,7 @@ showVerifierCommand() {
   __rootca_file=$(getFullpathOfRootCA)
   __namespace_for_keycloak=$(getNamespaceName "keycloak")
   echo ""
-  drawMaxColsSeparator "#" "32"
-  echo -e "\033[32mSUCCESS Termination\033[m"
-  echo -e "\033[32mUsage:\033[m"
-  echo ""
+  echo "# USAGE"
   echo "---"
   echo "## Trust CA with your browser and operating system. Check its file:"
   echo "  openssl x509 -in ${__rootca_file} -text"
@@ -466,7 +465,9 @@ showVerifierCommand() {
   echo "  kubectl config use-context ${__ctx_name}"
   echo "  kubectl get node          # whatever is okay, just choose the one you like"
   echo ""
-  drawMaxColsSeparator "#" "32"
+  echo "# SUCCESS"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]"
+  drawMaxColsSeparator "*" "39"
   return $?
 }
 
