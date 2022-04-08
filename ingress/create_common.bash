@@ -111,6 +111,38 @@ watiForSuccessOfCommand() {
   return 0
 }
 
+generateValuesYamlByDynamicsForDI() {
+  local __namespace
+  local __hostname
+  local __type
+  local __template_dir
+  local __basepath_of_input
+  local __version
+  local __fullpath_of_input_dir
+  local __reelativepath_list_of_input
+  local __fullpath_of_output_values_yaml
+  local __cmd
+  __namespace=$1
+  __hostname=$2
+  __type=$3
+  __template_dir="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __basepath_of_input=templates/${__namespace}
+  __version=$(helm show chart ./template-engine | yq '.version')
+  __fullpath_of_input_dir=${__template_dir}/${__basepath_of_input}
+  __reelativepath_list_of_input=$(find "${__fullpath_of_input_dir}" -name "*.yaml" | sed "s|^${__fullpath_of_input_dir}|${__basepath_of_input}|")
+  __fullpath_of_output_values_yaml=$(getFullpathOfValuesYamlBy "${__namespace}" outputs "${__type}" "${__version}")
+  __args_of_show_only=$(echo "$__reelativepath_list_of_input" | sed 's/^/--show-only /' | sed  -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
+  __args_of_set=$(echo "${@:4}" | sed 's/^/ / ; s/ / --set /g')
+  mkdir -p "$(dirname "${__fullpath_of_output_values_yaml}")"
+  __cmd=$(printf "helm template -n %s --release-name %s %s %s %s" \
+          "${__namespace}" \
+          "${__hostname}" \
+          "${__args_of_show_only}" \
+          "${__args_of_set}" \
+          "${__template_dir}")
+  eval "$__cmd"
+}
+
 initializeWorkdirOfWorkbase() {
   local __cluster_name
   local __workbase_dirs
@@ -205,19 +237,22 @@ getDirNameFor() {
   __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
 
-getConfVersion() {
+__getConfVersion() {
   local __namespace=$1
   local __type=$2
   __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
 }
 
 getFullpathOfValuesYamlBy() {
-  local __namespace=$1
-  local __purpose=$2
-  local __type=$3
+  local __namespace
+  local __purpose
+  local __type
   local __version
   local __workdir_of_purpose
-  __version=$(getConfVersion "${__namespace}" "${__type}")
+  __namespace=$1
+  __purpose=$2
+  __type=$3
+  __version=${4:-$(__getConfVersion "${__namespace}" "${__type}")}
   __workdir_of_purpose=$(getDirNameFor "${__purpose}")
   echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}/values.yaml"
 }

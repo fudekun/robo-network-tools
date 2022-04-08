@@ -18,13 +18,17 @@ checkArgs() {
       echo "  (recommend: Use automatic settings)"
       echo "| Name                         | e.g.                            |"
       echo "| ---------------------------- | ------------------------------- |"
-      echo "| TYPE_OF_SECRET_OPERATION     | (default)new-rootca or recycle  |"
+      echo "| TYPE_OF_SECRET_OPERATION     | (default)new or recycle  |"
       exit 1
     fi
   fi
   local __base_fqdn
   __base_fqdn=$(getBaseFQDN)
   export BASE_FQDN=$__base_fqdn
+  TYPE_OF_SECRET_OPERATION=${TYPE_OF_SECRET_OPERATION:-"new"}
+  TYPE_OF_SECRET_OPERATION=$(printf %q "$TYPE_OF_SECRET_OPERATION")
+  export TYPE_OF_SECRET_OPERATION=$TYPE_OF_SECRET_OPERATION
+      ### EXTRAPOLATION
   return $?
 }
 
@@ -44,9 +48,11 @@ installCertManager() {
   __executor() {
     __issueNewSecrets() {
       local __namespace_for_certmanager="$1"
-      local __base_fqdn="$2"
+      local __history_file="$2"
+      local __base_fqdn="$3"
       local __rootca_file
       __rootca_file=$(getFullpathOfRootCA)
+      kubectl apply -f values_for_cert-manager-issuer-rootca.yaml
       bash ./values_for_cert-manager-rootca.yaml.bash "$__namespace_for_certmanager" "$__base_fqdn"
         ### NOTE
         ### Can be changed to authenticated secret
@@ -64,23 +70,27 @@ installCertManager() {
         ### Save the RootCA
       return $?
     }
-    __issueSecrets() {
-      set -x
-      local __namespace_for_certmanager="$1"
-      local __base_fqdn="$2"
+    __issueSecretsUsingExistingHistory() {
+      local __namespace_for_certmanager=$1
+      local __history_file=$2
+      if [ -e "$__history_file" ]; then
+        kubectl -n "$__namespace_for_certmanager" --timeout 90s --wait apply -f "$__history_file"
+      else
+        echo "No history file found. Please generate a new RootCA."
+        exit 1
+      fi
+    }
+    __setupSecrets() {
+      local __namespace_for_certmanager
+      local __base_fqdn
       local __history_file
+      __namespace_for_certmanager="$1"
+      __base_fqdn="$2"
       __history_file=$(getFullpathOfHistory)
-      kubectl apply -f values_for_cert-manager-issuer-rootca.yaml
-      TYPE_OF_SECRET_OPERATION=${TYPE_OF_SECRET_OPERATION:-"new-rootca"}
-      if [ "$TYPE_OF_SECRET_OPERATION" = "new-rootca" ]; then
-        __issueNewSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
+      if [ "$TYPE_OF_SECRET_OPERATION" = "new" ]; then
+        __issueNewSecrets "${__namespace_for_certmanager}" "${__history_file}" "${__base_fqdn}"
       elif [ "$TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
-        if [ -e "$__history_file" ]; then
-          kubectl -n "$__namespace_for_certmanager" apply -f "$__history_file"
-        else
-          echo "No history file found. Please generate a new RootCA."
-          exit 1
-        fi
+        __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__history_file}"
       else
         echo "Please generate a new RootCA."
         exit 1
@@ -108,13 +118,12 @@ installCertManager() {
         --create-namespace \
         --wait \
         --timeout 600s \
-        --version 1.7.2 \
         -f "${__conf_of_helm}"
     ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
     ##
     echo ""
     echo "### Setting CA ..."
-    __issueSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
+    __setupSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
       ### NOTE
       ### Use the environment variable "TYPE_OF_SECRET_OPERATION" to switch
       ### between issuing a new certificate or using a past certificate.
