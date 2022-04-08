@@ -111,7 +111,16 @@ watiForSuccessOfCommand() {
   return 0
 }
 
-generateValuesYamlByDynamicsForDI() {
+generateManifestByDynamicsForDI() {
+  local __namespace
+  local __hostname
+  local __type
+  __namespace=$1
+  __hostname=$2
+  __type=$3
+}
+
+generateConfigByDynamicsForDI() {
   local __namespace
   local __hostname
   local __type
@@ -122,25 +131,36 @@ generateValuesYamlByDynamicsForDI() {
   local __reelativepath_list_of_input
   local __fullpath_of_output_values_yaml
   local __cmd
+  local __args_of_raw_set
+  ## Args
+  ##
   __namespace=$1
   __hostname=$2
   __type=$3
+  __args_of_raw_set=${*:4} # Store as a string
+  ## Preparation
+  ##
   __template_dir="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
   __basepath_of_input=templates/${__namespace}
-  __version=$(helm show chart ./template-engine | yq '.version')
+  __version=$(helm show chart "${__template_dir}" | yq '.version')
   __fullpath_of_input_dir=${__template_dir}/${__basepath_of_input}
   __reelativepath_list_of_input=$(find "${__fullpath_of_input_dir}" -name "*.yaml" | sed "s|^${__fullpath_of_input_dir}|${__basepath_of_input}|")
   __fullpath_of_output_values_yaml=$(getFullpathOfValuesYamlBy "${__namespace}" outputs "${__type}" "${__version}")
+  ## Variables actually used
+  ##
   __args_of_show_only=$(echo "$__reelativepath_list_of_input" | sed 's/^/--show-only /' | sed  -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
-  __args_of_set=$(echo "${@:4}" | sed 's/^/ / ; s/ / --set /g')
-  mkdir -p "$(dirname "${__fullpath_of_output_values_yaml}")"
+  __args_of_set=$(echo "${__args_of_raw_set}" global.dynamics=true | sed 's/^/ / ; s/ / --set /g')
   __cmd=$(printf "helm template -n %s --release-name %s %s %s %s" \
           "${__namespace}" \
           "${__hostname}" \
           "${__args_of_show_only}" \
           "${__args_of_set}" \
           "${__template_dir}")
-  eval "$__cmd"
+  ## Have an impact on below
+  ##
+  mkdir -p "$(dirname "${__fullpath_of_output_values_yaml}")"
+  rm -rf "${__fullpath_of_output_values_yaml}"
+  eval "${__cmd}" > "${__fullpath_of_output_values_yaml}"
 }
 
 initializeWorkdirOfWorkbase() {

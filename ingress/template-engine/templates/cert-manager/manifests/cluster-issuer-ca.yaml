@@ -1,5 +1,6 @@
 ##
 {{if (default .Values.global.manifests false)}}
+{{if (default .Values.certManager.isCa false)}}
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -13,4 +14,5 @@ metadata:
 spec:
   ca:
     secretName: {{ .Values.global.baseFqdn }}
+{{ end }}
 {{ end }}
