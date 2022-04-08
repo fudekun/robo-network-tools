@@ -41,9 +41,14 @@ checkArgs() {
 ##
 installKinD() {
   __executor() {
-    local __exist_cluster
-    if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME}  >/dev/null 2>&1"; then
-      kind create cluster --config values_for_kind-cluster.yaml --name "$CLUSTER_NAME"
+    local __workbase_dirs
+    local __workdir_of_confs
+    local __conffile_path
+    __workbase_dirs=$(getDirNameListOfWorkbase "${CLUSTER_NAME}")
+    __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
+    __conffile_path=${__workdir_of_confs}/modules/kind/kind/v1alpha1/values.yaml
+    if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME} >/dev/null 2>&1"; then
+      kind create cluster --config "${__conffile_path}" --name "${CLUSTER_NAME}"
     else
       echo "already exist for a cluster with the name ${CLUSTER_NAME}"
     fi
@@ -72,15 +77,18 @@ setupConfigMap() {
     HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
       ### NOTE
       ### If no value is declared, WDNS will create a hostname following the general naming conventions.
-    WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${CLUSTER_NAME}}
-    WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
-      ### EXTRAPOLATION
-    local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
-    local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
-    local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
-    local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
-    mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
-    rsync -a "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
+    local __workbase_dirs
+    local __workdir_of_work_base
+    local __workdir_of_logs
+    local __workdir_of_outputs
+    local __workdir_of_tmps
+    local __workdir_of_confs
+    __workbase_dirs=$(getDirNameListOfWorkbase "${CLUSTER_NAME}")
+    __workdir_of_work_base=$(echo "$__workbase_dirs" | awk -F ' ' '{print $1}')
+    __workdir_of_logs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')
+    __workdir_of_outputs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $3}')
+    __workdir_of_tmps=$(echo "$__workbase_dirs" | awk -F ' ' '{print $4}')
+    __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
     cat <<EOF | kubectl apply --timeout 90s --wait -f -
       apiVersion: v1
       kind: ConfigMap
@@ -96,7 +104,7 @@ setupConfigMap() {
         nic0.ipv4:         "${IPV4_DEFAULT_NIC}"
         nic0.ipv4_hyphen:  "${HOSTNAME_FOR_WCDNS_BASED_ON_IP}"
         nic0.ipv6:         "${IPV6_DEFAULT_NIC}"
-        workdir.work_base:   "${WORKDIR_OF_WORK_BASE}"
+        workdir.work_base:   "${__workdir_of_work_base}"
         workdir.logs:        "${__workdir_of_logs}"
         workdir.outputs:     "${__workdir_of_outputs}"
         workdir.tmps:        "${__workdir_of_tmps}"
@@ -108,7 +116,7 @@ EOF
       --patch "$(kubectl -n "${CLUSTER_INFO_NAMESPACE}" create configmap "${CLUSTER_INFO_NAMENAME}" \
                   --dry-run=client \
                   --output=json \
-                  --from-env-file="${__workdir_of_confs}"/essentials.env.properties \
+                  --from-env-file="${__workdir_of_confs}"/meta-pkgs/essentials.env.properties \
                 )"
     return $?
   }
@@ -168,8 +176,10 @@ main() {
 
 ## Set the base directory for RDBOX scripts!!
 ##
-export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
-  # Values can also be inserted externally
+WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$WORKDIR_OF_SCRIPTS_BASE")
+export WORKDIR_OF_SCRIPTS_BASE=$WORKDIR_OF_SCRIPTS_BASE
+  ### EXTRAPOLATION
 source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 showHeader
 main "$@"

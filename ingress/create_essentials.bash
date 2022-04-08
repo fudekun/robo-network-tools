@@ -65,6 +65,7 @@ installCertManager() {
       return $?
     }
     __issueSecrets() {
+      set -x
       local __namespace_for_certmanager="$1"
       local __base_fqdn="$2"
       local __history_file
@@ -84,6 +85,11 @@ installCertManager() {
         echo "Please generate a new RootCA."
         exit 1
       fi
+      bash ./values_for_cert-manager-issuer-subca.yaml.bash "${__namespace_for_certmanager}" "${__base_fqdn}"
+        ### NOTE
+        ### ClusterIssuer is namespace independent
+        ### However, it depends on selfsigned-cacert
+        ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
       return $?
     }
     local __namespace_for_certmanager
@@ -96,28 +102,22 @@ installCertManager() {
     __base_fqdn=$(getBaseFQDN)
     echo ""
     echo "### Installing with helm ..."
+    local __conf_of_helm
+    __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_certmanager}" confs helm)
     helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
         --create-namespace \
         --wait \
         --timeout 600s \
-        -f values_for_cert-manager-instance.yaml
+        --version 1.7.2 \
+        -f "${__conf_of_helm}"
     ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
     ##
     echo ""
-    echo "### Setting RootCA ..."
+    echo "### Setting CA ..."
     __issueSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
       ### NOTE
       ### Use the environment variable "TYPE_OF_SECRET_OPERATION" to switch
       ### between issuing a new certificate or using a past certificate.
-    ## 3. Setup Specific Issuer
-    ##
-    echo ""
-    echo "### Setting Specific Issuer ..."
-    bash ./values_for_cert-manager-issuer-subca.yaml.bash "${__namespace_for_certmanager}" "${__base_fqdn}"
-      ### NOTE
-      ### ClusterIssuer is namespace independent
-      ### However, it depends on selfsigned-cacert
-      ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
     return $?
   }
   echo ""
@@ -231,6 +231,7 @@ installAmbassador() {
     echo "### Issueing Private Key for ambassador ..."
     bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
         "${__namespace_for_ambassador}" \
+        "${__base_fqdn}" \
         "${__fqdn_for_ambassador_k8ssso}"
     watiForSuccessOfCommand \
       "kubectl -n ${__namespace_for_ambassador} get secrets ${__fqdn_for_ambassador_k8ssso}"
@@ -337,14 +338,14 @@ installKeycloak() {
     ##
     echo ""
     echo "### Installing with helm ..."
-    local __cluster_issuer=cluster-issuer-ca."${__fqdn_for_keycloak_main}"
+    local __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
     helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
       --create-namespace \
       --wait \
       --timeout 600s \
       --set ingress.hostname="${__fqdn_for_keycloak_main}" \
       --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
-      --set ingress.annotations.cert-manager.io/cluster-issuer="${__cluster_issuer}" \
+      --set ingress.annotations."cert-manager\.io/cluster-issuer"="${__cluster_issuer}" \
       --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
       --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
       --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}/auth" \

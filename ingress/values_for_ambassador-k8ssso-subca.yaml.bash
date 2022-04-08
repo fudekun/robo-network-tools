@@ -2,7 +2,8 @@
 set -euo pipefail
 
 __hostname_for_this=$1
-__fqdn_this_cluster=$2
+__base_fqdn=$2
+__fqdn_this_cluster=$3
 
 cat <<EOF | kubectl apply --timeout 90s --wait -f -
 apiVersion: cert-manager.io/v1
@@ -21,7 +22,7 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: cluster-issuer-ca.${__fqdn_this_cluster}
+    name: cluster-issuer-ca.${__base_fqdn}
     kind: ClusterIssuer
     group: cert-manager.io
 EOF

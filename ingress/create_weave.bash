@@ -8,9 +8,11 @@ header() {
 }
 
 main() {
+  set -x
   kubectl apply -f https://cloud.weave.works/k8s/net?k8s-version="$(kubectl version | base64 | tr -d '\n')"
   kubectl wait --timeout=300s -n kube-system --for=condition=ready pod -l name=weave-net
   return $?
+  set +x
 }
 
 source ./create_common.bash

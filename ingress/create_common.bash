@@ -105,23 +105,42 @@ watiForSuccessOfCommand() {
       return 1
     fi
     sleep 1
-    __count=$((__count++))
+    __count=$((__count+1))
   done
   echo ""
   return 0
 }
 
 initializeWorkdirOfWorkbase() {
+  local __cluster_name
+  local __workbase_dirs
+  local __workdir_of_work_base
+  local __workdir_of_logs
+  local __workdir_of_outputs
+  local __workdir_of_tmps
+  local __workdir_of_confs
+  __cluster_name="$1"
+  __workbase_dirs=$(getDirNameListOfWorkbase "${__cluster_name}")
+  __workdir_of_work_base=$(echo "$__workbase_dirs" | awk -F ' ' '{print $1}')
+  __workdir_of_logs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')
+  __workdir_of_outputs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $3}')
+  __workdir_of_tmps=$(echo "$__workbase_dirs" | awk -F ' ' '{print $4}')
+  __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
+  mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  rsync -au "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
+  echo "${__workdir_of_work_base}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+}
+
+getDirNameListOfWorkbase() {
   local __cluster_name="$1"
   WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
   WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
+  export WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE}
     ### EXTRAPOLATION
   local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
   local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
   local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
   local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
-  mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
-  rsync -au "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
   echo "${WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
@@ -184,6 +203,23 @@ getHostName() {
 getDirNameFor() {
   local __purpose=$1
   __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
+}
+
+getConfVersion() {
+  local __namespace=$1
+  local __type=$2
+  __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
+}
+
+getFullpathOfValuesYamlBy() {
+  local __namespace=$1
+  local __purpose=$2
+  local __type=$3
+  local __version
+  local __workdir_of_purpose
+  __version=$(getConfVersion "${__namespace}" "${__type}")
+  __workdir_of_purpose=$(getDirNameFor "${__purpose}")
+  echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}/values.yaml"
 }
 
 getFullpathOfRootCA() {
