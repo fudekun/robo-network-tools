@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/component: dependency-injection
     app.kubernetes.io/part-of: jetstack.cert-manager
     app.kubernetes.io/managed-by: rdbox
-    rdbox.local/format: v1alpha1
+    rdbox.local/format: v1beta1
     rdbox.local/chart: {{ .Chart.Version }}
 spec:
   isCA: true

@@ -52,7 +52,6 @@ installCertManager() {
       local __base_fqdn="$3"
       local __rootca_file
       __rootca_file=$(getFullpathOfRootCA)
-      #kubectl apply -f values_for_cert-manager-issuer-rootca.yaml
       applyManifestByDI "${__namespace_for_certmanager}" "${__namespace_for_certmanager}" 90s isSelfsigned=true isCa=true baseFqdn="${__base_fqdn}"
       bash ./values_for_cert-manager-rootca.yaml.bash "$__namespace_for_certmanager" "$__base_fqdn"
         ### NOTE
@@ -75,7 +74,7 @@ installCertManager() {
       local __namespace_for_certmanager=$1
       local __history_file=$2
       if [ -e "$__history_file" ]; then
-        kubectl -n "$__namespace_for_certmanager" --timeout 90s --wait apply -f "$__history_file"
+        kubectl -n "$__namespace_for_certmanager" apply --timeout 90s --wait -f "$__history_file"
         applyManifestByDI "${__namespace_for_certmanager}" "${__namespace_for_certmanager}" 90s isSelfsigned=false isCa=true baseFqdn="${__base_fqdn}"
       else
         echo "No history file found. Please generate a new RootCA."

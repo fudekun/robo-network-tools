@@ -156,7 +156,7 @@ __generateDynamicsValuesForDI() {
   ##
   __dirpath_of_template_engine="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
   __basepath_of_input=templates/${__namespace}
-  __version_of_engine=$(getVersionOfTemplateEngine)
+  __version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
   __fullpath_of_input_dir=${__dirpath_of_template_engine}/${__basepath_of_input}
   __reelativepath_list_of_input=$(find "${__fullpath_of_input_dir}" -name "*.yaml" | sed "s|^${__fullpath_of_input_dir}|${__basepath_of_input}|")
   __dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${__namespace}" outputs "${__type}" "${__version_of_engine}")")
@@ -401,4 +401,25 @@ getVersionOfTemplateEngine() {
   __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(helm show chart "${__dirpath_of_template_engine}" | yq '.version')
   echo -n "${__version_of_engine}"
+}
+
+getApiversionBasedOnSemver() {
+  local __raw_version
+  local __major
+  local __minor
+  local __build
+  local __api_version
+  __raw_version=${1:-"$(getVersionOfTemplateEngine)"}
+  __major=$(echo "${__raw_version}" | awk -F'.' '{ print $1 }')
+  __minor=$(echo "${__raw_version}" | awk -F'.' '{ print $2 }')
+  __build=$(echo "${__raw_version}" | awk -F'.' '{ print $3 }')
+  __major=$((__major+1))
+  __minor=$((__minor+0))
+  __build=$((__build+0))
+  if [ ${__minor} -gt 0 ]; then
+    __api_version=$(printf "v%dbeta%d" "${__major}" "${__minor}")
+  else
+    __api_version=$(printf "v%dalpha%d" "${__major}" "${__build}")
+  fi
+  echo -n "${__api_version}"
 }

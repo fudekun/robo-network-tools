@@ -46,7 +46,7 @@ installKinD() {
     local __conffile_path
     __workbase_dirs=$(getDirNameListOfWorkbase "${CLUSTER_NAME}")
     __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
-    __conffile_path=${__workdir_of_confs}/modules/kind/kind/v1alpha1/values.yaml
+    __conffile_path=${__workdir_of_confs}/modules/kind/kind/v1beta1/values.yaml
     if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME} >/dev/null 2>&1"; then
       kind create cluster --config "${__conffile_path}" --name "${CLUSTER_NAME}"
     else

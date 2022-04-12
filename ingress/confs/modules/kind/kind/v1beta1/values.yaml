@@ -1,4 +1,4 @@
-# rdbox.local/v1alpha1
+# rdbox.local/v1beta1
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
