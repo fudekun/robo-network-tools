@@ -198,10 +198,9 @@ installAmbassador() {
     local __namespace_for_ambassador
     local __hostname_for_ambassador_main
     local __aes_app_version
+    local __conf_of_helm
     ## 1. Install Ambassador's CRD
     ##
-    __namespace_for_ambassador=$(getNamespaceName "ambassador")
-    __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
     __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
     echo ""
     echo "### Activating a CRD of the ambassador ..."
@@ -211,11 +210,14 @@ installAmbassador() {
     ##
     echo ""
     echo "### Installing with helm ..."
+    __namespace_for_ambassador=$(getNamespaceName "ambassador")
+    __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
+    __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_ambassador}" confs helm)
     helm -n "${__namespace_for_ambassador}" upgrade --install "${__hostname_for_ambassador_main}" edge-stack/edge-stack \
         --create-namespace \
         --wait \
         --timeout 600s \
-        -f values_for_ambassador-instance.yaml
+        -f "${__conf_of_helm}"
     ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
     ##
     ## References
@@ -324,10 +326,8 @@ installKeycloak() {
     local __namespace_for_keycloak
     local __hostname_for_keycloak_main
     local __fqdn_for_keycloak_main
-    __base_fqdn=$(getBaseFQDN)
-    __namespace_for_keycloak=$(getNamespaceName "keycloak")
-    __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
-    __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
+    local __cluster_issuer
+    local __conf_of_helm
     ## 1. Config extra secrets
     ##
     echo ""
@@ -350,7 +350,12 @@ installKeycloak() {
     ##
     echo ""
     echo "### Installing with helm ..."
-    local __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
+    __base_fqdn=$(getBaseFQDN)
+    __namespace_for_keycloak=$(getNamespaceName "keycloak")
+    __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
+    __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
+    __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
+    __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_keycloak}" confs helm)
     helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
       --create-namespace \
       --wait \
@@ -361,7 +366,7 @@ installKeycloak() {
       --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
       --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
       --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}/auth" \
-      -f values_for_keycloak-instance.yaml
+      -f "${__conf_of_helm}"
     ## 3. Setup TLSContext
     ##
     echo ""
