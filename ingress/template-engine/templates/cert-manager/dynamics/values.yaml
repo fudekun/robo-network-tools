@@ -4,4 +4,5 @@ global:
   baseFqdn: {{ .Values.baseFqdn }}
 certManager:
   isSelfsigned: {{ .Values.isSelfsigned }}
+  isCa: {{ .Values.isCa }}
 {{ end }}

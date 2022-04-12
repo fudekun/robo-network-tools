@@ -4,14 +4,14 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ .Values.global.baseFqdn }}
+  name: cluster-issuer-selfsigned-{{ .Release.Name }}.{{ .Values.global.baseFqdn }}
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
-    app.kubernetes.io/part-of: jetstack/cert-manager
+    app.kubernetes.io/part-of: jetstack.cert-manager
     app.kubernetes.io/managed-by: rdbox
     rdbox.local/format: v1alpha1
-    rdbox.local/chart: {{ include "common.names.chart" . }}
+    rdbox.local/chart: {{ .Chart.Version }}
 spec:
   isCA: true
   commonName: "{{ .Values.global.baseFqdn }}"

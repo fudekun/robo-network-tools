@@ -5,7 +5,7 @@
 CLUSTER_INFO_NAMENAME=cluster-info
 CLUSTER_INFO_NAMESPACE=cluster-common
 NUM_INDENT=4
-##
+## VALUE for internal using
 ##
 __RAW_INDENT=$(for _ in $(eval "echo {1..$NUM_INDENT}"); do echo -ne " "; done)
 
@@ -111,56 +111,106 @@ watiForSuccessOfCommand() {
   return 0
 }
 
-generateManifestByDynamicsForDI() {
+applyManifestByDI() {
   local __namespace
   local __hostname
-  local __type
+  local __timeout
+  local __args_of_raw_set
+  local __fullpath_of_generated_dynamics
+  local __fullpath_of_generated_manifests
   __namespace=$1
   __hostname=$2
-  __type=$3
+  __timeout=$3
+  __args_of_raw_set="${*:4}"
+  __fullpath_of_generated_dynamics=$(__generateDynamicsConfigForDI "${__namespace}" "${__hostname}" "${__args_of_raw_set}")
+  __fullpath_of_generated_manifests=$(__generateManifestForDI "${__namespace}" "${__hostname}" "${__fullpath_of_generated_dynamics}")
+  if kubectl apply --dry-run=client -f "${__fullpath_of_generated_manifests}" ; then
+    echo "Successful --dry-run. Apply this manifest."
+    echo "- ${__fullpath_of_generated_manifests}"
+    kubectl apply --timeout "${__timeout}" --wait -f "${__fullpath_of_generated_manifests}"
+  fi
+  return $?
 }
 
-generateConfigByDynamicsForDI() {
+__generateDynamicsValuesForDI() {
   local __namespace
   local __hostname
   local __type
-  local __template_dir
+  local __args_of_eigenvalue
+  local __dirpath_of_template_engine
   local __basepath_of_input
-  local __version
+  local __version_of_engine
   local __fullpath_of_input_dir
   local __reelativepath_list_of_input
+  local __dirpath_of_output
   local __fullpath_of_output_values_yaml
+  local __fullpath_of_output_values_latest_yaml
   local __cmd
-  local __args_of_raw_set
   ## Args
   ##
   __namespace=$1
   __hostname=$2
-  __type=$3
-  __args_of_raw_set=${*:4} # Store as a string
+  __type=$3                # dynamics || manifests
+  __args_of_eigenvalue=$4  # Store as a string (Expect a Space Separate Value)
   ## Preparation
   ##
-  __template_dir="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __dirpath_of_template_engine="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
   __basepath_of_input=templates/${__namespace}
-  __version=$(helm show chart "${__template_dir}" | yq '.version')
-  __fullpath_of_input_dir=${__template_dir}/${__basepath_of_input}
+  __version_of_engine=$(getVersionOfTemplateEngine)
+  __fullpath_of_input_dir=${__dirpath_of_template_engine}/${__basepath_of_input}
   __reelativepath_list_of_input=$(find "${__fullpath_of_input_dir}" -name "*.yaml" | sed "s|^${__fullpath_of_input_dir}|${__basepath_of_input}|")
-  __fullpath_of_output_values_yaml=$(getFullpathOfValuesYamlBy "${__namespace}" outputs "${__type}" "${__version}")
+  __dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${__namespace}" outputs "${__type}" "${__version_of_engine}")")
+  __fullpath_of_output_values_yaml=${__dirpath_of_output}/values.$(getEpochMillisec).yaml
   ## Variables actually used
   ##
   __args_of_show_only=$(echo "$__reelativepath_list_of_input" | sed 's/^/--show-only /' | sed  -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
-  __args_of_set=$(echo "${__args_of_raw_set}" global.dynamics=true | sed 's/^/ / ; s/ / --set /g')
   __cmd=$(printf "helm template -n %s --release-name %s %s %s %s" \
           "${__namespace}" \
           "${__hostname}" \
           "${__args_of_show_only}" \
-          "${__args_of_set}" \
-          "${__template_dir}")
+          "${__args_of_eigenvalue}" \
+          "${__dirpath_of_template_engine}")
   ## Have an impact on below
   ##
+  __fullpath_of_output_values_latest_yaml="${__dirpath_of_output}"/values.latest.yaml
   mkdir -p "$(dirname "${__fullpath_of_output_values_yaml}")"
-  rm -rf "${__fullpath_of_output_values_yaml}"
+  if [ -L "${__fullpath_of_output_values_latest_yaml}" ]; then
+    unlink "${__fullpath_of_output_values_latest_yaml}"
+  fi
   eval "${__cmd}" > "${__fullpath_of_output_values_yaml}"
+  ln -s "${__fullpath_of_output_values_yaml}" "${__fullpath_of_output_values_latest_yaml}"
+  echo -n "${__fullpath_of_output_values_yaml}"
+  return $?
+}
+
+__generateManifestForDI() {
+  local __namespace
+  local __hostname
+  local __fullpath_of_generated_dynamics
+  local __args_of_eigenvalue
+  local __version_user_conf
+  local __fullpath_of_user_conf
+  __namespace=$1
+  __hostname=$2
+  __fullpath_of_generated_dynamics=$3
+  __version_user_conf=$(getConfVersion "${__namespace}" di)
+  __fullpath_of_user_conf="$(getDirNameFor confs)/modules/${__namespace}/di/${__version_user_conf}/values.yaml"
+  __args_of_eigenvalue="--set global.manifests=true --values ${__fullpath_of_user_conf} --values ${__fullpath_of_generated_dynamics}"
+  __generateDynamicsValuesForDI "${__namespace}" "${__hostname}" manifests "${__args_of_eigenvalue}"
+  return $?
+}
+
+__generateDynamicsConfigForDI() {
+  local __namespace
+  local __hostname
+  local __args_of_raw_set
+  local __args_of_eigenvalue
+  __namespace=$1
+  __hostname=$2
+  __args_of_raw_set=${*:3} # Store as a string
+  __args_of_eigenvalue=$(echo "${__args_of_raw_set}" global.dynamics=true | sed 's/^/ / ; s/ / --set /g')
+  __generateDynamicsValuesForDI "${__namespace}" "${__hostname}" dynamics "${__args_of_eigenvalue}"
+  return $?
 }
 
 initializeWorkdirOfWorkbase() {
@@ -257,7 +307,7 @@ getDirNameFor() {
   __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
 
-__getConfVersion() {
+getConfVersion() {
   local __namespace=$1
   local __type=$2
   __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
@@ -272,7 +322,7 @@ getFullpathOfValuesYamlBy() {
   __namespace=$1
   __purpose=$2
   __type=$3
-  __version=${4:-$(__getConfVersion "${__namespace}" "${__type}")}
+  __version=${4:-$(getConfVersion "${__namespace}" "${__type}")}
   __workdir_of_purpose=$(getDirNameFor "${__purpose}")
   echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}/values.yaml"
 }
@@ -332,9 +382,23 @@ getHashedPasswordByPbkdf2Sha256() {
 }
 
 getEpochMillisec() {
-  python3 -c 'import time; print(int(time.time() * 1000))'
+  local __ms
+  __ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
+  echo -n "$__ms"
 }
 
 getIso8601DayTime() {
-  date '+%Y-%m-%dT%H:%M:%S%z'
+  local __dt
+  __dt=$(date '+%Y-%m-%dT%H:%M:%S%z')
+  echo -n "$__dt"
+}
+
+getVersionOfTemplateEngine() {
+  local __dirpath_of_template_engine
+  local __basepath_of_input
+  local __version_of_engine
+  __dirpath_of_template_engine="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __basepath_of_input=templates/${__namespace}
+  __version_of_engine=$(helm show chart "${__dirpath_of_template_engine}" | yq '.version')
+  echo -n "${__version_of_engine}"
 }
