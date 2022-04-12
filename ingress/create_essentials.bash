@@ -105,6 +105,7 @@ installCertManager() {
     local __namespace_for_certmanager
     local __hostname_for_certmanager_main
     local __base_fqdn
+    local __conf_of_helm
     ## 1. Install Cert-Manager
     ##
     __namespace_for_certmanager=$(getNamespaceName "cert-manager")
@@ -112,7 +113,6 @@ installCertManager() {
     __base_fqdn=$(getBaseFQDN)
     echo ""
     echo "### Installing with helm ..."
-    local __conf_of_helm
     __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_certmanager}" confs helm)
     helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
         --create-namespace \
@@ -156,11 +156,13 @@ installMetalLB() {
         echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
         exit 1
       fi
-      echo -ne "$__docker_network_range"
+      echo -n "$__docker_network_range"
       return $?
     }
     local __namespace_for_metallb
+    local __hostname_for_metallb_main
     local __docker_network_range
+    local __conf_of_helm
     ## 1. Get ConfigValue MetalLB with L2 Mode
     ##
     echo ""
@@ -173,12 +175,13 @@ installMetalLB() {
     echo "### Installing with helm ..."
     __namespace_for_metallb=$(getNamespaceName "metallb")
     __hostname_for_metallb_main=$(getHostName "metallb" "main")
+    __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_metallb}" confs helm)
     helm -n "${__namespace_for_metallb}" upgrade --install "${__hostname_for_metallb_main}" metallb/metallb \
         --create-namespace \
         --wait \
         --timeout 600s \
         --set configInline.address-pools\[0\].addresses\[0\]="$__docker_network_range" \
-        -f values_for_metallb.yaml
+        -f "${__conf_of_helm}"
     return $?
   }
   echo ""
