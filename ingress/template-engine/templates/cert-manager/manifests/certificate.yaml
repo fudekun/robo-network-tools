@@ -1,10 +1,10 @@
 ##
 {{if (default .Values.global.manifests false)}}
-{{if (default .Values.certManager.isSelfsigned false)}}
+{{if (default .Values.certManager.dynamics.common.isSelfsigned false)}}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: cluster-issuer-selfsigned-{{ .Release.Name }}.{{ .Values.global.baseFqdn }}
+  name: cluster-issuer-selfsigned-{{ .Release.Name }}.{{ .Values.certManager.dynamics.common.baseFqdn }}
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -14,17 +14,17 @@ metadata:
     rdbox.local/chart: {{ .Chart.Version }}
 spec:
   isCA: true
-  commonName: "{{ .Values.global.baseFqdn }}"
+  commonName: "{{ .Values.certManager.dynamics.common.baseFqdn }}"
   dnsNames:
-    - {{ .Values.global.baseFqdn }}
-    - "*.{{ .Values.global.baseFqdn }}"
-  duration: {{ .Values.certificate.duration }}
-  secretName: {{ .Values.global.baseFqdn }}
-  {{- if .Values.certificate.privateKey }}
-  privateKey: {{- include "common.tplvalues.render" ( dict "value" .Values.certificate.privateKey "context" $) | nindent 4 }}
+    - {{ .Values.certManager.dynamics.common.baseFqdn }}
+    - "*.{{ .Values.certManager.dynamics.common.baseFqdn }}"
+  secretName: {{ .Values.certManager.dynamics.common.baseFqdn }}
+  duration: {{ .Values.certManager.di.certificate.duration }}
+  {{- if .Values.certManager.di.certificate.privateKey }}
+  privateKey: {{- include "common.tplvalues.render" ( dict "value" .Values.certManager.di.certificate.privateKey "context" $) | nindent 4 }}
   {{- end }}
-  {{- if .Values.certificate.subject }}
-  subject: {{- include "common.tplvalues.render" ( dict "value" .Values.certificate.subject "context" $) | nindent 4 }}
+  {{- if .Values.certManager.di.certificate.subject }}
+  subject: {{- include "common.tplvalues.render" ( dict "value" .Values.certManager.di.certificate.subject "context" $) | nindent 4 }}
   {{- end }}
   issuerRef:
     name: cluster-issuer-selfsigned-{{ .Release.Name }}

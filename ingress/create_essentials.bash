@@ -52,7 +52,12 @@ installCertManager() {
       local __base_fqdn="$3"
       local __rootca_file
       __rootca_file=$(getFullpathOfRootCA)
-      applyManifestByDI "${__namespace_for_certmanager}" "${__namespace_for_certmanager}" 90s isSelfsigned=true isCa=true baseFqdn="${__base_fqdn}"
+      applyManifestByDI "${__namespace_for_certmanager}" \
+                        "${__namespace_for_certmanager}" \
+                        90s \
+                        certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
+                        certManager.dynamics.common.isSelfsigned=true \
+                        certManager.dynamics.common.isCa=true
       bash ./values_for_cert-manager-rootca.yaml.bash "$__namespace_for_certmanager" "$__base_fqdn"
         ### NOTE
         ### Can be changed to authenticated secret
@@ -75,7 +80,12 @@ installCertManager() {
       local __history_file=$2
       if [ -e "$__history_file" ]; then
         kubectl -n "$__namespace_for_certmanager" apply --timeout 90s --wait -f "$__history_file"
-        applyManifestByDI "${__namespace_for_certmanager}" "${__namespace_for_certmanager}" 90s isSelfsigned=false isCa=true baseFqdn="${__base_fqdn}"
+        applyManifestByDI "${__namespace_for_certmanager}" \
+                          "${__namespace_for_certmanager}" \
+                          90s \
+                          certManager.dynamics.common.isSelfsigned=false \
+                          certManager.dynamics.common.isCa=true \
+                          certManager.dynamics.common.baseFqdn="${__base_fqdn}"
       else
         echo "No history file found. Please generate a new RootCA."
         exit 1
