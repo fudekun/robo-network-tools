@@ -4,7 +4,7 @@
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: cluster-issuer.{{ .Values.global.baseFqdn }}
+  name: cluster-issuer-ca.{{ .Values.global.baseFqdn }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
     app.kubernetes.io/part-of: jetstack.cert-manager

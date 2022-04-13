@@ -226,9 +226,9 @@ installAmbassador() {
     ##
     ## 1. Delete the openapi mapping from the Ambassador namespace
     ##
-    # if ! bash -c "kubectl delete -n ${__namespace_for_ambassador} ambassador-devportal-api"; then
-    #   echo "CRD(ambassador-devportal-api) is Not Found ...ok"
-    # fi
+    if ! kubectl delete -n "${__namespace_for_ambassador}" ambassador-devportal-api; then
+      echo "CRD(ambassador-devportal-api) is Not Found ...ok"
+    fi
     ## 2. private key using root key of this clsters.
     ##
     local __base_fqdn
@@ -322,8 +322,8 @@ installAmbassador() {
 ##
 installKeycloak() {
   __executor() {
-    local __base_fqdn
     local __namespace_for_keycloak
+    local __base_fqdn
     local __hostname_for_keycloak_main
     local __fqdn_for_keycloak_main
     local __cluster_issuer
@@ -332,6 +332,7 @@ installKeycloak() {
     ##
     echo ""
     echo "### Setting Config of keycloak ..."
+    __namespace_for_keycloak=$(getNamespaceName "keycloak")
     kubectl create namespace "${__namespace_for_keycloak}"
     kubectl -n "${__namespace_for_keycloak}" create secret generic specific-secrets \
       --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
@@ -351,7 +352,6 @@ installKeycloak() {
     echo ""
     echo "### Installing with helm ..."
     __base_fqdn=$(getBaseFQDN)
-    __namespace_for_keycloak=$(getNamespaceName "keycloak")
     __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
     __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
     __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
