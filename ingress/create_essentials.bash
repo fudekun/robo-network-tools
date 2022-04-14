@@ -18,7 +18,7 @@ checkArgs() {
       echo "  (recommend: Use automatic settings)"
       echo "| Name                         | e.g.                            |"
       echo "| ---------------------------- | ------------------------------- |"
-      echo "| TYPE_OF_SECRET_OPERATION     | (default)new or recycle  |"
+      echo "| TYPE_OF_SECRET_OPERATION     | (default)new or recycle         |"
       exit 1
     fi
   fi
@@ -58,7 +58,6 @@ installCertManager() {
                         certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                         certManager.dynamics.common.isSelfsigned=true \
                         certManager.dynamics.common.isCa=true
-      bash ./values_for_cert-manager-rootca.yaml.bash "$__namespace_for_certmanager" "$__base_fqdn"
         ### NOTE
         ### Can be changed to authenticated secret
       watiForSuccessOfCommand \
@@ -83,9 +82,8 @@ installCertManager() {
         applyManifestByDI "${__namespace_for_certmanager}" \
                           "${__namespace_for_certmanager}" \
                           90s \
-                          certManager.dynamics.common.isSelfsigned=false \
-                          certManager.dynamics.common.isCa=true \
-                          certManager.dynamics.common.baseFqdn="${__base_fqdn}"
+                          certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
+                          certManager.dynamics.common.isCa=true
       else
         echo "No history file found. Please generate a new RootCA."
         exit 1
@@ -253,10 +251,12 @@ installAmbassador() {
     __server_cert_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.crt
     echo ""
     echo "### Issueing Private Key for ambassador ..."
-    bash ./values_for_ambassador-k8ssso-subca.yaml.bash \
-        "${__namespace_for_ambassador}" \
-        "${__base_fqdn}" \
-        "${__fqdn_for_ambassador_k8ssso}"
+    applyManifestByDI "${__namespace_for_ambassador}" \
+                      "${__hostname_for_ambassador_k8ssso}" \
+                      90s \
+                      ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
+                      ambassador.dynamics.k8ssso.certificate.useCa=true
     watiForSuccessOfCommand \
       "kubectl -n ${__namespace_for_ambassador} get secrets ${__fqdn_for_ambassador_k8ssso}"
       ### NOTE
@@ -272,15 +272,18 @@ installAmbassador() {
     echo ""
     echo "### Activating CertificateSigningRequest ..."
     local __csr
-    __csr=$(bash ./values_for_ambassador-k8ssso-csr.cnf.bash \
+    __csr=$(bash "${WORKDIR_OF_SCRIPTS_BASE}/values_for_ambassador-k8ssso-csr.cnf.bash" \
         "${__hostname_for_ambassador_k8ssso}" \
         "${__fqdn_for_ambassador_k8ssso}" \
         "${__private_key_file}" | base64)
     ## 5. Create and apply the following YAML for a CertificateSigningRequest.
     ##
-    bash ./values_for_ambassador-k8ssso-csr.yaml.bash \
-        "${__hostname_for_ambassador_k8ssso}" \
-        "${__csr}"
+    applyManifestByDI "${__namespace_for_ambassador}" \
+                      "${__hostname_for_ambassador_k8ssso}" \
+                      180s \
+                      ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
+                      ambassador.dynamics.k8ssso.certificateSigningRequest.request="${__csr}"
     ## 6. Confirmation
     ##
     echo ""
@@ -302,10 +305,12 @@ installAmbassador() {
     ##
     echo ""
     echo "### Activating k8s SSO Endpoint ..."
-    bash ./values_for_ambassador-k8ssso-endpoint.yaml.bash \
-        "${__hostname_for_ambassador_k8ssso}" \
-        "${__fqdn_for_ambassador_k8ssso}" \
-        "${__namespace_for_ambassador}"
+    applyManifestByDI "${__namespace_for_ambassador}" \
+                      "${__hostname_for_ambassador_k8ssso}" \
+                      180s \
+                      ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
+                      ambassador.dynamics.k8ssso.endpoint.rbac.create=true
     ## 11. As a quick check
     ##
     watiForSuccessOfCommand \
@@ -338,6 +343,7 @@ installKeycloak() {
     local __fqdn_for_keycloak_main
     local __cluster_issuer
     local __conf_of_helm
+    local __rootca_file
     ## 1. Config extra secrets
     ##
     echo ""
@@ -381,9 +387,12 @@ installKeycloak() {
     ##
     echo ""
     echo "### Activating the TLSContext ..."
-    bash ./values_for_tlscontext.yaml.bash \
-      "${__namespace_for_keycloak}" \
-      "${__fqdn_for_keycloak_main}"
+    applyManifestByDI "${__namespace_for_keycloak}" \
+                      "${__hostname_for_keycloak_main}" \
+                      180s \
+                      keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
+                      keycloak.dynamics.main.tlsContext.create=true
         ### NOTE
         ### Tentative solution to the problem
         ### that TLSContext is not generated automatically from Ingress (v2.2.2)
@@ -391,17 +400,26 @@ installKeycloak() {
       "kubectl -n ${__namespace_for_keycloak} get secrets ${__hostname_for_keycloak_main}"
         ### NOTE
         ### Wait until SubCA is issued
-    local __rootca_file
-    __rootca_file=$(getFullpathOfRootCA)
     echo ""
     echo "### Testing to access the endpoint ..."
+    __rootca_file=$(getFullpathOfRootCA)
     watiForSuccessOfCommand \
       "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1"
     ## 4. Setup preset-entries
     ##
     echo ""
     echo "### Activating essential entries of the keycloak ..."
-    bash ./create_keycloak-entry.bash "${__namespace_for_keycloak}" "${__rootca_file}"
+    bash "${WORKDIR_OF_SCRIPTS_BASE}/create_keycloak-entry.bash" "${__namespace_for_keycloak}" "${__rootca_file}"
+    ## 5. Setup Authz
+    ##
+    echo ""
+    echo "### Setup the sample RBAC ..."
+    applyManifestByDI "${__namespace_for_keycloak}" \
+                      "${__hostname_for_keycloak_main}" \
+                      180s \
+                      keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
+                      keycloak.dynamics.main.rbac.create=true
     return $?
   }
   echo ""
@@ -440,16 +458,18 @@ installFilter() {
     ##
     echo ""
     echo "### Applying the filter for Impersonate-Group/User ..."
-    bash ./values_for_ambassador-k8ssso-filter.yaml.bash \
-        "${__hostname_for_ambassador_k8ssso}" \
-        "${__fqdn_for_ambassador_k8ssso}" \
-        "${__namespace_for_ambassador}" \
-        "${__jwks_uri}"
+    applyManifestByDI "${__namespace_for_ambassador}" \
+                      "${__hostname_for_ambassador_k8ssso}" \
+                      180s \
+                      ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
+                      ambassador.dynamics.k8ssso.filter.jwksUri="${__jwks_uri}"
     ## 2. Set Context
     ##
     local __ctx_name
     __ctx_name=$(getContextName4Kubectl)
-    echo "Setting Cluster Context ..."
+    echo ""
+    echo "### Setting Cluster Context ..."
     kubectl config set-context "${__ctx_name}" \
         --cluster="${__ctx_name}" \
         --user="${__ctx_name}"

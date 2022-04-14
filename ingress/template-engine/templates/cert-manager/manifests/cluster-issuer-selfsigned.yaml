@@ -1,6 +1,7 @@
 ##
-{{if (default .Values.global.manifests false)}}
-{{if (default .Values.certManager.dynamics.common.isSelfsigned false)}}
+{{- if .Values.certManager }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if and .Values.certManager.dynamics.common.isSelfsigned (hasKey .Values.certManager.dynamics.common "isSelfsigned")}}
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -13,5 +14,6 @@ metadata:
     rdbox.local/chart: {{ .Chart.Version }}
 spec:
   selfSigned: {}
-{{ end }}
-{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}

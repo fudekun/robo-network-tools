@@ -1,9 +1,11 @@
 ##
-{{if (default .Values.global.dynamics false)}}
+{{- if .Values.certManager }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
 certManager:
   dynamics:
     common:
       baseFqdn: {{ .Values.certManager.dynamics.common.baseFqdn }}
-      isSelfsigned: {{ .Values.certManager.dynamics.common.isCa }}
-      isCa: {{ .Values.certManager.dynamics.common.isSelfsigned }}
-{{ end }}
+      isSelfsigned: {{ .Values.certManager.dynamics.common.isSelfsigned | default false }}
+      isCa: {{ .Values.certManager.dynamics.common.isCa | default false }}
+{{- end }}
+{{- end }}
