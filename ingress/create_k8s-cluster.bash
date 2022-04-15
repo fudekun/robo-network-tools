@@ -42,30 +42,7 @@ checkArgs() {
 ## 1. Install KinD
 ##
 installKinD() {
-  __executor() {
-    ## Define version of the manifest
-    ##
-    local __VERSION_OF_MANIFEST
-    __VERSION_OF_MANIFEST="v1beta1"
-    ## Create the cluster
-    ##
-    local __workbase_dirs
-    local __workdir_of_confs
-    local __conffile_path
-    __workbase_dirs=$(getDirNameListOfWorkbase "${__RDBOX_CLUSTER_NAME}")
-    __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
-    __conffile_path=${__workdir_of_confs}/modules/kind/kind/${__VERSION_OF_MANIFEST}/values.yaml
-    if ! bash -c "kind get clusters | grep -c ${__RDBOX_CLUSTER_NAME} >/dev/null 2>&1"; then
-      kind create cluster --config "${__conffile_path}" --name "${__RDBOX_CLUSTER_NAME}"
-    else
-      echo "already exist for a cluster with the name ${__RDBOX_CLUSTER_NAME}"
-    fi
-    return $?
-  }
-  echo ""
-  echo "---"
-  echo "## Creating K8s Cluster by KinD ..."
-  cmdWithIndent "__executor"
+  bash "$(getWorkdirOfScripts)/create_kind.bash" "${__RDBOX_CLUSTER_NAME}"
   return $?
 }
 
@@ -138,7 +115,7 @@ EOF
 ## 3. Install Weave-Net
 ##
 installWeaveNet() {
-  bash "$(getWorkdirOfScripts)/create_weave.bash"
+  bash "$(getWorkdirOfScripts)/create_weave-net.bash"
   return $?
 }
 
@@ -174,7 +151,7 @@ main() {
   ## 3. Install Weave-Net
   ##
   cmdWithLoding \
-    "bash ${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_weave.bash" \
+    "installWeaveNet" \
     "Activating Weave-Net"
   ## 99. Notify Verifier-Command
   ##

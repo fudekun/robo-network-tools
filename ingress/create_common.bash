@@ -259,6 +259,26 @@ initializeWorkdirOfWorkbase() {
   echo "${__workdir_of_work_base}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
+#######################################
+# Checks if the argument string is available as a host name.
+# Arguments:
+#   hostname String (e.g. rdbox-01)
+# Returns:
+#   0 if thing is valid , non-zero on error.
+#######################################
+isValidHostname() {
+  local __hostname
+  __hostname=$1
+  if [[ "$__hostname" =~ ^[A-Za-z0-9][A-Za-z0-9\-]{1,61}[A-Za-z0-9]$ ]]; then
+    return 0
+  else
+    echo "Invalid Argument" 1>&2
+    echo "Expect: ^[A-Za-z0-9][A-Za-z0-9\-]{1,61}[A-Za-z0-9]$" 1>&2
+    echo "Actual: ${__hostname}" 1>&2
+    return 1
+  fi
+}
+
 getDirNameListOfWorkbase() {
   local __cluster_name="$1"
   RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}

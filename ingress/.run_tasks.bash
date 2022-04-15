@@ -2,7 +2,7 @@
 set -euo pipefail
 
 main() {
-  "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/create_kind-cluster.bash "$@"
+  "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/create_k8s-cluster.bash "$@"
 }
 
 ## Set the base directory for RDBOX scripts!!
