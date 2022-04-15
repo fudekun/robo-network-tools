@@ -350,6 +350,15 @@ getFullpathOfHistory() {
   echo -ne "${__dir}"/selfsigned-ca."${__base_fqdn}".ca.yaml
 }
 
+getFullpathOfVerifyMsgs() {
+  local __namespace
+  local __dir
+  __namespace="$1"
+  __dir=$(getDirNameFor outputs)/verify_msgs
+  mkdir -p "${__dir}"
+  echo -n "${__dir}"/"${__namespace}".verifier_command.txt
+}
+
 getPresetSuperAdminName() {
   local rep_name
   rep_name=$1

@@ -20,6 +20,14 @@ main() {
   return $?
 }
 
-source ./create_common.bash
+## Set the base directory for RDBOX scripts!!
+##
+set -euo pipefail
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
+  ### EXTRAPOLATION
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+set +euo pipefail
 main "$@"
 exit $?

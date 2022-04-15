@@ -174,7 +174,7 @@ main() {
   ## 3. Install Weave-Net
   ##
   cmdWithLoding \
-    "bash ./create_weave.bash" \
+    "bash ${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_weave.bash" \
     "Activating Weave-Net"
   ## 99. Notify Verifier-Command
   ##

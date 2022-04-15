@@ -194,7 +194,7 @@ main() {
 
   ## Notify Verifier-Command
   ##
-  showVerifierCommand "${rep_name}" "${BASE_URL}" > ./"${rep_name}".verifier_command.txt
+  showVerifierCommand "${rep_name}" "${BASE_URL}" > "$(getFullpathOfVerifyMsgs "${rep_name}")"
 
   return $?
 }

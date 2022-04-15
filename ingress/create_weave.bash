@@ -15,7 +15,7 @@ main() {
   set +x
 }
 
-source ./create_common.bash
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 header "$@"
 cmdWithIndent "main"
 exit $?

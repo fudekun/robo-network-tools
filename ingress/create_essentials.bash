@@ -515,7 +515,7 @@ showVerifierCommand() {
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
   # echo ""
   # echo "---""
-  cat ./"${__namespace_for_keycloak}".verifier_command.txt
+  cat "$(getFullpathOfVerifyMsgs "${__namespace_for_keycloak}")"
   # echo ""
   echo ""
   echo "---"
