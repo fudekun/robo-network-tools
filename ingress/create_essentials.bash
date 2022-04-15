@@ -280,7 +280,7 @@ installAmbassador() {
     echo ""
     echo "### Activating CertificateSigningRequest ..."
     local __csr
-    __csr=$(bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/values_for_ambassador-k8ssso-csr.cnf.bash" \
+    __csr=$(bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_ambassador-k8ssso-csr.cnf.bash" \
         "${__hostname_for_ambassador_k8ssso}" \
         "${__fqdn_for_ambassador_k8ssso}" \
         "${__private_key_file}" | base64)

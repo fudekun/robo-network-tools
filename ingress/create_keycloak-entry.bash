@@ -55,6 +55,7 @@ __createEntry() {
   local hashed_salted_value
   local hash_iterations
   local fullname_array
+  local conf_file
   password=$(__getClusterAdminSecret "${rep_name}")
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   preset_group_name=$(getPresetGroupName)
@@ -77,12 +78,13 @@ __createEntry() {
     ## >> Using deprecated 'credentials' format in JSON representation for user 'xxxxx'. It will be removed in future versions
     ## !!
     ##
+  conf_file="$(getDirNameFor confs)/modules/${rep_name}/entry/$(getConfVersion "${rep_name}" entry)/values.jq.json"
   ## Execute Admin REST API
   ##
   curl -fs --cacert "${ROOTCA_FILE}" -X POST "$operation_endpoint_url" \
       -H "Authorization: bearer $access_token" \
       -H "Content-Type: application/json" \
-      -d "$(jq -n -r -f values_for_keycloak-entry-realm.jq.json \
+      -d "$(jq -n -r -f "$conf_file" \
           --arg client_secret "$client_secret" \
           --arg cluster_name "$cluster_name" \
           --arg preset_group_name "$preset_group_name" \
