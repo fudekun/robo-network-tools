@@ -31,6 +31,9 @@ checkArgs() {
   RDBOX_TYPE_OF_SECRET_OPERATION=$(printf %q "$RDBOX_TYPE_OF_SECRET_OPERATION")
   export RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
       ### EXTRAPOLATION
+  local __epoch_ms
+  __epoch_ms=$(getEpochMillisec)
+  export __RELEASE_ID=${__epoch_ms}
   return $?
 }
 
@@ -47,75 +50,76 @@ initializeEssentials() {
 ## 2. Install Cert-Manager
 ##
 installCertManager() {
+  __issueNewSecrets() {
+    local __namespace_for_certmanager="$1"
+    local __hostname_for_certmanager_main="$2"
+    local __history_file="$3"
+    local __base_fqdn="$4"
+    local __rootca_file
+    applyManifestByDI "${__namespace_for_certmanager}" \
+                      "${__hostname_for_certmanager_main}" \
+                      "${__RELEASE_ID}" \
+                      90s \
+                      certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      certManager.dynamics.common.isSelfsigned=true \
+                      certManager.dynamics.common.isCa=true
+      ### NOTE
+      ### Can be changed to authenticated secret
+    watiForSuccessOfCommand \
+      "kubectl -n ${__namespace_for_certmanager} get secrets ${__base_fqdn}"
+      ### NOTE
+      ### Wait until RootCA is issued
+    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o yaml > "${__history_file}"
+      ### NOTE
+      ### Save the History file
+    __rootca_file=$(getFullpathOfRootCA)
+    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json | \
+      jq -r '.data["ca.crt"]' | \
+      base64 -d > "${__rootca_file}"
+      ### NOTE
+      ### Save the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
+    return $?
+  }
+  __issueSecretsUsingExistingHistory() {
+    local __namespace_for_certmanager="$1"
+    local __hostname_for_certmanager_main="$2"
+    local __history_file="$3"
+    if [ ! -e "${__history_file}" ]; then
+      echo "No history file found. Please generate a new RootCA."
+      exit 1
+    fi
+    kubectl -n "${__namespace_for_certmanager}" apply --timeout 90s --wait -f "${__history_file}"
+    applyManifestByDI "${__namespace_for_certmanager}" \
+                      "${__hostname_for_certmanager_main}" \
+                      "${__RELEASE_ID}" \
+                      90s \
+                      certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
+                      certManager.dynamics.common.isCa=true
+  }
+  __setupSecrets() {
+    local __namespace_for_certmanager
+    local __hostname_for_certmanager_main
+    local __base_fqdn
+    local __history_file
+    __namespace_for_certmanager="$1"
+    __hostname_for_certmanager_main="$2"
+    __base_fqdn="$3"
+    __history_file=$(getFullpathOfHistory)
+    if [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "new" ]; then
+      __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
+    elif [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
+      __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}"
+    else
+      echo "Please generate a new RootCA."
+      exit 1
+    fi
+      ### NOTE
+      ### ClusterIssuer is namespace independent
+      ### However, it depends on selfsigned-cacert
+      ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
+    return $?
+  }
   __executor() {
-    __issueNewSecrets() {
-      local __namespace_for_certmanager="$1"
-      local __hostname_for_certmanager_main="$2"
-      local __history_file="$3"
-      local __base_fqdn="$4"
-      local __rootca_file
-      applyManifestByDI "${__namespace_for_certmanager}" \
-                        "${__hostname_for_certmanager_main}" \
-                        90s \
-                        certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
-                        certManager.dynamics.common.isSelfsigned=true \
-                        certManager.dynamics.common.isCa=true
-        ### NOTE
-        ### Can be changed to authenticated secret
-      watiForSuccessOfCommand \
-        "kubectl -n ${__namespace_for_certmanager} get secrets ${__base_fqdn}"
-        ### NOTE
-        ### Wait until RootCA is issued
-      kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o yaml > "${__history_file}"
-        ### NOTE
-        ### Save the History file
-      __rootca_file=$(getFullpathOfRootCA)
-      kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json | \
-        jq -r '.data["ca.crt"]' | \
-        base64 -d > "${__rootca_file}"
-        ### NOTE
-        ### Save the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
-      return $?
-    }
-    __issueSecretsUsingExistingHistory() {
-      local __namespace_for_certmanager="$1"
-      local __hostname_for_certmanager_main="$2"
-      local __history_file="$3"
-      if [ -e "${__history_file}" ]; then
-        kubectl -n "${__namespace_for_certmanager}" apply --timeout 90s --wait -f "${__history_file}"
-        applyManifestByDI "${__namespace_for_certmanager}" \
-                          "${__hostname_for_certmanager_main}" \
-                          90s \
-                          certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
-                          certManager.dynamics.common.isCa=true
-      else
-        echo "No history file found. Please generate a new RootCA."
-        exit 1
-      fi
-    }
-    __setupSecrets() {
-      local __namespace_for_certmanager
-      local __hostname_for_certmanager_main
-      local __base_fqdn
-      local __history_file
-      __namespace_for_certmanager="$1"
-      __hostname_for_certmanager_main="$2"
-      __base_fqdn="$3"
-      __history_file=$(getFullpathOfHistory)
-      if [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "new" ]; then
-        __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
-      elif [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
-        __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}"
-      else
-        echo "Please generate a new RootCA."
-        exit 1
-      fi
-        ### NOTE
-        ### ClusterIssuer is namespace independent
-        ### However, it depends on selfsigned-cacert
-        ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
-      return $?
-    }
     local __namespace_for_certmanager
     local __hostname_for_certmanager_main
     local __base_fqdn
@@ -153,26 +157,26 @@ installCertManager() {
 ## 3. Install MetalLB
 ##
 installMetalLB() {
+  __getNetworkRangeForVirtualHost() {
+    local __docker_network_ip
+    local __docker_network_prefix
+    local __docker_network_range
+    __docker_network_ip=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
+    __docker_network_prefix=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
+    if [ "$__docker_network_prefix" -le 16 ]; then
+      __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s-%s.%s.%s", $1, $2, "255.200", $1, $2, "255.250"}')
+    elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
+      __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
+    else
+      echo "WARN: Your Docker network configuration is not expected;"
+      echo "- You will need to execute the MetalLB configuration yourself."
+      echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
+      exit 1
+    fi
+    echo -n "$__docker_network_range"
+    return $?
+  }
   __executor() {
-    __getNetworkRangeForVirtualHost() {
-      local __docker_network_ip
-      local __docker_network_prefix
-      local __docker_network_range
-      __docker_network_ip=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
-      __docker_network_prefix=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
-      if [ "$__docker_network_prefix" -le 16 ]; then
-        __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s-%s.%s.%s", $1, $2, "255.200", $1, $2, "255.250"}')
-      elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
-        __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
-      else
-        echo "WARN: Your Docker network configuration is not expected;"
-        echo "- You will need to execute the MetalLB configuration yourself."
-        echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
-        exit 1
-      fi
-      echo -n "$__docker_network_range"
-      return $?
-    }
     local __namespace_for_metallb
     local __hostname_for_metallb_main
     local __docker_network_range
@@ -261,6 +265,7 @@ installAmbassador() {
     echo "### Issueing Private Key for ambassador ..."
     applyManifestByDI "${__namespace_for_ambassador}" \
                       "${__hostname_for_ambassador_k8ssso}" \
+                      "${__RELEASE_ID}" \
                       90s \
                       ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                       ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
@@ -288,6 +293,7 @@ installAmbassador() {
     ##
     applyManifestByDI "${__namespace_for_ambassador}" \
                       "${__hostname_for_ambassador_k8ssso}" \
+                      "${__RELEASE_ID}" \
                       180s \
                       ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                       ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
@@ -315,6 +321,7 @@ installAmbassador() {
     echo "### Activating k8s SSO Endpoint ..."
     applyManifestByDI "${__namespace_for_ambassador}" \
                       "${__hostname_for_ambassador_k8ssso}" \
+                      "${__RELEASE_ID}" \
                       180s \
                       ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                       ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
@@ -397,6 +404,7 @@ installKeycloak() {
     echo "### Activating the TLSContext ..."
     applyManifestByDI "${__namespace_for_keycloak}" \
                       "${__hostname_for_keycloak_main}" \
+                      "${__RELEASE_ID}" \
                       180s \
                       keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
                       keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
@@ -428,6 +436,7 @@ installKeycloak() {
     echo "### Setup the sample RBAC ..."
     applyManifestByDI "${__namespace_for_keycloak}" \
                       "${__hostname_for_keycloak_main}" \
+                      "${__RELEASE_ID}" \
                       180s \
                       keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
                       keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
@@ -472,6 +481,7 @@ installFilter() {
     echo "### Applying the filter for Impersonate-Group/User ..."
     applyManifestByDI "${__namespace_for_ambassador}" \
                       "${__hostname_for_ambassador_k8ssso}" \
+                      "${__RELEASE_ID}" \
                       180s \
                       ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                       ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
