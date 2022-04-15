@@ -2,12 +2,12 @@
 
 ## FIXED VALUE
 ##
-CLUSTER_INFO_NAMENAME=cluster-info
-CLUSTER_INFO_NAMESPACE=cluster-common
-NUM_INDENT=4
+__RDBOX_CLUSTER_INFO_NAMENAME=cluster-info
+__RDBOX_CLUSTER_INFO_NAMESPACE=cluster-common
+__NUM_INDENT=4
 ## VALUE for internal using
 ##
-__RAW_INDENT=$(for _ in $(eval "echo {1..$NUM_INDENT}"); do echo -ne " "; done)
+__RAW_INDENT=$(for _ in $(eval "echo {1..$__NUM_INDENT}"); do echo -ne " "; done)
 
 cleanupShowLoading() {
   tput cnorm
@@ -75,6 +75,7 @@ showIndent() {
 cmdWithIndent() {
   local commands="$1"
   local mark="${2:-"YES"}" # YES or NO
+  local esc
   if [ "$mark" = "YES" ]; then
     esc=$(printf '\033')
     eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${__RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
@@ -125,8 +126,9 @@ applyManifestByDI() {
   __fullpath_of_generated_dynamics=$(__generateDynamicsConfigForDI "${__namespace}" "${__hostname}" "${__args_of_raw_set}")
   __fullpath_of_generated_manifests=$(__generateManifestForDI "${__namespace}" "${__hostname}" "${__fullpath_of_generated_dynamics}")
   if kubectl apply --dry-run=client -f "${__fullpath_of_generated_manifests}" ; then
-    echo "Successful --dry-run. Apply this manifest."
-    echo "- ${__fullpath_of_generated_manifests}"
+    echo ""
+    echo "- Successful --dry-run. Apply this manifest."
+    echo "   - ${__fullpath_of_generated_manifests}"
     kubectl apply --timeout "${__timeout}" --wait -f "${__fullpath_of_generated_manifests}"
   fi
   return $?
@@ -144,8 +146,9 @@ __generateDynamicsValuesForDI() {
   local __reelativepath_list_of_input
   local __dirpath_of_output
   local __fullpath_of_output_values_yaml
-  local __fullpath_of_output_values_latest_yaml
+  local __args_of_show_only
   local __cmd
+  local __fullpath_of_output_values_latest_yaml
   ## Args
   ##
   __namespace=$1
@@ -154,7 +157,7 @@ __generateDynamicsValuesForDI() {
   __args_of_eigenvalue=$4  # Store as a string (Expect a Space Separate Value)
   ## Preparation
   ##
-  __dirpath_of_template_engine="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/template-engine"
   __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
   __fullpath_of_input_dir=${__dirpath_of_template_engine}/${__basepath_of_input}
@@ -187,9 +190,9 @@ __generateManifestForDI() {
   local __namespace
   local __hostname
   local __fullpath_of_generated_dynamics
-  local __args_of_eigenvalue
   local __version_user_conf
   local __fullpath_of_user_conf
+  local __args_of_eigenvalue
   __namespace=$1
   __hostname=$2
   __fullpath_of_generated_dynamics=$3
@@ -229,34 +232,34 @@ initializeWorkdirOfWorkbase() {
   __workdir_of_tmps=$(echo "$__workbase_dirs" | awk -F ' ' '{print $4}')
   __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
   mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
-  rsync -au "${WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
+  rsync -au "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
   echo "${__workdir_of_work_base}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
 getDirNameListOfWorkbase() {
   local __cluster_name="$1"
-  WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
-  WORKDIR_OF_WORK_BASE=$(printf %q "$WORKDIR_OF_WORK_BASE")
-  export WORKDIR_OF_WORK_BASE=${WORKDIR_OF_WORK_BASE}
+  RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
+  RDBOX_WORKDIR_OF_WORK_BASE=$(printf %q "$RDBOX_WORKDIR_OF_WORK_BASE")
+  export RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE}
     ### EXTRAPOLATION
-  local __workdir_of_logs=${WORKDIR_OF_WORK_BASE}/logs
-  local __workdir_of_outputs=${WORKDIR_OF_WORK_BASE}/outputs
-  local __workdir_of_tmps=${WORKDIR_OF_WORK_BASE}/tmps
-  local __workdir_of_confs=${WORKDIR_OF_WORK_BASE}/confs
-  echo "${WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  local __workdir_of_logs=${RDBOX_WORKDIR_OF_WORK_BASE}/logs
+  local __workdir_of_outputs=${RDBOX_WORKDIR_OF_WORK_BASE}/outputs
+  local __workdir_of_tmps=${RDBOX_WORKDIR_OF_WORK_BASE}/tmps
+  local __workdir_of_confs=${RDBOX_WORKDIR_OF_WORK_BASE}/confs
+  echo "${RDBOX_WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
 getNetworkInfo() {
-  NAME_DEFULT_NIC=${NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
-  NAME_DEFULT_NIC=$(printf %q "$NAME_DEFULT_NIC")
+  RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
     # EXTRAPOLATION
-  export NAME_DEFULT_NIC
+  export RDBOX_NAME_DEFULT_NIC
   # shellcheck disable=SC2015
-  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
+  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
                     sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
   export IPV4_DEFAULT_NIC
   # shellcheck disable=SC2015
-  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$NAME_DEFULT_NIC" || ifconfig "$NAME_DEFULT_NIC") | \
+  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
                     sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
   export IPV6_DEFAULT_NIC
   HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
@@ -272,7 +275,7 @@ getContextName4Kubectl() {
 
 __getClusterinfoFromConfigmap() {
   local __item=$1
-  kubectl -n ${CLUSTER_INFO_NAMESPACE} get configmaps ${CLUSTER_INFO_NAMENAME} -o json| jq -r "${__item}"
+  kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmaps ${__RDBOX_CLUSTER_INFO_NAMENAME} -o json| jq -r "${__item}"
 }
 
 getWorkdirOfScripts() {
@@ -348,6 +351,7 @@ getFullpathOfHistory() {
 }
 
 getPresetSuperAdminName() {
+  local rep_name
   rep_name=$1
   helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.adminUser'
 }
@@ -397,7 +401,7 @@ getVersionOfTemplateEngine() {
   local __dirpath_of_template_engine
   local __basepath_of_input
   local __version_of_engine
-  __dirpath_of_template_engine="${WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/template-engine"
   __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(helm show chart "${__dirpath_of_template_engine}" | yq '.version')
   echo -n "${__version_of_engine}"

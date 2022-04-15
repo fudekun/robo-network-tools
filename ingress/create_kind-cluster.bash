@@ -8,7 +8,9 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
-  printf "# ARGS\n  - %s\n" "$*"
+  echo ""
+  printf "# ARGS:\n%s\n" "$*"
+  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"
     echo "     \${1} Specify the cluster name  (e.g. rdbox)"
@@ -17,22 +19,22 @@ checkArgs() {
     echo ""
     echo "# EnvironmentVariable"
     echo "  (recommend: Use automatic settings)"
-    echo "| Name                    | e.g.                       |"
-    echo "| ----------------------  | -------------------------- |"
-    echo "| NAME_DEFULT_NIC         | en0                        |"
-    echo "| WORKDIR_OF_WORK_BASE    | \${HOME}/rdbox/\${1}         |"
+    echo "| Name                          | e.g.                       |"
+    echo "| ----------------------------  | -------------------------- |"
+    echo "| RDBOX_NAME_DEFULT_NIC         | en0                        |"
+    echo "| RDBOX_WORKDIR_OF_WORK_BASE    | HOME/rdbox/#1              |"
     exit 1
   fi
-  CLUSTER_NAME=$(printf %q "$1")
+  __RDBOX_CLUSTER_NAME=$(printf %q "$1")
     # EXTRAPOLATION
-  export CLUSTER_NAME=$CLUSTER_NAME
-  DOMAIN_NAME=$(printf %q "$2")
+  export __RDBOX_CLUSTER_NAME=$__RDBOX_CLUSTER_NAME
+  __RDBOX_DOMAIN_NAME=$(printf %q "$2")
     # EXTRAPOLATION
-  export DOMAIN_NAME=$DOMAIN_NAME
+  export __RDBOX_DOMAIN_NAME=$__RDBOX_DOMAIN_NAME
   if [ $# = 3 ]; then
-    HOST_NAME=$(printf %q "$3")
+    __RDBOX_HOST_NAME=$(printf %q "$3")
       # EXTRAPOLATION
-    export HOST_NAME=$HOST_NAME
+    export __RDBOX_HOST_NAME=$__RDBOX_HOST_NAME
   fi
   return $?
 }
@@ -41,16 +43,22 @@ checkArgs() {
 ##
 installKinD() {
   __executor() {
+    ## Define version of the manifest
+    ##
+    local __VERSION_OF_MANIFEST
+    __VERSION_OF_MANIFEST="v1beta1"
+    ## Create the cluster
+    ##
     local __workbase_dirs
     local __workdir_of_confs
     local __conffile_path
-    __workbase_dirs=$(getDirNameListOfWorkbase "${CLUSTER_NAME}")
+    __workbase_dirs=$(getDirNameListOfWorkbase "${__RDBOX_CLUSTER_NAME}")
     __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
-    __conffile_path=${__workdir_of_confs}/modules/kind/kind/v1beta1/values.yaml
-    if ! bash -c "kind get clusters | grep -c ${CLUSTER_NAME} >/dev/null 2>&1"; then
-      kind create cluster --config "${__conffile_path}" --name "${CLUSTER_NAME}"
+    __conffile_path=${__workdir_of_confs}/modules/kind/kind/${__VERSION_OF_MANIFEST}/values.yaml
+    if ! bash -c "kind get clusters | grep -c ${__RDBOX_CLUSTER_NAME} >/dev/null 2>&1"; then
+      kind create cluster --config "${__conffile_path}" --name "${__RDBOX_CLUSTER_NAME}"
     else
-      echo "already exist for a cluster with the name ${CLUSTER_NAME}"
+      echo "already exist for a cluster with the name ${__RDBOX_CLUSTER_NAME}"
     fi
     return $?
   }
@@ -67,14 +75,14 @@ setupConfigMap() {
   __executor() {
     ## .1 If the Namespace already exists, recreate it
     ##
-    if ! bash -c "kubectl delete namespace ${CLUSTER_INFO_NAMESPACE} >/dev/null 2>&1"; then
-      echo "The ${CLUSTER_INFO_NAMENAME}.${CLUSTER_INFO_NAMESPACE} is Not Found"
+    if ! bash -c "kubectl delete namespace ${__RDBOX_CLUSTER_INFO_NAMESPACE} >/dev/null 2>&1"; then
+      echo "The ${__RDBOX_CLUSTER_INFO_NAMENAME}.${__RDBOX_CLUSTER_INFO_NAMESPACE} is Not Found"
     fi
-    kubectl create namespace "${CLUSTER_INFO_NAMESPACE}"
+    kubectl create namespace "${__RDBOX_CLUSTER_INFO_NAMESPACE}"
     getNetworkInfo
       ### NOTE
       ### These returning value are passed by EXPORT
-    HOST_NAME=${HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+    __RDBOX_HOST_NAME=${__RDBOX_HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
       ### NOTE
       ### If no value is declared, WDNS will create a hostname following the general naming conventions.
     local __workbase_dirs
@@ -83,7 +91,7 @@ setupConfigMap() {
     local __workdir_of_outputs
     local __workdir_of_tmps
     local __workdir_of_confs
-    __workbase_dirs=$(getDirNameListOfWorkbase "${CLUSTER_NAME}")
+    __workbase_dirs=$(getDirNameListOfWorkbase "${__RDBOX_CLUSTER_NAME}")
     __workdir_of_work_base=$(echo "$__workbase_dirs" | awk -F ' ' '{print $1}')
     __workdir_of_logs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')
     __workdir_of_outputs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $3}')
@@ -93,14 +101,14 @@ setupConfigMap() {
       apiVersion: v1
       kind: ConfigMap
       metadata:
-        name:      "${CLUSTER_INFO_NAMENAME}"
-        namespace: "${CLUSTER_INFO_NAMESPACE}"
+        name:      "${__RDBOX_CLUSTER_INFO_NAMENAME}"
+        namespace: "${__RDBOX_CLUSTER_INFO_NAMESPACE}"
       data:
-        name: ${CLUSTER_NAME}
-        nic0.name:         "${NAME_DEFULT_NIC}"
-        nic0.host:         "${HOST_NAME}"
-        nic0.domain:       "${DOMAIN_NAME}"
-        nic0.base_fqdn:    "${CLUSTER_NAME}.${HOST_NAME}.${DOMAIN_NAME}"
+        name: ${__RDBOX_CLUSTER_NAME}
+        nic0.name:         "${RDBOX_NAME_DEFULT_NIC}"
+        nic0.host:         "${__RDBOX_HOST_NAME}"
+        nic0.domain:       "${__RDBOX_DOMAIN_NAME}"
+        nic0.base_fqdn:    "${__RDBOX_CLUSTER_NAME}.${__RDBOX_HOST_NAME}.${__RDBOX_DOMAIN_NAME}"
         nic0.ipv4:         "${IPV4_DEFAULT_NIC}"
         nic0.ipv4_hyphen:  "${HOSTNAME_FOR_WCDNS_BASED_ON_IP}"
         nic0.ipv6:         "${IPV6_DEFAULT_NIC}"
@@ -109,11 +117,11 @@ setupConfigMap() {
         workdir.outputs:     "${__workdir_of_outputs}"
         workdir.tmps:        "${__workdir_of_tmps}"
         workdir.confs:       "${__workdir_of_confs}"
-        workdir.scripts:     "${WORKDIR_OF_SCRIPTS_BASE}"
+        workdir.scripts:     "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"
 EOF
-    kubectl -n "${CLUSTER_INFO_NAMESPACE}" patch configmap "${CLUSTER_INFO_NAMENAME}" \
+    kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" patch configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
       --type merge \
-      --patch "$(kubectl -n "${CLUSTER_INFO_NAMESPACE}" create configmap "${CLUSTER_INFO_NAMENAME}" \
+      --patch "$(kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
                   --dry-run=client \
                   --output=json \
                   --from-env-file="${__workdir_of_confs}"/meta-pkgs/essentials.env.properties \
@@ -176,11 +184,11 @@ main() {
 
 ## Set the base directory for RDBOX scripts!!
 ##
-WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
-WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$WORKDIR_OF_SCRIPTS_BASE")
-export WORKDIR_OF_SCRIPTS_BASE=$WORKDIR_OF_SCRIPTS_BASE
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
   ### EXTRAPOLATION
-source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 showHeader
 main "$@"
 exit $?

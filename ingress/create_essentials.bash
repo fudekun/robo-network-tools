@@ -8,7 +8,9 @@ set -euo pipefail
 ## 0. Input Argument Checking
 ##
 checkArgs() {
-  printf "Args: %s\n" "$*"
+  echo ""
+  printf "# ARGS:\n%s\n" "$*"
+  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   if [ $# -eq 1 ]; then
     if [ "$1" = "help" ]; then
       echo "# Args"
@@ -16,18 +18,18 @@ checkArgs() {
       echo ""
       echo "# EnvironmentVariable"
       echo "  (recommend: Use automatic settings)"
-      echo "| Name                         | e.g.                            |"
-      echo "| ---------------------------- | ------------------------------- |"
-      echo "| TYPE_OF_SECRET_OPERATION     | (default)new or recycle         |"
+      echo "| Name                               | e.g.                            |"
+      echo "| ---------------------------------- | ------------------------------- |"
+      echo "| RDBOX_TYPE_OF_SECRET_OPERATION     | (default)new or recycle         |"
       exit 1
     fi
   fi
   local __base_fqdn
   __base_fqdn=$(getBaseFQDN)
   export BASE_FQDN=$__base_fqdn
-  TYPE_OF_SECRET_OPERATION=${TYPE_OF_SECRET_OPERATION:-"new"}
-  TYPE_OF_SECRET_OPERATION=$(printf %q "$TYPE_OF_SECRET_OPERATION")
-  export TYPE_OF_SECRET_OPERATION=$TYPE_OF_SECRET_OPERATION
+  RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-"new"}
+  RDBOX_TYPE_OF_SECRET_OPERATION=$(printf %q "$RDBOX_TYPE_OF_SECRET_OPERATION")
+  export RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
       ### EXTRAPOLATION
   return $?
 }
@@ -48,12 +50,12 @@ installCertManager() {
   __executor() {
     __issueNewSecrets() {
       local __namespace_for_certmanager="$1"
-      local __history_file="$2"
-      local __base_fqdn="$3"
+      local __hostname_for_certmanager_main="$2"
+      local __history_file="$3"
+      local __base_fqdn="$4"
       local __rootca_file
-      __rootca_file=$(getFullpathOfRootCA)
       applyManifestByDI "${__namespace_for_certmanager}" \
-                        "${__namespace_for_certmanager}" \
+                        "${__hostname_for_certmanager_main}" \
                         90s \
                         certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                         certManager.dynamics.common.isSelfsigned=true \
@@ -61,26 +63,28 @@ installCertManager() {
         ### NOTE
         ### Can be changed to authenticated secret
       watiForSuccessOfCommand \
-        "kubectl -n $__namespace_for_certmanager get secrets $__base_fqdn"
+        "kubectl -n ${__namespace_for_certmanager} get secrets ${__base_fqdn}"
         ### NOTE
         ### Wait until RootCA is issued
-      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o yaml > "$__history_file"
+      kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o yaml > "${__history_file}"
         ### NOTE
         ### Save the History file
-      kubectl -n "$__namespace_for_certmanager" get secrets "$__base_fqdn" -o json | \
+      __rootca_file=$(getFullpathOfRootCA)
+      kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json | \
         jq -r '.data["ca.crt"]' | \
-        base64 -d > "$__rootca_file"
+        base64 -d > "${__rootca_file}"
         ### NOTE
-        ### Save the RootCA
+        ### Save the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
       return $?
     }
     __issueSecretsUsingExistingHistory() {
-      local __namespace_for_certmanager=$1
-      local __history_file=$2
-      if [ -e "$__history_file" ]; then
-        kubectl -n "$__namespace_for_certmanager" apply --timeout 90s --wait -f "$__history_file"
+      local __namespace_for_certmanager="$1"
+      local __hostname_for_certmanager_main="$2"
+      local __history_file="$3"
+      if [ -e "${__history_file}" ]; then
+        kubectl -n "${__namespace_for_certmanager}" apply --timeout 90s --wait -f "${__history_file}"
         applyManifestByDI "${__namespace_for_certmanager}" \
-                          "${__namespace_for_certmanager}" \
+                          "${__hostname_for_certmanager_main}" \
                           90s \
                           certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                           certManager.dynamics.common.isCa=true
@@ -91,15 +95,17 @@ installCertManager() {
     }
     __setupSecrets() {
       local __namespace_for_certmanager
+      local __hostname_for_certmanager_main
       local __base_fqdn
       local __history_file
       __namespace_for_certmanager="$1"
-      __base_fqdn="$2"
+      __hostname_for_certmanager_main="$2"
+      __base_fqdn="$3"
       __history_file=$(getFullpathOfHistory)
-      if [ "$TYPE_OF_SECRET_OPERATION" = "new" ]; then
-        __issueNewSecrets "${__namespace_for_certmanager}" "${__history_file}" "${__base_fqdn}"
-      elif [ "$TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
-        __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__history_file}"
+      if [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "new" ]; then
+        __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
+      elif [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
+        __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}"
       else
         echo "Please generate a new RootCA."
         exit 1
@@ -131,9 +137,9 @@ installCertManager() {
     ##
     echo ""
     echo "### Setting CA ..."
-    __setupSecrets "${__namespace_for_certmanager}" "${__base_fqdn}"
+    __setupSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__base_fqdn}"
       ### NOTE
-      ### Use the environment variable "TYPE_OF_SECRET_OPERATION" to switch
+      ### Use the environment variable "RDBOX_TYPE_OF_SECRET_OPERATION" to switch
       ### between issuing a new certificate or using a past certificate.
     return $?
   }
@@ -188,7 +194,7 @@ installMetalLB() {
         --create-namespace \
         --wait \
         --timeout 600s \
-        --set configInline.address-pools\[0\].addresses\[0\]="$__docker_network_range" \
+        --set configInline.address-pools\[0\].addresses\[0\]="${__docker_network_range}" \
         -f "${__conf_of_helm}"
     return $?
   }
@@ -209,7 +215,9 @@ installAmbassador() {
     local __conf_of_helm
     ## 1. Install Ambassador's CRD
     ##
-    __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest | jq -r ".tag_name" | cut -b 2-)
+    __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest \
+                      | jq -r ".tag_name" \
+                      | cut -b 2-)
     echo ""
     echo "### Activating a CRD of the ambassador ..."
     kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__aes_app_version}"/aes-crds.yaml
@@ -272,7 +280,7 @@ installAmbassador() {
     echo ""
     echo "### Activating CertificateSigningRequest ..."
     local __csr
-    __csr=$(bash "${WORKDIR_OF_SCRIPTS_BASE}/values_for_ambassador-k8ssso-csr.cnf.bash" \
+    __csr=$(bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/values_for_ambassador-k8ssso-csr.cnf.bash" \
         "${__hostname_for_ambassador_k8ssso}" \
         "${__fqdn_for_ambassador_k8ssso}" \
         "${__private_key_file}" | base64)
@@ -405,11 +413,15 @@ installKeycloak() {
     __rootca_file=$(getFullpathOfRootCA)
     watiForSuccessOfCommand \
       "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1"
+      ### NOTE
+      ### Use the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
     ## 4. Setup preset-entries
     ##
     echo ""
     echo "### Activating essential entries of the keycloak ..."
-    bash "${WORKDIR_OF_SCRIPTS_BASE}/create_keycloak-entry.bash" "${__namespace_for_keycloak}" "${__rootca_file}"
+    bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_keycloak-entry.bash" \
+      "${__namespace_for_keycloak}" \
+      "${__rootca_file}"
     ## 5. Setup Authz
     ##
     echo ""
@@ -562,9 +574,9 @@ trap 'rm -rf $TEMP_DIR' EXIT
 
 ## Set the base directory for RDBOX scripts!!
 ##
-export WORKDIR_OF_SCRIPTS_BASE=${WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
   # Values can also be inserted externally
-source "${WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 showHeader
 main "$@"
 exit $?
