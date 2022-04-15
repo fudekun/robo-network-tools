@@ -56,6 +56,7 @@ __createEntry() {
   local hash_iterations
   local fullname_array
   local conf_file
+  local http_code
   password=$(__getClusterAdminSecret "${rep_name}")
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   preset_group_name=$(getPresetGroupName)
@@ -81,7 +82,7 @@ __createEntry() {
   conf_file="$(getDirNameFor confs)/modules/${rep_name}/entry/$(getConfVersion "${rep_name}" entry)/values.jq.json"
   ## Execute Admin REST API
   ##
-  curl -fs --cacert "${ROOTCA_FILE}" -X POST "$operation_endpoint_url" \
+  http_code=$(curl -fs -w '%{http_code}' -o /dev/null --cacert "${ROOTCA_FILE}" -X POST "$operation_endpoint_url" \
       -H "Authorization: bearer $access_token" \
       -H "Content-Type: application/json" \
       -d "$(jq -n -r -f "$conf_file" \
@@ -95,7 +96,15 @@ __createEntry() {
           --arg created_date "$created_date" \
           --arg first_name "$first_name" \
           --arg last_name "$last_name" \
-      )"
+      )")
+  if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+    echo "Success create the new entry"
+  elif [ "${http_code}" -eq 409 ]; then
+    echo "Already exist the same entry"
+  else
+    echo "ERROR the HTTP Code is ${http_code}"
+    return 1
+  fi
 }
 
 ## References
@@ -182,10 +191,15 @@ main() {
 
   ## Set Context
   local client_secret
+  local __ctx_name
+  __ctx_name=$(getContextName4Kubectl)
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   echo ""
   echo "### Setting Cluster Context ..."
-  kubectl config set-credentials "$(getContextName4Kubectl)" \
+  if ! kubectl config delete-user "${__ctx_name}"; then
+    echo "The ClusterContext(user) is Not Found ...ok"
+  fi
+  kubectl config set-credentials "${__ctx_name}" \
       --exec-api-version=client.authentication.k8s.io/v1beta1 \
       --exec-command=kubectl \
       --exec-arg=oidc-login \

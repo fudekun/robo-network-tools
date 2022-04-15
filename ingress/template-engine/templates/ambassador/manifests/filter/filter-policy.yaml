@@ -6,6 +6,7 @@ apiVersion: getambassador.io/v3alpha1
 kind: FilterPolicy
 metadata:
   name: {{ .Values.ambassador.dynamics.k8ssso.hostname }}
+  namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
     app.kubernetes.io/part-of: datawire.edge-stack

@@ -69,13 +69,16 @@ installCertManager() {
       "kubectl -n ${__namespace_for_certmanager} get secrets ${__base_fqdn}"
       ### NOTE
       ### Wait until RootCA is issued
-    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o yaml > "${__history_file}"
+    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o yaml --show-managed-fields \
+      | yq 'del(.metadata.uid, .metadata.creationTimestamp, .metadata.resourceVersion, .metadata.managedFields)' \
+      > "${__history_file}"
       ### NOTE
       ### Save the History file
     __rootca_file=$(getFullpathOfRootCA)
-    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json | \
-      jq -r '.data["ca.crt"]' | \
-      base64 -d > "${__rootca_file}"
+    kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json \
+      | jq -r '.data["ca.crt"]' \
+      | base64 -d \
+      > "${__rootca_file}"
       ### NOTE
       ### Save the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
     return $?
@@ -247,7 +250,7 @@ installAmbassador() {
     ## 1. Delete the openapi mapping from the Ambassador namespace
     ##
     if ! kubectl delete -n "${__namespace_for_ambassador}" ambassador-devportal-api; then
-      echo "CRD(ambassador-devportal-api) is Not Found ...ok"
+      echo "The openapi-mapping(ambassador-devportal-api) is Not Found ...ok"
     fi
     ## 2. private key using root key of this clsters.
     ##
@@ -274,9 +277,10 @@ installAmbassador() {
       "kubectl -n ${__namespace_for_ambassador} get secrets ${__fqdn_for_ambassador_k8ssso}"
       ### NOTE
       ### Wait until SubCA is issued
-    kubectl -n "${__namespace_for_ambassador}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json | \
-        jq -r '.data["tls.key"]' | \
-        base64 -d > "${__private_key_file}"
+    kubectl -n "${__namespace_for_ambassador}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
+        | jq -r '.data["tls.key"]' \
+        | base64 -d \
+        > "${__private_key_file}"
       ### NOTE
       ### As a temporary file to issue CSRs
     ## 3. Create a file a CNF and a certificate signing request with the CNF file.
@@ -307,10 +311,14 @@ installAmbassador() {
     ##
     echo ""
     echo "### Exporting TLS Secret ..."
-    kubectl get csr "${__hostname_for_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" | \
-        base64 -d > "${__server_cert_file}"
+    kubectl get csr "${__hostname_for_ambassador_k8ssso}" -o jsonpath="{.status.certificate}" \
+        | base64 -d \
+        > "${__server_cert_file}"
     ## 8. Create a TLS Secret using our private key and public certificate.
     ##
+    if ! kubectl -n "${__namespace_for_ambassador}" delete secret "${__hostname_for_ambassador_k8ssso}"; then
+      echo "The secret(${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) is Not Found ...ok"
+    fi
     kubectl -n "${__namespace_for_ambassador}" create secret tls "${__hostname_for_ambassador_k8ssso}" \
         --cert "${__server_cert_file}" \
         --key "${__private_key_file}"
@@ -328,14 +336,25 @@ installAmbassador() {
                       ambassador.dynamics.k8ssso.endpoint.rbac.create=true
     ## 11. As a quick check
     ##
-    watiForSuccessOfCommand \
-      "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
+    if kubectl -n "${__namespace_for_ambassador}" get filters "${__hostname_for_ambassador_k8ssso}"; then
+      echo "already exist the filters (${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) ...ok"
+      echo "skip a quick check ...ok"
+    else
+      echo "The filters(${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) is Not Found ...ok"
+      watiForSuccessOfCommand \
+        "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
+    fi
       ### NOTE
       ### Wait until to startup the Host
     ## 12. Set Context
     echo ""
     echo "### Setting Cluster Context ..."
-    kubectl config set-cluster "$(getContextName4Kubectl)" \
+    local __ctx_name
+    __ctx_name=$(getContextName4Kubectl)
+    if ! kubectl config delete-cluster "${__ctx_name}"; then
+      echo "The ClusterContext(cluster) is Not Found ...ok"
+    fi
+    kubectl config set-cluster "${__ctx_name}" \
         --server=https://"${__fqdn_for_ambassador_k8ssso}" \
         --certificate-authority="${__server_cert_file}" \
         --embed-certs
@@ -352,6 +371,7 @@ installAmbassador() {
 ##
 installKeycloak() {
   __executor() {
+    local __SPECIFIC_SECRETS="specific-secrets"
     local __namespace_for_keycloak
     local __base_fqdn
     local __hostname_for_keycloak_main
@@ -359,25 +379,32 @@ installKeycloak() {
     local __cluster_issuer
     local __conf_of_helm
     local __rootca_file
+    local __http_code
     ## 1. Config extra secrets
     ##
     echo ""
     echo "### Setting Config of keycloak ..."
     __namespace_for_keycloak=$(getNamespaceName "keycloak")
-    kubectl create namespace "${__namespace_for_keycloak}"
-    kubectl -n "${__namespace_for_keycloak}" create secret generic specific-secrets \
-      --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
-        ### NOTE
-        ### The postgresql-postgres-password is password for root user
-        ### The postgresql-password is password for the unprivileged user
-        ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
+    if ! kubectl create namespace "${__namespace_for_keycloak}"; then
+      echo "already exist the namespace (${__namespace_for_keycloak}) ...ok"
+    fi
+    if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}"; then
+      echo "already exist the secrets (${__SPECIFIC_SECRETS}.${__namespace_for_keycloak}) ...ok"
+    else
+      kubectl -n "${__namespace_for_keycloak}" create secret generic "${__SPECIFIC_SECRETS}" \
+        --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+        --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+          ### NOTE
+          ### The postgresql-postgres-password is password for root user
+          ### The postgresql-password is password for the unprivileged user
+          ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
+    fi
     ## 2. Install Keycloak
     ##
     echo ""
@@ -419,8 +446,9 @@ installKeycloak() {
     echo ""
     echo "### Testing to access the endpoint ..."
     __rootca_file=$(getFullpathOfRootCA)
-    watiForSuccessOfCommand \
-      "curl -fs --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/ >/dev/null 2>&1"
+    __http_code=$(watiForSuccessOfCommand \
+                "curl -fs -w '%{http_code}' -o /dev/null --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/")
+    echo "The HTTP Status is ${__http_code} ...ok"
       ### NOTE
       ### Use the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
     ## 4. Setup preset-entries
@@ -492,6 +520,9 @@ installFilter() {
     __ctx_name=$(getContextName4Kubectl)
     echo ""
     echo "### Setting Cluster Context ..."
+    if ! kubectl config delete-context "${__ctx_name}"; then
+      echo "The ClusterContext(context) is Not Found ...ok"
+    fi
     kubectl config set-context "${__ctx_name}" \
         --cluster="${__ctx_name}" \
         --user="${__ctx_name}"
