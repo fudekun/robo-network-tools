@@ -2,16 +2,15 @@
 set -euo pipefail
 
 main() {
-  ## 1. Initialize WorkDir
   local __cluster_name
   local __workbase_dirs
-  local _logfile_path
+  ## 1. Initialize WorkDir
   __cluster_name="$1"
   __workbase_dirs=$(initializeWorkdirOfWorkbase "$__cluster_name")
-  __logfile_path=$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')/rdbox.log
   ## 0. Create the k8s cluster
-  script -q /dev/null "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/.run_tasks.bash "$@" 2>&1 | \
-    tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' > "${__logfile_path}")
+  script -q /dev/null "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/create_k8s-cluster.bash "$@" 2>&1 \
+    | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
+      > "$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')/rdbox.log")
 }
 
 ## Set the base directory for RDBOX scripts!!

@@ -10,8 +10,9 @@ set -euo pipefail
 checkArgs() {
   echo ""
   printf "# ARGS:\n%s\n" "$*"
-  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
-  if [ $# -eq 1 ]; then
+  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x /  - /')"
+  echo ""
+  if [[ $# -eq 1 ]]; then
     if [ "$1" = "help" ]; then
       echo "# Args"
       echo "None"
@@ -21,41 +22,60 @@ checkArgs() {
       echo "| Name                               | e.g.                            |"
       echo "| ---------------------------------- | ------------------------------- |"
       echo "| RDBOX_TYPE_OF_SECRET_OPERATION     | (default)new or recycle         |"
-      exit 1
+      return 1
     fi
   fi
-  local __base_fqdn
-  __base_fqdn=$(getBaseFQDN)
-  export BASE_FQDN=$__base_fqdn
-  RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-"new"}
-  RDBOX_TYPE_OF_SECRET_OPERATION=$(printf %q "$RDBOX_TYPE_OF_SECRET_OPERATION")
-  export RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
-      ### EXTRAPOLATION
   local __epoch_ms
   __epoch_ms=$(getEpochMillisec)
-  export __RELEASE_ID=${__epoch_ms}
+  readonly __RELEASE_ID=${__epoch_ms}
   return $?
 }
 
 ## 1. Initialize
 ##
 initializeEssentials() {
+  __executor() {
+    local __workdir_of_confs
+    ## 1. Update Helm
+    ##
+    echo ""
+    echo "### Updateing Helm ..."
+    helm repo update
+    ## 2. Set up a ConfigMap for the meta-pkg of essentials
+    ##
+    echo ""
+    echo "### Setting a ConfigMap for the meta-pkg of essentials ..."
+    __workdir_of_confs=$(getDirNameFor confs)
+    readonly __workdir_of_confs
+    kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" patch configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
+      --type merge \
+      --patch "$(kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
+                  --dry-run=client \
+                  --output=json \
+                  --from-env-file="${__workdir_of_confs}"/meta-pkgs/essentials.env.properties \
+                )"
+    return $?
+  }
   echo ""
   echo "---"
   echo "## Initializing essentials ..."
-  ## 1. Update Helm
-  updateHelm
+  cmdWithIndent "__executor"
+  return $?
 }
 
 ## 2. Install Cert-Manager
 ##
 installCertManager() {
   __issueNewSecrets() {
-    local __namespace_for_certmanager="$1"
-    local __hostname_for_certmanager_main="$2"
-    local __history_file="$3"
-    local __base_fqdn="$4"
+    local __namespace_for_certmanager
+    local __hostname_for_certmanager_main
+    local __history_file
+    local __base_fqdn
     local __rootca_file
+    readonly __namespace_for_certmanager="${1}"
+    readonly __hostname_for_certmanager_main="${2}"
+    readonly __history_file="${3}"
+    readonly __base_fqdn="${4}"
     applyManifestByDI "${__namespace_for_certmanager}" \
                       "${__hostname_for_certmanager_main}" \
                       "${__RELEASE_ID}" \
@@ -75,6 +95,7 @@ installCertManager() {
       ### NOTE
       ### Save the History file
     __rootca_file=$(getFullpathOfRootCA)
+    readonly __rootca_file
     kubectl -n "${__namespace_for_certmanager}" get secrets "${__base_fqdn}" -o json \
       | jq -r '.data["ca.crt"]' \
       | base64 -d \
@@ -84,13 +105,12 @@ installCertManager() {
     return $?
   }
   __issueSecretsUsingExistingHistory() {
-    local __namespace_for_certmanager="$1"
-    local __hostname_for_certmanager_main="$2"
-    local __history_file="$3"
-    if [ ! -e "${__history_file}" ]; then
-      echo "No history file found. Please generate a new RootCA."
-      exit 1
-    fi
+    local __namespace_for_certmanager
+    local __hostname_for_certmanager_main
+    local __history_file
+    readonly __namespace_for_certmanager="${1}"
+    readonly __hostname_for_certmanager_main="${2}"
+    readonly __history_file="${3}"
     kubectl -n "${__namespace_for_certmanager}" apply --timeout 90s --wait -f "${__history_file}"
     applyManifestByDI "${__namespace_for_certmanager}" \
                       "${__hostname_for_certmanager_main}" \
@@ -98,16 +118,18 @@ installCertManager() {
                       90s \
                       certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                       certManager.dynamics.common.isCa=true
+    return $?
   }
   __setupSecrets() {
     local __namespace_for_certmanager
     local __hostname_for_certmanager_main
     local __base_fqdn
     local __history_file
-    __namespace_for_certmanager="$1"
-    __hostname_for_certmanager_main="$2"
-    __base_fqdn="$3"
+    readonly __namespace_for_certmanager="${1}"
+    readonly __hostname_for_certmanager_main="${2}"
+    readonly __base_fqdn="$3"
     __history_file=$(getFullpathOfHistory)
+    readonly __history_file
     if [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "new" ]; then
       __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
     elif [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
@@ -122,19 +144,44 @@ installCertManager() {
       ###                        -> (Name of $__base_fqdn, like rdbox.rdbox.172-16-0-110.nip.io)
     return $?
   }
+  checkArgs() {
+    RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-"new"}
+    if [[ "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "new" || "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "recycle" ]]; then
+      readonly RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
+    else
+      echo "**ERROR**  Invalid Environment Variable (RDBOX_TYPE_OF_SECRET_OPERATION)" >&2
+      echo "  - Expect: new|recycle" >&2
+      echo "  - Actual: ${RDBOX_TYPE_OF_SECRET_OPERATION}" >&2
+      return 1
+    fi
+    if [[ "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "recycle" ]]; then
+      if [ ! -e "$(getFullpathOfHistory)" ]; then
+        echo "**ERROR**  No history file found. Please generate a new RootCA." >&2
+        echo "  - Expect: Unset Environment Variable (RDBOX_TYPE_OF_SECRET_OPERATION)" >&2
+        return 1
+      fi
+    fi
+  }
   __executor() {
     local __namespace_for_certmanager
     local __hostname_for_certmanager_main
     local __base_fqdn
     local __conf_of_helm
+    ## 0. Check Values
+    ##
+    checkArgs "$@"
     ## 1. Install Cert-Manager
     ##
-    __namespace_for_certmanager=$(getNamespaceName "cert-manager")
-    __hostname_for_certmanager_main=$(getHostName "cert-manager" "main")
-    __base_fqdn=$(getBaseFQDN)
     echo ""
     echo "### Installing with helm ..."
+    __namespace_for_certmanager=$(getNamespaceName "cert-manager")
+    readonly __namespace_for_certmanager
+    __hostname_for_certmanager_main=$(getHostName "cert-manager" "main")
+    readonly __hostname_for_certmanager_main
+    __base_fqdn=$(getBaseFQDN)
+    readonly __base_fqdn
     __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_certmanager}" confs helm)
+    readonly __conf_of_helm
     helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
         --create-namespace \
         --wait \
@@ -174,7 +221,7 @@ installMetalLB() {
       echo "WARN: Your Docker network configuration is not expected;"
       echo "- You will need to execute the MetalLB configuration yourself."
       echo "- https://kind.sigs.k8s.io/docs/user/loadbalancer/#setup-address-pool-used-by-loadbalancers"
-      exit 1
+      return 1
     fi
     echo -n "$__docker_network_range"
     return $?
@@ -184,18 +231,15 @@ installMetalLB() {
     local __hostname_for_metallb_main
     local __docker_network_range
     local __conf_of_helm
-    ## 1. Get ConfigValue MetalLB with L2 Mode
-    ##
-    echo ""
-    echo "### Calculating ConfigValue ..."
-    __docker_network_range=$(__getNetworkRangeForVirtualHost)
-    echo "${__docker_network_range}"
-    ## 2. Install MetalLB Instance
+    ## 1. Install MetalLB Instance
     ##
     echo ""
     echo "### Installing with helm ..."
     __namespace_for_metallb=$(getNamespaceName "metallb")
     __hostname_for_metallb_main=$(getHostName "metallb" "main")
+    __docker_network_range=$(__getNetworkRangeForVirtualHost)
+      ### NOTE
+      ### Get ConfigValue MetalLB with L2 Mode
     __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_metallb}" confs helm)
     helm -n "${__namespace_for_metallb}" upgrade --install "${__hostname_for_metallb_main}" metallb/metallb \
         --create-namespace \
@@ -216,17 +260,17 @@ installMetalLB() {
 ##
 installAmbassador() {
   __executor() {
+    local __aes_app_version
     local __namespace_for_ambassador
     local __hostname_for_ambassador_main
-    local __aes_app_version
     local __conf_of_helm
     ## 1. Install Ambassador's CRD
     ##
+    echo ""
+    echo "### Activating a CRD of the ambassador ..."
     __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest \
                       | jq -r ".tag_name" \
                       | cut -b 2-)
-    echo ""
-    echo "### Activating a CRD of the ambassador ..."
     kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__aes_app_version}"/aes-crds.yaml
     kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
     ## 2. Install Ambassador Instance
@@ -546,7 +590,6 @@ showVerifierCommand() {
   __namespace_for_keycloak=$(getNamespaceName "keycloak")
   echo ""
   echo "# USAGE"
-  echo "---"
   echo "## Trust CA with your browser and operating system. Check its file:"
   echo "  openssl x509 -in ${__rootca_file} -text"
   echo "  ---"
@@ -555,14 +598,13 @@ showVerifierCommand() {
   echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
   # echo ""
-  # echo "---""
   cat "$(getFullpathOfVerifyMsgs "${__namespace_for_keycloak}")"
   # echo ""
   echo ""
-  echo "---"
+  echo "# USAGE"
   echo "## Execute the following command to run kubectl with single sign-on:"
   echo "  ### Execute the following command"
-  echo "  ### This will open your default browser, and execute the login operation"
+  echo "  ### Your default browser will launch and you should perform the login operation"
   echo "  kubectl config use-context ${__ctx_name}"
   echo "  kubectl get node          # whatever is okay, just choose the one you like"
   echo ""
@@ -578,32 +620,34 @@ main() {
   checkArgs "$@"
   ## 1. Initializing
   ##
-  initializeEssentials "$@"
+  cmdWithLoding \
+    "initializeEssentials" \
+    "Initializing the meta-pkgs of essentials"
   ## 2. Install Cert-Manager
   ##
   cmdWithLoding \
     "installCertManager" \
-    "Activating cert-manager"
+    "Activating the cert-manager"
   ## 3. Install MetalLB
   ##
   cmdWithLoding \
     "installMetalLB" \
-    "Activating metallb"
+    "Activating the metallb"
   ## 4. Install Ambassador
   ##
   cmdWithLoding \
     "installAmbassador" \
-    "Activating ambassador"
+    "Activating the ambassador"
   ## 5. Install Keycloak
   ##
   cmdWithLoding \
     "installKeycloak" \
-    "Activating keycloak"
+    "Activating the keycloak"
   ## 6. Install Filter
   ##
   cmdWithLoding \
     "installFilter" \
-    "Activating filter"
+    "Activating the filter"
   ## 99. Notify Verifier-Command
   ##
   showVerifierCommand

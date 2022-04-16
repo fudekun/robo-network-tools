@@ -94,12 +94,6 @@ drawMaxColsSeparator() {
   printf "\033[${color}m%s\033[m\n" "${raw_separator}"
 }
 
-updateHelm() {
-  cmdWithLoding \
-    "helm repo update 1> /dev/null" \
-    "Updateing Helm"
-}
-
 watiForSuccessOfCommand() {
   local __cmds="$1"
   local __count=0
@@ -267,14 +261,36 @@ initializeWorkdirOfWorkbase() {
 #   0 if thing is valid , non-zero on error.
 #######################################
 isValidHostname() {
+  local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,20}[A-Za-z0-9]$'
   local __hostname
   __hostname=$1
-  if [[ "$__hostname" =~ ^[A-Za-z0-9][A-Za-z0-9\-]{1,61}[A-Za-z0-9]$ ]]; then
+  if [[ "$__hostname" =~ ${__regex} ]]; then
     return 0
   else
-    echo "Invalid Argument" 1>&2
-    echo "Expect: ^[A-Za-z0-9][A-Za-z0-9\-]{1,61}[A-Za-z0-9]$" 1>&2
-    echo "Actual: ${__hostname}" 1>&2
+    echo "**ERROR**  Invalid Argument (hostname)" >&2
+    echo "  - Expect: ${__regex}" >&2
+    echo "  - Actual: ${__hostname}" >&2
+    return 1
+  fi
+}
+
+#######################################
+# Checks if the argument string is available as a domain.
+# Arguments:
+#   domainname String (e.g. nip.io)
+# Returns:
+#   0 if thing is valid , non-zero on error.
+#######################################
+isValidDomainname() {
+  local __regex='^([A-Za-z]{2,6}|[A-Za-z]{2,6}\.[A-Za-z]{2,6})$'
+  local __domainname
+  __domainname=$1
+  if [[ "$__domainname" =~ ${__regex} ]]; then
+    return 0
+  else
+    echo "**ERROR**  Invalid Argument (domainname)" >&2
+    echo "  - Expect: ${__regex}" >&2
+    echo "  - Actual: ${__domainname}" >&2
     return 1
   fi
 }

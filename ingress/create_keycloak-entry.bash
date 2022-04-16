@@ -141,14 +141,12 @@ showVerifierCommand() {
   local rep_name=${1}
   local base_url=${2:-https://$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.ingress.hostname')}
   echo ""
-  echo "---"
+  echo "# USAGE"
   echo "## The basic keycloak entry has been inserted. Check its status by running:"
-  echo "  ---"
   echo "  ### For all realms"
   echo "  ${base_url}/auth/admin"
   echo "    echo Username: \$(helm -n ${rep_name} get values ${rep_name} -o json | jq -r '.auth.adminUser')"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.admin-password}' | base64 --decode)"
-  echo "  ---"
   echo "  ### For this k8s cluster only (ClusterName: $(getClusterName))"
   echo "  ${base_url}/auth/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
   echo "    echo Username: $(getPresetClusterAdminName "${rep_name}")"

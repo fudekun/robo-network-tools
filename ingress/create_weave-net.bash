@@ -4,7 +4,7 @@ set -euo pipefail
 showHeaderCommand() {
   echo ""
   echo "---"
-  echo "## Installing Weave-Net ..."
+  echo "## Installing the weave-net ..."
   return $?
 }
 
@@ -20,6 +20,10 @@ showVerifierCommand() {
   echo "---"
   echo "## Weave-Net has been installed. Check its status by running:"
   echo "    kubectl -n kube-system get daemonsets weave-net -o wide"
+  return $?
+}
+
+checkArgs() {
   return $?
 }
 
