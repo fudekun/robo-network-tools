@@ -38,7 +38,7 @@ checkArgs() {
   else
     return 2
   fi
-  if [ $# = 3 ]; then
+  if [[ $# -eq 3 ]]; then
     if isValidHostname "$3"; then
       __RDBOX_HOST_NAME=$(printf %q "$3")
       export __RDBOX_HOST_NAME=$__RDBOX_HOST_NAME

@@ -233,6 +233,19 @@ __generateDynamicsConfigForDI() {
   return $?
 }
 
+#######################################
+# Initialize based on the specified ClusterName
+# - Creates a working directory
+# - Synchronize confs directories
+# Globals:
+#   RDBOX_WORKDIR_OF_SCRIPTS_BASE
+# Arguments:
+#   ClusterName String (e.g. rdbox)
+# Outputs:
+#   the list of Workdirs by SpaceSeparateString
+# Returns:
+#   0 if thing was created, non-zero on error.
+#######################################
 initializeWorkdirOfWorkbase() {
   local __cluster_name
   local __workbase_dirs
@@ -241,7 +254,14 @@ initializeWorkdirOfWorkbase() {
   local __workdir_of_outputs
   local __workdir_of_tmps
   local __workdir_of_confs
-  __cluster_name="$1"
+  ## Check Args
+  ##
+  if isValidHostname "$1"; then
+    __cluster_name=$(printf %q "$1")
+    readonly __cluster_name
+  else
+    return 1
+  fi
   __workbase_dirs=$(getDirNameListOfWorkbase "${__cluster_name}")
   __workdir_of_work_base=$(echo "$__workbase_dirs" | awk -F ' ' '{print $1}')
   __workdir_of_logs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')
@@ -250,7 +270,8 @@ initializeWorkdirOfWorkbase() {
   __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
   mkdir -p "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
   rsync -au "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/confs/ "${__workdir_of_confs}"
-  echo "${__workdir_of_work_base}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  echo -n "${__workdir_of_work_base}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  return $?
 }
 
 #######################################
@@ -511,4 +532,5 @@ getApiversionBasedOnSemver() {
     __api_version=$(printf "v%dalpha%d" "${__major}" "${__build}")
   fi
   echo -n "${__api_version}"
+  return $?
 }

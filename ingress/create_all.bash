@@ -4,10 +4,10 @@ set -euo pipefail
 main() {
   local __cluster_name
   local __workbase_dirs
-  ## 1. Initialize WorkDir
+  ## 0. Initialize WorkDir
   __cluster_name="$1"
   __workbase_dirs=$(initializeWorkdirOfWorkbase "$__cluster_name")
-  ## 0. Create the k8s cluster
+  ## 1. Create the k8s cluster
   script -q /dev/null "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/create_k8s-cluster.bash "$@" 2>&1 \
     | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
       > "$(echo "$__workbase_dirs" | awk -F ' ' '{print $2}')/rdbox.log")
