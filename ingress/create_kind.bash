@@ -8,6 +8,22 @@ showHeaderCommand() {
   return $?
 }
 
+checkArgs() {
+  ## Define version of the manifest
+  ##
+  readonly __VERSION_OF_MANIFEST="v1beta1"
+  ## Check Args
+  ##
+  if isValidHostname "$1"; then
+    __RDBOX_CLUSTER_NAME=$(printf %q "$1")
+    export __RDBOX_CLUSTER_NAME=$__RDBOX_CLUSTER_NAME
+    readonly __RDBOX_CLUSTER_NAME
+  else
+    return 1
+  fi
+  return $?
+}
+
 main() {
   local __RDBOX_CLUSTER_NAME
   __RDBOX_CLUSTER_NAME=$1
@@ -22,22 +38,6 @@ showVerifierCommand() {
   echo "# USAGE"
   echo "## KinD has been installed. Check its status by running:"
   echo "    kind get nodes --name rdbox"
-  return $?
-}
-
-checkArgs() {
-  ## Define version of the manifest
-  ##
-  readonly __VERSION_OF_MANIFEST="v1beta1"
-  ## Check Args
-  ##
-  if isValidHostname "$1"; then
-    __RDBOX_CLUSTER_NAME=$(printf %q "$1")
-    export __RDBOX_CLUSTER_NAME=$__RDBOX_CLUSTER_NAME
-    readonly __RDBOX_CLUSTER_NAME
-  else
-    return 1
-  fi
   return $?
 }
 

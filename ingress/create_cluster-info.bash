@@ -8,21 +8,6 @@ showHeaderCommand() {
   return $?
 }
 
-main() {
-  showHeaderCommand "$@"
-  cmdWithIndent "__executor $*"
-  showVerifierCommand > /dev/null 2>&1
-  return $?
-}
-
-showVerifierCommand() {
-  echo ""
-  echo "# USAGE"
-  echo "## Cluster-Info has been installed. Check its status by running:"
-  echo "    kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmap ${__RDBOX_CLUSTER_INFO_NAMENAME} -o yaml"
-  return $?
-}
-
 checkArgs() {
   if isValidHostname "$1"; then
     __RDBOX_CLUSTER_NAME=$(printf %q "$1")
@@ -47,6 +32,21 @@ checkArgs() {
       return 3
     fi
   fi
+}
+
+main() {
+  showHeaderCommand "$@"
+  cmdWithIndent "__executor $*"
+  showVerifierCommand > /dev/null 2>&1
+  return $?
+}
+
+showVerifierCommand() {
+  echo ""
+  echo "# USAGE"
+  echo "## Cluster-Info has been installed. Check its status by running:"
+  echo "    kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmap ${__RDBOX_CLUSTER_INFO_NAMENAME} -o yaml"
+  return $?
 }
 
 __executor() {

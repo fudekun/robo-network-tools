@@ -5,6 +5,13 @@ set -euo pipefail
 ## Create a minimum KinD to run a ROS2 app on a Kubernetes cluster.
 ###############################################################################
 
+showHeaderCommand() {
+  echo ""
+  echo "---"
+  echo "# Installing Meta-Package (k8s-cluster) ..."
+  return $?
+}
+
 ## 0. Input Argument Checking
 ##
 checkArgs() {
@@ -28,25 +35,13 @@ checkArgs() {
   return $?
 }
 
-## 1. Install KinD
-##
-installKinD() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_kind.bash" "$@"
-  return $?
-}
-
-## 2. SetUp ConfigMap
-##
-setupConfigMap() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_cluster-info.bash" "$@"
-  return $?
-}
-
-## 3. Install Weave-Net
-##
-installWeaveNet() {
-  bash "$(getWorkdirOfScripts)/create_weave-net.bash" "$@"
-  return $?
+main() {
+  showHeaderCommand "$@"
+  executor "$@"
+  # cmdWithIndent "executor $*"
+  showVerifierCommand
+  return 
+  $?
 }
 
 ## 99. Notify Verifier-Command
@@ -63,7 +58,7 @@ showVerifierCommand() {
   return $?
 }
 
-main() {
+executor() {
   ## Input Argument Checking
   ##
   checkArgs "$@"
@@ -82,9 +77,27 @@ main() {
   cmdWithLoding \
     "installWeaveNet $*" \
     "Activating the weave-net"
-  ## Notify Verifier-Command
-  ##
-  showVerifierCommand
+  return $?
+}
+
+## 1. Install KinD
+##
+installKinD() {
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_kind.bash" "$@"
+  return $?
+}
+
+## 2. SetUp ConfigMap
+##
+setupConfigMap() {
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_cluster-info.bash" "$@"
+  return $?
+}
+
+## 3. Install Weave-Net
+##
+installWeaveNet() {
+  bash "$(getWorkdirOfScripts)/create_weave-net.bash" "$@"
   return $?
 }
 

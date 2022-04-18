@@ -8,9 +8,13 @@ showHeaderCommand() {
   return $?
 }
 
+checkArgs() {
+  return $?
+}
+
 main() {
   showHeaderCommand "$@"
-  cmdWithIndent "__executor"
+  cmdWithIndent "__executor $*"
   showVerifierCommand > "$(getFullpathOfVerifyMsgs "weave-net")"
   return $?
 }
@@ -20,10 +24,6 @@ showVerifierCommand() {
   echo "---"
   echo "## Weave-Net has been installed. Check its status by running:"
   echo "    kubectl -n kube-system get daemonsets weave-net -o wide"
-  return $?
-}
-
-checkArgs() {
   return $?
 }
 
