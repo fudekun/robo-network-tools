@@ -50,10 +50,10 @@ checkArgs() {
 }
 
 __executor() {
-  ## .0 Check Value
+  ## Input Argument Checking
   ##
   checkArgs "$@"
-  ## .1 If the Namespace already exists, recreate it
+  ## If the Namespace already exists, recreate it
   ##
   if ! bash -c "kubectl delete namespace ${__RDBOX_CLUSTER_INFO_NAMESPACE} >/dev/null 2>&1"; then
     echo "The namespace(${__RDBOX_CLUSTER_INFO_NAMENAME}.${__RDBOX_CLUSTER_INFO_NAMESPACE}) is Not Found ...ok"

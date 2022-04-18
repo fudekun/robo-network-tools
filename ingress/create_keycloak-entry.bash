@@ -194,7 +194,7 @@ main() {
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   echo ""
   echo "### Setting Cluster Context ..."
-  if ! kubectl config delete-user "${__ctx_name}"; then
+  if ! kubectl config delete-user "${__ctx_name}" 2>/dev/null; then
     echo "The ClusterContext(user) is Not Found ...ok"
   fi
   kubectl config set-credentials "${__ctx_name}" \
@@ -213,10 +213,6 @@ main() {
   return $?
 }
 
-## Set the base directory for RDBOX scripts!!
-##
-export RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
-  # Values can also be inserted externally
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
 main "$@"
 exit $?

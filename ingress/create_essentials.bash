@@ -13,7 +13,7 @@ checkArgs() {
   printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x /  - /')"
   echo ""
   if [[ $# -eq 1 ]]; then
-    if [ "$1" = "help" ]; then
+    if [[ "$1" == "help" ]]; then
       echo "# Args"
       echo "None"
       echo ""
@@ -85,7 +85,7 @@ installCertManager() {
                       certManager.dynamics.common.isCa=true
       ### NOTE
       ### Can be changed to authenticated secret
-    watiForSuccessOfCommand \
+    waitForSuccessOfCommand \
       "kubectl -n ${__namespace_for_certmanager} get secrets ${__base_fqdn}"
       ### NOTE
       ### Wait until RootCA is issued
@@ -130,9 +130,9 @@ installCertManager() {
     readonly __base_fqdn="$3"
     __history_file=$(getFullpathOfHistory)
     readonly __history_file
-    if [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "new" ]; then
+    if [[ "$RDBOX_TYPE_OF_SECRET_OPERATION" == "new" ]]; then
       __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
-    elif [ "$RDBOX_TYPE_OF_SECRET_OPERATION" = "recycle" ]; then
+    elif [[ "$RDBOX_TYPE_OF_SECRET_OPERATION" == "recycle" ]]; then
       __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}"
     else
       echo "Please generate a new RootCA."
@@ -213,9 +213,9 @@ installMetalLB() {
     local __docker_network_range
     __docker_network_ip=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $1}')
     __docker_network_prefix=$(docker network inspect kind | jq -r ".[].IPAM.Config[].Subnet" | grep -v ":" | awk -F/ '{print $2}')
-    if [ "$__docker_network_prefix" -le 16 ]; then
+    if [[ "$__docker_network_prefix" -le 16 ]]; then
       __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s-%s.%s.%s", $1, $2, "255.200", $1, $2, "255.250"}')
-    elif [ "$__docker_network_prefix" -gt 16 ] && [ "$__docker_network_prefix" -le 24 ]; then
+    elif [[ "$__docker_network_prefix" -gt 16 ]] && [[ "$__docker_network_prefix" -le 24 ]]; then
       __docker_network_range=$(echo "$__docker_network_ip" | awk -F. '{printf "%s.%s.%s.%s-%s.%s.%s.%s", $1, $2, $3, "200", $1, $2, $3, "250"}')
     else
       echo "WARN: Your Docker network configuration is not expected;"
@@ -293,7 +293,7 @@ installAmbassador() {
     ##
     ## 1. Delete the openapi mapping from the Ambassador namespace
     ##
-    if ! kubectl delete -n "${__namespace_for_ambassador}" ambassador-devportal-api; then
+    if ! kubectl delete -n "${__namespace_for_ambassador}" ambassador-devportal-api 2>/dev/null; then
       echo "The openapi-mapping(ambassador-devportal-api) is Not Found ...ok"
     fi
     ## 2. private key using root key of this clsters.
@@ -317,7 +317,7 @@ installAmbassador() {
                       ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                       ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
                       ambassador.dynamics.k8ssso.certificate.useCa=true
-    watiForSuccessOfCommand \
+    waitForSuccessOfCommand \
       "kubectl -n ${__namespace_for_ambassador} get secrets ${__fqdn_for_ambassador_k8ssso}"
       ### NOTE
       ### Wait until SubCA is issued
@@ -360,7 +360,7 @@ installAmbassador() {
         > "${__server_cert_file}"
     ## 8. Create a TLS Secret using our private key and public certificate.
     ##
-    if ! kubectl -n "${__namespace_for_ambassador}" delete secret "${__hostname_for_ambassador_k8ssso}"; then
+    if ! kubectl -n "${__namespace_for_ambassador}" delete secret "${__hostname_for_ambassador_k8ssso}" 2>/dev/null; then
       echo "The secret(${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) is Not Found ...ok"
     fi
     kubectl -n "${__namespace_for_ambassador}" create secret tls "${__hostname_for_ambassador_k8ssso}" \
@@ -380,12 +380,12 @@ installAmbassador() {
                       ambassador.dynamics.k8ssso.endpoint.rbac.create=true
     ## 11. As a quick check
     ##
-    if kubectl -n "${__namespace_for_ambassador}" get filters "${__hostname_for_ambassador_k8ssso}"; then
+    if kubectl -n "${__namespace_for_ambassador}" get filters "${__hostname_for_ambassador_k8ssso}" 2>/dev/null; then
       echo "already exist the filters (${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) ...ok"
       echo "skip a quick check ...ok"
     else
       echo "The filters(${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) is Not Found ...ok"
-      watiForSuccessOfCommand \
+      waitForSuccessOfCommand \
         "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
     fi
       ### NOTE
@@ -395,7 +395,7 @@ installAmbassador() {
     echo "### Setting Cluster Context ..."
     local __ctx_name
     __ctx_name=$(getContextName4Kubectl)
-    if ! kubectl config delete-cluster "${__ctx_name}"; then
+    if ! kubectl config delete-cluster "${__ctx_name}" 2>/dev/null; then
       echo "The ClusterContext(cluster) is Not Found ...ok"
     fi
     kubectl config set-cluster "${__ctx_name}" \
@@ -429,7 +429,7 @@ installKeycloak() {
     echo ""
     echo "### Setting Config of keycloak ..."
     __namespace_for_keycloak=$(getNamespaceName "keycloak")
-    if ! kubectl create namespace "${__namespace_for_keycloak}"; then
+    if ! kubectl create namespace "${__namespace_for_keycloak}" 2>/dev/null; then
       echo "already exist the namespace (${__namespace_for_keycloak}) ...ok"
     fi
     if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}"; then
@@ -483,14 +483,14 @@ installKeycloak() {
         ### NOTE
         ### Tentative solution to the problem
         ### that TLSContext is not generated automatically from Ingress (v2.2.2)
-    watiForSuccessOfCommand \
+    waitForSuccessOfCommand \
       "kubectl -n ${__namespace_for_keycloak} get secrets ${__hostname_for_keycloak_main}"
         ### NOTE
         ### Wait until SubCA is issued
     echo ""
     echo "### Testing to access the endpoint ..."
     __rootca_file=$(getFullpathOfRootCA)
-    __http_code=$(watiForSuccessOfCommand \
+    __http_code=$(waitForSuccessOfCommand \
                 "curl -fs -w '%{http_code}' -o /dev/null --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/")
     echo "The HTTP Status is ${__http_code} ...ok"
       ### NOTE
@@ -657,11 +657,6 @@ main() {
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
-## Set the base directory for RDBOX scripts!!
-##
-export RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
-  # Values can also be inserted externally
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
-showHeader
 main "$@"
 exit $?

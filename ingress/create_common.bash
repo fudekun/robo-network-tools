@@ -65,9 +65,11 @@ showLoading() {
 }
 
 cmdWithLoding() {
-  local commands="$1"
-  local message="$2"
-  eval "${commands} & showLoading '${message} '"
+  local cmd
+  local message
+  cmd=$(printf %q "$1" | sed "s/\\\//g")
+  message="$2"
+  eval "${cmd} & showLoading '${message} '"
 }
 
 showIndent() {
@@ -75,14 +77,16 @@ showIndent() {
 }
 
 cmdWithIndent() {
-  local commands="$1"
-  local mark="${2:-"YES"}" # YES or NO
-  local esc
-  if [ "$mark" = "YES" ]; then
+  local cmd
+  local mark
+  cmd=$(printf %q "$1" | sed "s/\\\//g")
+  mark="${2:-"YES"}" # YES or NO
+  if [[ "$mark" == "YES" ]]; then
+    local esc
     esc=$(printf '\033')
-    eval "{ ${commands} 3>&1 1>&2 2>&3 | sed 's/^/${__RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
+    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
   else
-    eval "${commands} 2>&1 | showIndent"
+    eval "${cmd} 2>&1 | showIndent"
   fi
 }
 
@@ -94,15 +98,25 @@ drawMaxColsSeparator() {
   printf "\033[${color}m%s\033[m\n" "${raw_separator}"
 }
 
-watiForSuccessOfCommand() {
-  local __cmds="$1"
-  local __count=0
-  while ! eval "${__cmds} 2>/dev/null"; do
-    if [ $__count -gt 300 ]; then
+#######################################
+# Wait for successful command
+#   - The command is executed periodically and continues until the maximum wait time is reached.
+# Arguments:
+#   Command
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
+waitForSuccessOfCommand() {
+  local cmd
+  local count
+  cmd=$(printf %q "$1" | sed "s/\\\//g")
+  count=0
+  while ! eval "${cmd} 2>/dev/null"; do
+    if [[ $count -gt 300 ]]; then
       return 1
     fi
     sleep 1
-    __count=$((__count+1))
+    count=$((count+1))
   done
   echo ""
   return 0
@@ -190,7 +204,7 @@ __generateDynamicsValuesForDI() {
   ##
   __fullpath_of_output_values_latest_yaml="${__dirpath_of_output}"/values.latest.yaml
   mkdir -p "$(dirname "${__fullpath_of_output_values_yaml}")"
-  if [ -L "${__fullpath_of_output_values_latest_yaml}" ]; then
+  if [[ -L "${__fullpath_of_output_values_latest_yaml}" ]]; then
     unlink "${__fullpath_of_output_values_latest_yaml}"
   fi
   eval "${__cmd}" > "${__fullpath_of_output_values_yaml}"
@@ -526,7 +540,7 @@ getApiversionBasedOnSemver() {
   __major=$((__major+1))
   __minor=$((__minor+0))
   __build=$((__build+0))
-  if [ ${__minor} -gt 0 ]; then
+  if [[ ${__minor} -gt 0 ]]; then
     __api_version=$(printf "v%dbeta%d" "${__major}" "${__minor}")
   else
     __api_version=$(printf "v%dalpha%d" "${__major}" "${__build}")
