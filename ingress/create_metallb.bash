@@ -15,16 +15,17 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand > "$(getFullpathOfVerifyMsgs "metallb")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "metallb")"
   return $?
 }
 
 showVerifierCommand() {
   local namespace
-  namespace=$(getNamespaceName "ambassador")
+  namespace=$(getNamespaceName "metallb")
   echo ""
-  echo "---"
-  echo "## metallb has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### metallb has been installed. Check its status by running:"
   echo "    kubectl -n ${namespace} get deployments -o wide"
   return $?
 }

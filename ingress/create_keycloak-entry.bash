@@ -141,8 +141,8 @@ showVerifierCommand() {
   local rep_name=${1}
   local base_url=${2:-https://$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.ingress.hostname')}
   echo ""
-  echo "# USAGE"
-  echo "## The basic keycloak entry has been inserted. Check its status by running:"
+  echo "## USAGE"
+  echo "### The basic keycloak entry has been inserted. Check its status by running:"
   echo "  ### For all realms"
   echo "  ${base_url}/auth/admin"
   echo "    echo Username: \$(helm -n ${rep_name} get values ${rep_name} -o json | jq -r '.auth.adminUser')"

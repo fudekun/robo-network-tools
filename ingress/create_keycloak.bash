@@ -15,17 +15,13 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand > "$(getFullpathOfVerifyMsgs "keycloak")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "keycloak")"
   return $?
 }
 
 showVerifierCommand() {
-  local namespace
-  namespace=$(getNamespaceName "keycloak")
-  echo ""
-  echo "---"
-  echo "## keycloak has been installed. Check its status by running:"
-  echo "    kubectl -n ${namespace} get deployments  -o wide"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
   return $?
 }
 

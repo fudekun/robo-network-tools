@@ -31,17 +31,20 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand > "$(getFullpathOfVerifyMsgs "cert-manager")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "cert-manager")"
   return $?
 }
 
 showVerifierCommand() {
-  local __namespace_for_certmanager
-  __namespace_for_certmanager=$(getNamespaceName "cert-manager")
   echo ""
-  echo "---"
-  echo "## cert-manager has been installed. Check its status by running:"
-  echo "    kubectl -n ${__namespace_for_certmanager} get deployments  -o wide"
+  echo "## USAGE"
+  echo "### Trust CA with your browser and operating system. Check its file:"
+  echo "    openssl x509 -in $(getFullpathOfRootCA) -text"
+  echo "  ### This information is for reference to trust The CA file:"
+  echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
+  echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
+  echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
   return $?
 }
 

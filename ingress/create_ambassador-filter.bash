@@ -15,18 +15,19 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand >> "$(getFullpathOfVerifyMsgs "ambassador")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "ambassador")"
   return $?
 }
 
 showVerifierCommand() {
-  local namespace
-  namespace=$(getNamespaceName "ambassador")
   echo ""
-  echo "---"
-  echo "## ambassador has been updated. Check its status by running:"
-  echo "    kubectl -n ${namespace} get filters  -o wide"
-  echo "    kubectl -n ${namespace} get filterpolicies  -o wide"
+  echo "## USAGE"
+  echo "### Execute the following command to run kubectl with single sign-on:"
+  echo "  ### Execute the following command"
+  echo "  ### Your default browser will launch and you should perform the login operation"
+  echo "    kubectl config use-context $(getContextName4Kubectl)"
+  echo "    kubectl get node          # whatever is okay, just choose the one you like"
   return $?
 }
 

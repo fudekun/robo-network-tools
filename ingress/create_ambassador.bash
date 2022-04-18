@@ -15,7 +15,8 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand > "$(getFullpathOfVerifyMsgs "ambassador")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "ambassador")"
   return $?
 }
 
@@ -23,8 +24,8 @@ showVerifierCommand() {
   local namespace
   namespace=$(getNamespaceName "ambassador")
   echo ""
-  echo "---"
-  echo "## ambassador has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### ambassador has been installed. Check its status by running:"
   echo "    kubectl -n ${namespace} get deployments  -o wide"
   return $?
 }

@@ -43,8 +43,8 @@ main() {
 
 showVerifierCommand() {
   echo ""
-  echo "# USAGE"
-  echo "## Cluster-Info has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### Cluster-Info has been installed. Check its status by running:"
   echo "    kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmap ${__RDBOX_CLUSTER_INFO_NAMENAME} -o yaml"
   return $?
 }

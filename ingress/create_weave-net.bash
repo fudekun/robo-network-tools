@@ -15,14 +15,15 @@ checkArgs() {
 main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
-  showVerifierCommand > "$(getFullpathOfVerifyMsgs "weave-net")"
+  verify_string=$(showVerifierCommand)
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "weave-net")"
   return $?
 }
 
 showVerifierCommand() {
   echo ""
-  echo "---"
-  echo "## Weave-Net has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### Weave-Net has been installed. Check its status by running:"
   echo "    kubectl -n kube-system get daemonsets weave-net -o wide"
   return $?
 }

@@ -40,16 +40,15 @@ main() {
   executor "$@"
   # cmdWithIndent "executor $*"
   showVerifierCommand
-  return 
-  $?
+  return $?
 }
 
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
   echo ""
-  echo "# USAGE"
-  echo "## K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
   echo ""
   echo "# SUCCESS"

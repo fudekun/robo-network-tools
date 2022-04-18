@@ -35,8 +35,8 @@ main() {
 
 showVerifierCommand() {
   echo ""
-  echo "# USAGE"
-  echo "## KinD has been installed. Check its status by running:"
+  echo "## USAGE"
+  echo "### KinD has been installed. Check its status by running:"
   echo "    kind get nodes --name rdbox"
   return $?
 }

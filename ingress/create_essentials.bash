@@ -50,31 +50,9 @@ main() {
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
-  local __ctx_name
-  local __rootca_file
-  local __namespace_for_keycloak
-  __ctx_name=$(getContextName4Kubectl)
-  __rootca_file=$(getFullpathOfRootCA)
-  __namespace_for_keycloak=$(getNamespaceName "keycloak")
-  echo ""
-  echo "# USAGE"
-  echo "## Trust CA with your browser and operating system. Check its file:"
-  echo "  openssl x509 -in ${__rootca_file} -text"
-  echo "  ---"
-  echo "  ### This information is for reference to trust The CA file:"
-  echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
-  echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
-  echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
-  # echo ""
-  cat "$(getFullpathOfVerifyMsgs "${__namespace_for_keycloak}")"
-  # echo ""
-  echo ""
-  echo "# USAGE"
-  echo "## Execute the following command to run kubectl with single sign-on:"
-  echo "  ### Execute the following command"
-  echo "  ### Your default browser will launch and you should perform the login operation"
-  echo "  kubectl config use-context ${__ctx_name}"
-  echo "  kubectl get node          # whatever is okay, just choose the one you like"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "cert-manager")")"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "ambassador")")"
   echo ""
   echo "# SUCCESS"
   echo "[$(getIso8601DayTime)][$(basename "$0")]"
