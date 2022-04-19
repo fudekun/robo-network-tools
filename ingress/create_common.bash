@@ -4,30 +4,71 @@
 
 ## FIXED VALUE
 ##
+__RDBOX_VERSION=v0.1.0
+__RDBOX_OPTS_RDBOX_MAIN="n:"
+__RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMENAME=cluster-info
 __RDBOX_CLUSTER_INFO_NAMESPACE=cluster-common
-__NUM_INDENT=4
+__RDBOX_NUM_INDENT=4
 ## VALUE for internal using
 ##
-__RAW_INDENT=$(for _ in $(eval "echo {1..$__NUM_INDENT}"); do echo -ne " "; done)
+__RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
 
 cleanupShowLoading() {
   tput cnorm
 }
 
+#######################################
+# Show Headder message
+# Arguments:
+#   (optional)is_showing_logo boolean
+# Outputs:
+#   A message containing the time and the name of the script from which it was run.
+#   Optionally include a logo in the message.
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
 showHeader() {
+  local is_showing_logo=${1:-false}
   drawMaxColsSeparator "=" "39"
   echo "[$(getIso8601DayTime)][$(basename "$0")]"
   echo "# START"
+  if "${is_showing_logo}"; then
+    echo ""
+    echo "- This is an advanced IT platform for robotics and IoT developers -"
+    echo "           .___. "
+    echo "          /___/| "
+    echo "          |   |/ "
+    echo "          .---.  "
+    echo "          RDBOX  "
+    echo "- A Robotics Developers BOX -"
+  fi
+  return $?
+}
+
+#######################################
+# Show Footer message
+# Arguments:
+#   ReturnCode
+# Outputs:
+#   A message containing the time and the name of the script from which it was run.
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
+showFooter() {
+  local result
+  local message
+  result=${1:-0}
+  if [[ "${result}" -eq 0 ]]; then
+    message="SUCCESS"
+  else
+    message="FAILED ${1}"
+  fi
   echo ""
-  echo "---"
-  echo "- This is an advanced IT platform for robotics and IoT developers -"
-  echo "           .___. "
-  echo "          /___/| "
-  echo "          |   |/ "
-  echo "          .---.  "
-  echo "          RDBOX  "
-  echo "- A Robotics Developers BOX -"
+  echo "# ${message}"
+  echo "[$(getIso8601DayTime)][$(basename "$0")]"
+  drawMaxColsSeparator "*" "39"
+  return $?
 }
 
 showLoading() {

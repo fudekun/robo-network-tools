@@ -1,0 +1,100 @@
+#!/bin/bash
+set -euo pipefail
+
+function main() {
+  local subcommand
+  subcommand="${1}"
+  case "${subcommand}" in
+    create)
+      create "${@:2}"
+      ;;
+    init)
+      init "${@:2}"
+      ;;
+    delete)
+      delete "${@:2}"
+      ;;
+    version)
+      version
+      ;;
+    *)
+      echo "Unexpected subcommand ${subcommand}"
+      ;;
+  esac
+}
+
+function get_cluster_name() {
+  local cluster_name
+  local opt optarg
+  while getopts "${__RDBOX_OPTS_CREATE_MAIN}""${__RDBOX_OPTS_RDBOX_MAIN}"-: opt; do
+    optarg="$OPTARG"
+    if [[ "$opt" = - ]]; then
+      opt="-${OPTARG%%=*}"
+      optarg="${OPTARG/${OPTARG%%=*}/}"
+      optarg="${optarg#=}"
+      if [[ -z "$optarg" ]] && [[ ! "${!OPTIND}" = -* ]]; then
+        optarg="${!OPTIND}"
+        shift
+      fi
+    fi
+    case "-$opt" in
+      -n|--name) cluster_name="$optarg" ;;
+      *) ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+  echo -n "${cluster_name}"
+  return $?
+}
+
+function exec_with_logger() {
+  local fullpath_script
+  local cluster_name
+  local workbase_dirs
+  local workdir_of_logs
+  fullpath_script=${1}
+  cluster_name=${2}
+  workbase_dirs=$(getDirNameListOfWorkbase "${cluster_name}")
+  workdir_of_logs=$(echo "$workbase_dirs" | awk -F ' ' '{print $2}')
+  script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
+    | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
+      >> "${workdir_of_logs}/rdbox.log")
+  return $?
+}
+
+function create() {
+  local fullpath_script
+  local cluster_name
+  cluster_name=$(get_cluster_name "${@}")
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/rdbox_create.bash
+  exec_with_logger "${fullpath_script}" "${cluster_name}" "${@}"
+  return $?
+}
+
+function delete() {
+  echo "Delete"
+  return $?
+}
+
+function init() {
+  local fullpath_script
+  local cluster_name
+  cluster_name=$(get_cluster_name "${@}")
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/rdbox_init.bash
+  exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
+  return $?
+}
+
+function version() {
+  echo "${__RDBOX_VERSION}"
+}
+
+## Set the base directory for RDBOX scripts!!
+##
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")" || exit 1; pwd)}
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
+  ### EXTRAPOLATION
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+main "$@"
+exit $?

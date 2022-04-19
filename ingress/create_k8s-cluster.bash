@@ -16,7 +16,7 @@ showHeaderCommand() {
 ##
 checkArgs() {
   echo ""
-  printf "# ARGS:\n%s\n" "$*"
+  printf "# ARGS:\n%q\n" "$*"
   printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"
@@ -50,10 +50,6 @@ showVerifierCommand() {
   echo "## USAGE"
   echo "### K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
   echo "    kubectl get node -o wide"
-  echo ""
-  echo "# SUCCESS"
-  echo "[$(getIso8601DayTime)][$(basename "$0")]"
-  drawMaxColsSeparator "*" "39"
   return $?
 }
 
