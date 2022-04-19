@@ -16,8 +16,8 @@ showHeaderCommand() {
 ##
 checkArgs() {
   echo ""
-  printf "# ARGS:\n%s\n" "$*"
-  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x /  - /')"
+  printf "# ARGS:\n%q (%s arg(s))\n" "$*" "$#"
+  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   echo ""
   if [[ $# -eq 1 ]]; then
     if [[ "$1" == "help" ]]; then
@@ -53,10 +53,6 @@ showVerifierCommand() {
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "cert-manager")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "ambassador")")"
-  echo ""
-  echo "# SUCCESS"
-  echo "[$(getIso8601DayTime)][$(basename "$0")]"
-  drawMaxColsSeparator "*" "39"
   return $?
 }
 

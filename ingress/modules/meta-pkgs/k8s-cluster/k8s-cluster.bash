@@ -5,7 +5,7 @@ set -euo pipefail
 ## Create a minimum KinD to run a ROS2 app on a Kubernetes cluster.
 ###############################################################################
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "# Installing Meta-Package (k8s-cluster) ..."
@@ -14,28 +14,34 @@ showHeaderCommand() {
 
 ## 0. Input Argument Checking
 ##
-checkArgs() {
+function checkArgs() {
   echo ""
   printf "# ARGS:\n%q (%s arg(s))\n" "$*" "$#"
   printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
-  if [ $# -lt 2 ] || [ "$1" = "help" ]; then
-    echo "# Args"
-    echo "     \${1} Specify the cluster name  (e.g. rdbox)"
-    echo "     \${2} Specify the Domain name   (e.g. Your Domain OR nip.io, sslip.io ...)"
-    echo "(opt)\${3} Specify the Host name     (e.g. rdbox-master-00)"
-    echo ""
-    echo "# EnvironmentVariable"
-    echo "  (recommend: Use automatic settings)"
-    echo "| Name                          | e.g.                       |"
-    echo "| ----------------------------  | -------------------------- |"
-    echo "| RDBOX_NAME_DEFULT_NIC         | en0                        |"
-    echo "| RDBOX_WORKDIR_OF_WORK_BASE    | HOME/rdbox/#1              |"
-    exit 1
-  fi
+  local opt optarg
+  while getopts "${__RDBOX_OPTS_CREATE_MAIN}""${__RDBOX_OPTS_RDBOX_MAIN}"-: opt; do
+    optarg="$OPTARG"
+    if [[ "$opt" = - ]]; then
+      opt="-${OPTARG%%=*}"
+      optarg="${OPTARG/${OPTARG%%=*}/}"
+      optarg="${optarg#=}"
+      if [[ -z "$optarg" ]] && [[ ! "${!OPTIND}" = -* ]]; then
+        optarg="${!OPTIND}"
+        shift
+      fi
+    fi
+    case "-$opt" in
+      -d|--domain) domain_name="$optarg" ;;
+      -h|--host) host_name="$optarg" ;;
+      -n|--name) cluster_name="$optarg" ;;
+      *) ;;
+    esac
+  done
+  shift $((OPTIND - 1))
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   executor "$@"
   # cmdWithIndent "executor $*"
@@ -45,7 +51,7 @@ main() {
 
 ## 99. Notify Verifier-Command
 ##
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
@@ -53,46 +59,48 @@ showVerifierCommand() {
   return $?
 }
 
-executor() {
+function executor() {
   ## Input Argument Checking
   ##
+  local cluster_name domain_name host_name
   checkArgs "$@"
   ## Install KinD
   ##
   cmdWithLoding \
-    "installKinD $*" \
+    "installKinD ${cluster_name}" \
     "Activating the K8s Cluster by KinD"
   ## SetUp ConfigMap
   ##
+  host_name=${host_name:-""}
   cmdWithLoding \
-    "setupConfigMap $*" \
+    "setupConfigMap ${cluster_name} ${domain_name} ${host_name}" \
     "Activating the cluster-info"
   ## Install Weave-Net
   ##
   cmdWithLoding \
-    "installWeaveNet $*" \
+    "installWeaveNet" \
     "Activating the weave-net"
   return $?
 }
 
 ## 1. Install KinD
 ##
-installKinD() {
+function installKinD() {
   bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_kind.bash" "$@"
   return $?
 }
 
 ## 2. SetUp ConfigMap
 ##
-setupConfigMap() {
+function setupConfigMap() {
   bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_cluster-info.bash" "$@"
   return $?
 }
 
 ## 3. Install Weave-Net
 ##
-installWeaveNet() {
-  bash "$(getWorkdirOfScripts)/create_weave-net.bash" "$@"
+function installWeaveNet() {
+  bash "$(getWorkdirOfScripts)/create_weave-net.bash"
   return $?
 }
 

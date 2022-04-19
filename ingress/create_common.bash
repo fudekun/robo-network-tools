@@ -312,7 +312,7 @@ initializeWorkdirOfWorkbase() {
   local __workdir_of_confs
   ## Check Args
   ##
-  if isValidHostname "$1"; then
+  if isValidClustername "$1"; then
     __cluster_name=$(printf %q "$1")
     readonly __cluster_name
   else
@@ -331,6 +331,27 @@ initializeWorkdirOfWorkbase() {
 }
 
 #######################################
+# Checks if the argument string is available as a cluster name.
+# Arguments:
+#   hostname String (e.g. rdbox)
+# Returns:
+#   0 if thing is valid , non-zero on error.
+#######################################
+isValidClustername() {
+  local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,12}[A-Za-z0-9]$'
+  local __clustername
+  __clustername=$1
+  if [[ "$__clustername" =~ ${__regex} ]]; then
+    return 0
+  else
+    echo "**ERROR**  Invalid Argument (clustername)" >&2
+    echo "  - Expect: ${__regex}" >&2
+    echo "  - Actual: ${__clustername}" >&2
+    return 1
+  fi
+}
+
+#######################################
 # Checks if the argument string is available as a host name.
 # Arguments:
 #   hostname String (e.g. rdbox-01)
@@ -338,7 +359,7 @@ initializeWorkdirOfWorkbase() {
 #   0 if thing is valid , non-zero on error.
 #######################################
 isValidHostname() {
-  local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,20}[A-Za-z0-9]$'
+  local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,64}[A-Za-z0-9]$'
   local __hostname
   __hostname=$1
   if [[ "$__hostname" =~ ${__regex} ]]; then

@@ -14,7 +14,7 @@ checkArgs() {
   readonly __VERSION_OF_MANIFEST="v1beta1"
   ## Check Args
   ##
-  if isValidHostname "$1"; then
+  if isValidClustername "$1"; then
     __RDBOX_CLUSTER_NAME=$(printf %q "$1")
     export __RDBOX_CLUSTER_NAME=$__RDBOX_CLUSTER_NAME
     readonly __RDBOX_CLUSTER_NAME

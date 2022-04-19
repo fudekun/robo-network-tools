@@ -38,7 +38,14 @@ function get_cluster_name() {
       fi
     fi
     case "-$opt" in
-      -n|--name) cluster_name="$optarg" ;;
+      -n|--name)
+        if isValidClustername "$optarg"; then
+          cluster_name=$(printf %q "$optarg")
+          readonly cluster_name
+        else
+          return 1
+        fi
+        ;;
       *) ;;
     esac
   done
@@ -55,7 +62,13 @@ function exec_with_logger() {
   fullpath_script=${1}
   cluster_name=${2}
   workbase_dirs=$(getDirNameListOfWorkbase "${cluster_name}")
+  workbase_of_top=$(echo "$workbase_dirs" | awk -F ' ' '{print $1}')
   workdir_of_logs=$(echo "$workbase_dirs" | awk -F ' ' '{print $2}')
+  if [ ! -d "${workbase_of_top}" ]; then
+    echo "**ERROR** First, initialize it by executing the command:"
+    echo "    rdbox init --name ${cluster_name}"
+    return 1
+  fi
   script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
     | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
       >> "${workdir_of_logs}/rdbox.log")
@@ -83,10 +96,24 @@ function delete() {
 function init() {
   local fullpath_script
   local cluster_name
+  local outputs
+  local ret
+  local workbase_dirs
+  local workdir_of_logs
   cluster_name=$(get_cluster_name "${@}")
   fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/init.bash
-  exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
-  return $?
+  outputs=$(bash "${fullpath_script}" "${cluster_name}")
+  ret=$?
+    ### NOTE
+    ### The following commands are processed to save the execution results as a log file
+    ### It doesn't matter if you fail.
+  echo "${outputs}"
+  workbase_dirs=$(getDirNameListOfWorkbase "${cluster_name}")
+  workdir_of_logs=$(echo "$workbase_dirs" | awk -F ' ' '{print $2}')
+  echo "${outputs}" >> "${workdir_of_logs}"/rdbox.log
+    ### NOTE
+    ### Try to save the stdout/stderr
+  return $ret
 }
 
 function version() {
