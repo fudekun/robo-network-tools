@@ -16,7 +16,7 @@ showHeaderCommand() {
 ##
 checkArgs() {
   echo ""
-  printf "# ARGS:\n%q\n" "$*"
+  printf "# ARGS:\n%q (%s arg(s))\n" "$*" "$#"
   printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   if [ $# -lt 2 ] || [ "$1" = "help" ]; then
     echo "# Args"

@@ -10,6 +10,7 @@ __RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMENAME=cluster-info
 __RDBOX_CLUSTER_INFO_NAMESPACE=cluster-common
 __RDBOX_NUM_INDENT=4
+__RDBOX_SUBMODULES_DIR_RELATIVE_PATH="/submodules"
 ## VALUE for internal using
 ##
 __RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)

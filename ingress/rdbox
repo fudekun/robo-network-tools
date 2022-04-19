@@ -66,13 +66,17 @@ function create() {
   local fullpath_script
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
-  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/rdbox_create.bash
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/create.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" "${@}"
   return $?
 }
 
 function delete() {
-  echo "Delete"
+  local fullpath_script
+  local cluster_name
+  cluster_name=$(get_cluster_name "${@}")
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/delete.bash
+  exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
   return $?
 }
 
@@ -80,13 +84,14 @@ function init() {
   local fullpath_script
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
-  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/rdbox_init.bash
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/init.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
   return $?
 }
 
 function version() {
   echo "${__RDBOX_VERSION}"
+  return $?
 }
 
 ## Set the base directory for RDBOX scripts!!

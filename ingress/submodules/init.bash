@@ -16,13 +16,16 @@ function main() {
 }
 
 function showVerifierCommand() {
-  local result
-  local workspace_dir
+  local result workspace_dir conf_dir
   result=${1}
   workspace_dir=${2}
+  conf_dir=$(echo "$workspace_dir" | awk -F ' ' '{print $5}')
   echo ""
   echo "# Your working directories/files are ready"
   echo "  $workspace_dir"
+  echo ""
+  echo "  ## You can customize the configuration files to match your environment"
+  echo "  ${conf_dir}"
   showFooter "${result}"
   return $?
 }
