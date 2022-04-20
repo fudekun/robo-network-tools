@@ -4,16 +4,16 @@
 
 ## FIXED VALUE
 ##
-__RDBOX_VERSION=v0.1.0
+__RDBOX_VERSION="v0.1.0"
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
-__RDBOX_CLUSTER_INFO_NAMENAME=cluster-info
-__RDBOX_CLUSTER_INFO_NAMESPACE=cluster-common
-__RDBOX_NUM_INDENT=4
+__RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
+__RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
 __RDBOX_SUBMODULES_DIR_RELATIVE_PATH="/submodules"
+__RDBOX_NUM_INDENT=4
 ## VALUE for internal using
 ##
-__RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
+__RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
 
 cleanupShowLoading() {
   tput cnorm
@@ -32,7 +32,7 @@ cleanupShowLoading() {
 showHeader() {
   local is_showing_logo=${1:-false}
   drawMaxColsSeparator "=" "39"
-  echo "[$(getIso8601DayTime)][$(basename "$0")]"
+  echo "[$(getIso8601DayTime)][$(getEpochSec)][$(basename "$0")]"
   echo "# START"
   if "${is_showing_logo}"; then
     echo ""
@@ -67,7 +67,7 @@ showFooter() {
   fi
   echo ""
   echo "# ${message}"
-  echo "[$(getIso8601DayTime)][$(basename "$0")]"
+  echo "[$(getIso8601DayTime)][$(getEpochSec)][$(basename "$0")]"
   drawMaxColsSeparator "*" "39"
   return $?
 }
@@ -115,7 +115,7 @@ cmdWithLoding() {
 }
 
 showIndent() {
-  sed "s/^/${__RAW_INDENT}/";
+  sed "s/^/${__RDBOX_RAW_INDENT}/";
 }
 
 cmdWithIndent() {
@@ -126,7 +126,7 @@ cmdWithIndent() {
   if [[ "$mark" == "YES" ]]; then
     local esc
     esc=$(printf '\033')
-    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
+    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
   else
     eval "${cmd} 2>&1 | showIndent"
   fi
@@ -226,7 +226,7 @@ __generateDynamicsValuesForDI() {
   __args_of_eigenvalue=$5  # Store as a string (Expect a Space Separate Value)
   ## Preparation
   ##
-  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/helm/template-engine"
   __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
   __fullpath_of_input_dir=${__dirpath_of_template_engine}/${__basepath_of_input}
@@ -551,26 +551,62 @@ getHashedPasswordByPbkdf2Sha256() {
   echo "$__hash_iterations"
 }
 
+getEpochSec() {
+  local __sec
+  local __ret
+  __sec=$(python3 -c 'import time; print(time.time())')
+  __ret=$?
+  echo -n "${__sec}"
+  return ${__ret}
+}
+
 getEpochMillisec() {
   local __ms
+  local __ret
   __ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
+  __ret=$?
   echo -n "$__ms"
+  return ${__ret}
 }
 
+#######################################
+# Get a DateTime string (ISO8601 compliance)
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A DateTime string (e.g. 2022-04-20T13:51:12+0900)
+#######################################
 getIso8601DayTime() {
   local __dt
+  local __ret
   __dt=$(date '+%Y-%m-%dT%H:%M:%S%z')
-  echo -n "$__dt"
+  __ret=$?
+  echo -n "${__dt}"
+  return ${__ret}
 }
 
+#######################################
+# Get the version string of TemplateEngine
+# Globals:
+#   RDBOX_WORKDIR_OF_SCRIPTS_BASE
+# Arguments:
+#   None
+# Outputs:
+#   A TemplateEngine Version String (e.g. 0.1.0)
+#######################################
 getVersionOfTemplateEngine() {
   local __dirpath_of_template_engine
   local __basepath_of_input
   local __version_of_engine
-  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/template-engine"
+  local __ret
+  __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/helm/template-engine"
   __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(helm show chart "${__dirpath_of_template_engine}" | yq '.version')
+  __ret=$?
   echo -n "${__version_of_engine}"
+  return ${__ret}
 }
 
 #######################################
@@ -588,7 +624,7 @@ getVersionOfTemplateEngine() {
 # Arguments:
 #   SemVer String (e.g. v1beta1)
 # Outputs:
-#   APIVersion String (e.g. v0.1.0)
+#   A APIVersion String (e.g. v0.1.0)
 #######################################
 getApiversionBasedOnSemver() {
   local __raw_version

@@ -43,7 +43,7 @@ __executor() {
   if ! kubectl create namespace "${__namespace_for_keycloak}" 2>/dev/null; then
     echo "already exist the namespace (${__namespace_for_keycloak}) ...ok"
   fi
-  if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}"; then
+  if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}" 2>/dev/null; then
     echo "already exist the secrets (${__SPECIFIC_SECRETS}.${__namespace_for_keycloak}) ...ok"
   else
     kubectl -n "${__namespace_for_keycloak}" create secret generic "${__SPECIFIC_SECRETS}" \

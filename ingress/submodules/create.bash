@@ -55,7 +55,6 @@ function executor() {
 }
 
 function get_fullpath_of_script() {
-  set -x
   local module_name
   local directories
   local count_of_directories
@@ -68,7 +67,6 @@ function get_fullpath_of_script() {
     echo -n ""
   fi
   return $?
-  set +x
 }
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"

@@ -66,7 +66,7 @@ __executor() {
   __ctx_name=$(getContextName4Kubectl)
   echo ""
   echo "### Setting Cluster Context ..."
-  if ! kubectl config delete-context "${__ctx_name}" > /dev/null; then
+  if ! kubectl config delete-context "${__ctx_name}" > /dev/null 2>&1; then
     echo "The ClusterContext(context) is Not Found ...ok"
   fi
   kubectl config set-context "${__ctx_name}" \
