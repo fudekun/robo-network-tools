@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 ## References
@@ -8,7 +8,7 @@ set -euo pipefail
 ## 1. Obtain an access token for user in the realm master with username admin and password
 ## 2. Invoke the API you need by extracting the value of the access_token property
 ##
-__getAccessToken() {
+function __getAccessToken() {
   local rep_name=$1
   local BASE_URL=$2
   local username
@@ -39,7 +39,7 @@ __getAccessToken() {
 ## 4. Go to the Credentials tab and note down the secret
 ## 5. Go to the user tab and create a user with the first name ????
 ##
-__createEntry() {
+function __createEntry() {
   local rep_name=$1
   local BASE_URL=$2
   local access_token=$3
@@ -110,7 +110,7 @@ __createEntry() {
 ## References
 ## https://stackoverflow.com/questions/46689034/logout-user-via-keycloak-rest-api-doesnt-work
 ##
-__logoutSuperAdmin() {
+function __logoutSuperAdmin() {
   local BASE_URL=$1
   local REFLESH_TOKEN=$2
   local revoke_endpoint
@@ -122,22 +122,22 @@ __logoutSuperAdmin() {
       -d "refresh_token=$REFLESH_TOKEN"
 }
 
-__getSuperAdminSecret() {
+function __getSuperAdminSecret() {
   local rep_name=$1
   kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.admin-password}' | base64 --decode
 }
 
-__getClusterAdminSecret() {
+function __getClusterAdminSecret() {
   local rep_name=$1
   kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode
 }
 
-__getClusterK8sSSOSecret() {
+function __getClusterK8sSSOSecret() {
   local rep_name=$1
   kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 --decode
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   local rep_name=${1}
   local base_url=${2:-https://$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.ingress.hostname')}
   echo ""
@@ -154,7 +154,7 @@ showVerifierCommand() {
   return $?
 }
 
-main() {
+function main() {
   local rep_name=$1
   ROOTCA_FILE=${ROOTCA_FILE:-$2}
 

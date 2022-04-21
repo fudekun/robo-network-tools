@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing the weave-net ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -20,7 +20,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### Weave-Net has been installed. Check its status by running:"
@@ -28,7 +28,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   kubectl apply -f https://cloud.weave.works/k8s/net?k8s-version="$(kubectl version | base64 | tr -d '\n')"
   kubectl wait --timeout=300s -n kube-system --for=condition=ready pod -l name=weave-net
   return $?

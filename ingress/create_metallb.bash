@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing metallb ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -20,7 +20,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   local namespace
   namespace=$(getNamespaceName "metallb")
   echo ""
@@ -30,7 +30,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   local __namespace_for_metallb
   local __hostname_for_metallb_main
   local __docker_network_range
@@ -54,7 +54,7 @@ __executor() {
   return $?
 }
 
-__getNetworkRangeForVirtualHost() {
+function __getNetworkRangeForVirtualHost() {
   local __docker_network_ip
   local __docker_network_prefix
   local __docker_network_range

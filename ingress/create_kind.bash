@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Creating the K8s Cluster by KinD ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   ## Define version of the manifest
   ##
   readonly __VERSION_OF_MANIFEST="v1beta1"
@@ -24,7 +24,7 @@ checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   local __RDBOX_CLUSTER_NAME
   __RDBOX_CLUSTER_NAME=$1
   showHeaderCommand "$__RDBOX_CLUSTER_NAME"
@@ -33,7 +33,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### KinD has been installed. Check its status by running:"
@@ -41,7 +41,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   ## .0 Check Value
   ##
   checkArgs "$@"

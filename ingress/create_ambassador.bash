@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing ambassador ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -20,7 +20,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   local namespace
   namespace=$(getNamespaceName "ambassador")
   echo ""
@@ -30,7 +30,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   local __aes_app_version
   local __namespace_for_ambassador
   local __hostname_for_ambassador_main

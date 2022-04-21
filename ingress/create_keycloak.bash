@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing keycloak ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -20,12 +20,12 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
   return $?
 }
 
-__executor() {
+function __executor() {
   local __SPECIFIC_SECRETS="specific-secrets"
   local __namespace_for_keycloak
   local __base_fqdn

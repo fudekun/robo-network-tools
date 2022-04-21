@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing the cluster-info ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   if isValidClustername "$1"; then
     __RDBOX_CLUSTER_NAME=$(printf %q "$1")
     export __RDBOX_CLUSTER_NAME=$__RDBOX_CLUSTER_NAME
@@ -34,14 +34,14 @@ checkArgs() {
   fi
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   showVerifierCommand > /dev/null 2>&1
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### Cluster-Info has been installed. Check its status by running:"
@@ -49,7 +49,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   ## Input Argument Checking
   ##
   checkArgs "$@"

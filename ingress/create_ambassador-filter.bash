@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing filter ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -20,7 +20,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### Execute the following command to run kubectl with single sign-on:"
@@ -31,7 +31,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   local __base_fqdn
   __base_fqdn=$(getBaseFQDN)
   local __namespace_for_keycloak

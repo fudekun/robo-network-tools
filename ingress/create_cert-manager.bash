@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-showHeaderCommand() {
+function showHeaderCommand() {
   echo ""
   echo "---"
   echo "## Installing cert-manager ..."
   return $?
 }
 
-checkArgs() {
+function checkArgs() {
   RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-"new"}
   if [[ "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "new" || "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "recycle" ]]; then
     readonly RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
@@ -28,7 +28,7 @@ checkArgs() {
   return $?
 }
 
-main() {
+function main() {
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -36,7 +36,7 @@ main() {
   return $?
 }
 
-showVerifierCommand() {
+function showVerifierCommand() {
   echo ""
   echo "## USAGE"
   echo "### Trust CA with your browser and operating system. Check its file:"
@@ -48,7 +48,7 @@ showVerifierCommand() {
   return $?
 }
 
-__executor() {
+function __executor() {
   local __namespace_for_certmanager
   local __hostname_for_certmanager_main
   local __base_fqdn
@@ -84,7 +84,7 @@ __executor() {
   return $?
 }
 
-__setupSecrets() {
+function __setupSecrets() {
   local __namespace_for_certmanager
   local __hostname_for_certmanager_main
   local __base_fqdn
@@ -109,7 +109,7 @@ __setupSecrets() {
   return $?
 }
 
-__issueNewSecrets() {
+function __issueNewSecrets() {
   local __namespace_for_certmanager
   local __hostname_for_certmanager_main
   local __history_file
@@ -148,7 +148,7 @@ __issueNewSecrets() {
   return $?
 }
 
-__issueSecretsUsingExistingHistory() {
+function __issueSecretsUsingExistingHistory() {
   local __namespace_for_certmanager
   local __hostname_for_certmanager_main
   local __history_file

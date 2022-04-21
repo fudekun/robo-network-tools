@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ## https://google.github.io/styleguide/shellguide.html
 
@@ -9,13 +9,13 @@ __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
-__RDBOX_SUBMODULES_DIR_RELATIVE_PATH="/submodules"
+__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
 __RDBOX_NUM_INDENT=4
 ## VALUE for internal using
 ##
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
 
-cleanupShowLoading() {
+function cleanupShowLoading() {
   tput cnorm
 }
 
@@ -29,7 +29,7 @@ cleanupShowLoading() {
 # Returns:
 #   0 if thing was success, non-zero on error.
 #######################################
-showHeader() {
+function showHeader() {
   local is_showing_logo=${1:-false}
   drawMaxColsSeparator "=" "39"
   echo "[$(getIso8601DayTime)][$(getEpochSec)][$(basename "$0")]"
@@ -56,7 +56,7 @@ showHeader() {
 # Returns:
 #   0 if thing was success, non-zero on error.
 #######################################
-showFooter() {
+function showFooter() {
   local result
   local message
   result=${1:-0}
@@ -72,7 +72,7 @@ showFooter() {
   return $?
 }
 
-showLoading() {
+function showLoading() {
   local mypid=$!
   local loadingText=$1
   tput civis
@@ -106,7 +106,7 @@ showLoading() {
   return "$exit_status"
 }
 
-cmdWithLoding() {
+function cmdWithLoding() {
   local cmd
   local message
   cmd=$(printf %q "$1" | sed "s/\\\//g")
@@ -114,11 +114,11 @@ cmdWithLoding() {
   eval "${cmd} & showLoading '${message} '"
 }
 
-showIndent() {
+function showIndent() {
   sed "s/^/${__RDBOX_RAW_INDENT}/";
 }
 
-cmdWithIndent() {
+function cmdWithIndent() {
   local cmd
   local mark
   cmd=$(printf %q "$1" | sed "s/\\\//g")
@@ -132,7 +132,7 @@ cmdWithIndent() {
   fi
 }
 
-drawMaxColsSeparator() {
+function drawMaxColsSeparator() {
   local char=${1:-#}
   local color=${2:-32}
   local raw_separator
@@ -148,7 +148,7 @@ drawMaxColsSeparator() {
 # Returns:
 #   0 if thing was success, non-zero on error.
 #######################################
-waitForSuccessOfCommand() {
+function waitForSuccessOfCommand() {
   local cmd
   local count
   cmd=$(printf %q "$1" | sed "s/\\\//g")
@@ -177,7 +177,7 @@ waitForSuccessOfCommand() {
 # Returns:
 #   0 if thing was applyed, non-zero on error.
 #######################################
-applyManifestByDI() {
+function applyManifestByDI() {
   local __namespace
   local __hostname
   local __release_id
@@ -201,7 +201,7 @@ applyManifestByDI() {
   return $?
 }
 
-__generateDynamicsValuesForDI() {
+function __generateDynamicsValuesForDI() {
   local __namespace
   local __hostname
   local __release_id
@@ -255,7 +255,7 @@ __generateDynamicsValuesForDI() {
   return $?
 }
 
-__generateManifestForDI() {
+function __generateManifestForDI() {
   local __namespace
   local __hostname
   local __release_id
@@ -274,7 +274,7 @@ __generateManifestForDI() {
   return $?
 }
 
-__generateDynamicsConfigForDI() {
+function __generateDynamicsConfigForDI() {
   local __namespace
   local __hostname
   local __release_id
@@ -302,7 +302,7 @@ __generateDynamicsConfigForDI() {
 # Returns:
 #   0 if thing was created, non-zero on error.
 #######################################
-initializeWorkdirOfWorkbase() {
+function initializeWorkdirOfWorkbase() {
   local __cluster_name
   local __workbase_dirs
   local __workdir_of_work_base
@@ -337,7 +337,7 @@ initializeWorkdirOfWorkbase() {
 # Returns:
 #   0 if thing is valid , non-zero on error.
 #######################################
-isValidClustername() {
+function isValidClustername() {
   local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,12}[A-Za-z0-9]$'
   local __clustername
   __clustername=$1
@@ -358,7 +358,7 @@ isValidClustername() {
 # Returns:
 #   0 if thing is valid , non-zero on error.
 #######################################
-isValidHostname() {
+function isValidHostname() {
   local __regex='^[A-Za-z0-9][A-Za-z0-9\-]{1,64}[A-Za-z0-9]$'
   local __hostname
   __hostname=$1
@@ -379,7 +379,7 @@ isValidHostname() {
 # Returns:
 #   0 if thing is valid , non-zero on error.
 #######################################
-isValidDomainname() {
+function isValidDomainname() {
   local __regex='^([A-Za-z]{2,6}|[A-Za-z]{2,6}\.[A-Za-z]{2,6})$'
   local __domainname
   __domainname=$1
@@ -393,7 +393,7 @@ isValidDomainname() {
   fi
 }
 
-getDirNameListOfWorkbase() {
+function getDirNameListOfWorkbase() {
   local __cluster_name="$1"
   RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
   RDBOX_WORKDIR_OF_WORK_BASE=$(printf %q "$RDBOX_WORKDIR_OF_WORK_BASE")
@@ -406,7 +406,7 @@ getDirNameListOfWorkbase() {
   echo "${RDBOX_WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
 }
 
-getNetworkInfo() {
+function getNetworkInfo() {
   RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
   RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
     # EXTRAPOLATION
@@ -423,57 +423,57 @@ getNetworkInfo() {
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
 
-getContextName4Kubectl() {
+function getContextName4Kubectl() {
   local prefix=${1:-sso}
   local context_name
   context_name=${prefix}-$(getClusterName)
   echo -e "$context_name"
 }
 
-__getClusterinfoFromConfigmap() {
+function __getClusterinfoFromConfigmap() {
   local __item=$1
   kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmaps ${__RDBOX_CLUSTER_INFO_NAMENAME} -o json| jq -r "${__item}"
 }
 
-getWorkdirOfScripts() {
+function getWorkdirOfScripts() {
   __getClusterinfoFromConfigmap ".data[\"workdir.scripts\"]"
 }
 
-getClusterName() {
+function getClusterName() {
   __getClusterinfoFromConfigmap ".data.name"
 }
 
-getBaseFQDN() {
+function getBaseFQDN() {
   __getClusterinfoFromConfigmap ".data[\"nic0.base_fqdn\"]"
 }
 
-getIPv4 () {
+function getIPv4 () {
   __getClusterinfoFromConfigmap ".data[\"nic0.ipv4\"]"
 }
 
-getNamespaceName() {
+function getNamespaceName() {
   local __namespace=$1
   __getClusterinfoFromConfigmap ".data[\"namespace.${__namespace}\"]"
 }
 
-getHostName() {
+function getHostName() {
   local __namespace=$1
   local __host=$2
   __getClusterinfoFromConfigmap ".data[\"${__namespace}.hostname.${__host}\"]"
 }
 
-getDirNameFor() {
+function getDirNameFor() {
   local __purpose=$1
   __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
 
-getConfVersion() {
+function getConfVersion() {
   local __namespace=$1
   local __type=$2
   __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
 }
 
-getFullpathOfValuesYamlBy() {
+function getFullpathOfValuesYamlBy() {
   local __namespace
   local __purpose
   local __type
@@ -487,7 +487,7 @@ getFullpathOfValuesYamlBy() {
   echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}/values.yaml"
 }
 
-getFullpathOfRootCA() {
+function getFullpathOfRootCA() {
   local __dir
   local __base_fqdn
   __dir=$(getDirNameFor outputs)/ca
@@ -497,7 +497,7 @@ getFullpathOfRootCA() {
   echo -ne "${__dir}"/"${__base_fqdn}".ca.crt
 }
 
-getFullpathOfHistory() {
+function getFullpathOfHistory() {
   local __dir
   local __base_fqdn
   __base_fqdn=$(getBaseFQDN)
@@ -507,7 +507,7 @@ getFullpathOfHistory() {
   echo -ne "${__dir}"/selfsigned-ca."${__base_fqdn}".ca.yaml
 }
 
-getFullpathOfVerifyMsgs() {
+function getFullpathOfVerifyMsgs() {
   local __namespace
   local __dir
   __namespace="$1"
@@ -516,17 +516,17 @@ getFullpathOfVerifyMsgs() {
   echo -n "${__dir}"/"${__namespace}".verifier_command.txt
 }
 
-getPresetSuperAdminName() {
+function getPresetSuperAdminName() {
   local rep_name
   rep_name=$1
   helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.adminUser'
 }
 
-getPresetClusterAdminName() {
+function getPresetClusterAdminName() {
   getPresetGroupName
 }
 
-getPresetGroupName() {
+function getPresetGroupName() {
   # !! Must be a hyphen-delimited string !!
   # e.g. *cluster-admim*
   echo -n "cluster-admin"
@@ -545,7 +545,7 @@ getPresetGroupName() {
 # References:
 #   https://docs.python.org/ja/3/library/hashlib.html?highlight=pbkdf2#hashlib.pbkdf2_hmac
 #######################################
-getHashedPasswordByPbkdf2Sha256() {
+function getHashedPasswordByPbkdf2Sha256() {
   local __password=$1
   local __hash_iterations=27500
   local __salt
@@ -574,7 +574,7 @@ getHashedPasswordByPbkdf2Sha256() {
 # Outputs:
 #   A Epoch sec (e.g. 1650430272.1467361)
 #######################################
-getEpochSec() {
+function getEpochSec() {
   local __sec
   local __ret
   __sec=$(python3 -c 'import time; print(time.time())')
@@ -592,7 +592,7 @@ getEpochSec() {
 # Outputs:
 #   A Epoch milli sec (e.g. 1650430272146)
 #######################################
-getEpochMillisec() {
+function getEpochMillisec() {
   local __ms
   local __ret
   __ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
@@ -610,7 +610,7 @@ getEpochMillisec() {
 # Outputs:
 #   A DateTime string (e.g. 2022-04-20T13:51:12+0900)
 #######################################
-getIso8601DayTime() {
+function getIso8601DayTime() {
   local __dt
   local __ret
   __dt=$(date '+%Y-%m-%dT%H:%M:%S%z')
@@ -628,7 +628,7 @@ getIso8601DayTime() {
 # Outputs:
 #   A TemplateEngine Version String (e.g. 0.1.0)
 #######################################
-getVersionOfTemplateEngine() {
+function getVersionOfTemplateEngine() {
   local __dirpath_of_template_engine
   local __basepath_of_input
   local __version_of_engine
@@ -658,7 +658,7 @@ getVersionOfTemplateEngine() {
 # Outputs:
 #   A APIVersion String (e.g. v0.1.0)
 #######################################
-getApiversionBasedOnSemver() {
+function getApiversionBasedOnSemver() {
   local __raw_version
   local __major
   local __minor

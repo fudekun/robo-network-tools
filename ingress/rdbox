@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 function main() {
@@ -79,7 +79,7 @@ function create() {
   local fullpath_script
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
-  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/create.bash
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH}/create.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" "${@}"
   return $?
 }
@@ -88,7 +88,7 @@ function delete() {
   local fullpath_script
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
-  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/delete.bash
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH}/delete.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
   return $?
 }
@@ -101,7 +101,7 @@ function init() {
   local workbase_dirs
   local workdir_of_logs
   cluster_name=$(get_cluster_name "${@}")
-  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBMODULES_DIR_RELATIVE_PATH}/init.bash
+  fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH}/init.bash
   outputs=$(bash "${fullpath_script}" "${cluster_name}")
   ret=$?
     ### NOTE
