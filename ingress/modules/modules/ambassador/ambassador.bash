@@ -104,7 +104,7 @@ function __executor() {
   echo ""
   echo "### Activating CertificateSigningRequest ..."
   local __csr
-  __csr=$(bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_ambassador-k8ssso-csr.cnf.bash" \
+  __csr=$(bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/ambassador/subs/k8ssso-csr.cnf.bash" \
       "${__hostname_for_ambassador_k8ssso}" \
       "${__fqdn_for_ambassador_k8ssso}" \
       "${__private_key_file}" | base64)
@@ -179,6 +179,6 @@ function __executor() {
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

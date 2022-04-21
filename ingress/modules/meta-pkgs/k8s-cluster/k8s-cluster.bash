@@ -86,24 +86,24 @@ function executor() {
 ## 1. Install KinD
 ##
 function installKinD() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_kind.bash" "$@"
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/kind/kind.bash" "$@"
   return $?
 }
 
 ## 2. SetUp ConfigMap
 ##
 function setupConfigMap() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_cluster-info.bash" "$@"
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/cluster-info/cluster-info.bash" "$@"
   return $?
 }
 
 ## 3. Install Weave-Net
 ##
 function installWeaveNet() {
-  bash "$(getWorkdirOfScripts)/create_weave-net.bash"
+  bash "$(getWorkdirOfScripts)/modules/modules/weave-net/weave-net.bash"
   return $?
 }
 
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

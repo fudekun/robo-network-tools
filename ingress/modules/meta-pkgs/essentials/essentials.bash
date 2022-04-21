@@ -128,35 +128,35 @@ initializeEssentials() {
 ## 2. Install Cert-Manager
 ##
 installCertManager() {
-  bash "$(getWorkdirOfScripts)/create_cert-manager.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/cert-manager/cert-manager.bash" "$@"
   return $?
 }
 
 ## 3. Install MetalLB
 ##
 installMetalLB() {
-  bash "$(getWorkdirOfScripts)/create_metallb.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/metallb/metallb.bash" "$@"
   return $?
 }
 
 ## 4. Install Ambassador
 ##
 installAmbassador() {
-  bash "$(getWorkdirOfScripts)/create_ambassador.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/ambassador/ambassador.bash" "$@"
   return $?
 }
 
 ## 5. Install Keycloak
 ##
 installKeycloak() {
-  bash "$(getWorkdirOfScripts)/create_keycloak.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/keycloak/keycloak.bash" "$@"
   return $?
 }
 
 ## 6. Install Filter
 ##
 installFilter() {
-  bash "$(getWorkdirOfScripts)/create_ambassador-filter.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/ambassador/subs/filter.bash" "$@"
   return $?
 }
 
@@ -166,6 +166,6 @@ RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "
 RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
 export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
   ### EXTRAPOLATION
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

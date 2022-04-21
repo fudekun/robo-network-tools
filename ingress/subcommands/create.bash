@@ -69,6 +69,6 @@ function get_fullpath_of_script() {
   return $?
 }
 
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

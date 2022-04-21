@@ -74,6 +74,6 @@ function __getNetworkRangeForVirtualHost() {
   return $?
 }
 
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

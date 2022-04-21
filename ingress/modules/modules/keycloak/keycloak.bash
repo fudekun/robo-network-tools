@@ -110,7 +110,7 @@ function __executor() {
   ##
   echo ""
   echo "### Activating essential entries of the keycloak ..."
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_keycloak-entry.bash" \
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/keycloak/subs/entry.bash" \
     "${__namespace_for_keycloak}" \
     "${__rootca_file}"
   ## 5. Setup Authz
@@ -127,6 +127,6 @@ function __executor() {
   return $?
 }
 
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/create_common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?
