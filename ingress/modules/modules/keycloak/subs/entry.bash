@@ -101,10 +101,50 @@ function __createEntry() {
     echo "Success create the new entry"
   elif [ "${http_code}" -eq 409 ]; then
     echo "Already exist the same entry"
+    return 0
   else
-    echo "ERROR the HTTP Code is ${http_code}"
+    echo "**ERROR** the HTTP Code is ${http_code}"
     return 1
   fi
+    ## New Realm
+    ##
+  operation_endpoint_url=${operation_endpoint_url}/${cluster_name}
+  conf_file="$(getDirNameFor confs)/modules/${rep_name}/entry/$(getConfVersion "${rep_name}" entry)/client_scope.jq.json"
+  http_code=$(curl -fs -w '%{http_code}' -o /dev/null --cacert "${ROOTCA_FILE}" -X POST "${operation_endpoint_url}/client-scopes" \
+      -H "Authorization: bearer $access_token" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n -r -f "$conf_file" \
+      )")
+  if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+    echo "Success create the new entry"
+  elif [ "${http_code}" -eq 409 ]; then
+    echo "Already exist the same entry"
+    return 0
+  else
+    echo "**ERROR** the HTTP Code is ${http_code}"
+    return 1
+  fi
+    ## New ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")
+    ##
+  conf_file="$(getDirNameFor confs)/modules/${rep_name}/entry/$(getConfVersion "${rep_name}" entry)/client.jq.json"
+  http_code=$(curl -fs -w '%{http_code}' -o /dev/null --cacert "${ROOTCA_FILE}" -X POST "$operation_endpoint_url/clients" \
+      -H "Authorization: bearer $access_token" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n -r -f "$conf_file" \
+          --arg client_secret "$client_secret" \
+      )")
+  if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+    echo "Success create the new entry"
+  elif [ "${http_code}" -eq 409 ]; then
+    echo "Already exist the same entry"
+    return 0
+  else
+    echo "**ERROR** the HTTP Code is ${http_code}"
+    return 1
+  fi
+    ## New Client(ambassador)
+    ##
+  return $?
 }
 
 ## References

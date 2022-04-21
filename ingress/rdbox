@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+###############################################################################
+## The base point of New RDBOX Systems
+###############################################################################
+
 function main() {
   local subcommand
   subcommand="${1}"
