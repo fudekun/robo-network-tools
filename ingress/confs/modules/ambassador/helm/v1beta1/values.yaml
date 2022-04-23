@@ -2,6 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+createDevPortalMappings: false
+
 # Emissary Chart Values.
 # all values under emissary-ingress key are passed to [the emissary chart](https://github.com/emissary-ingress/emissary/blob/master/charts/emissary-ingress/README.md)
 # Example:
