@@ -729,7 +729,7 @@ function getOsNameAtContainer() {
 # Globals:
 #   None
 # Arguments:
-#   None
+#   ClusterName String (e.g. rdbox)
 # Outputs:
 #   A Port Number of the kubeapi-server (e.g. 35762)
 # Returns:
@@ -757,7 +757,7 @@ function getPortnumberOfkubeapi() {
 # Arguments:
 #   None
 # Outputs:
-#   true or false
+#   true or false (String)
 # Returns:
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
@@ -779,9 +779,9 @@ function isRequiredSecurityTunnel() {
 # Globals:
 #   None
 # Arguments:
-#   None
+#   A Process Name String (e.g. socat)
 # Outputs:
-#   true or false
+#   true or false (String)
 # Returns:
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
