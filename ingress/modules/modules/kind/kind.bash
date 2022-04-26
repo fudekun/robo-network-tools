@@ -25,10 +25,8 @@ function checkArgs() {
 }
 
 function main() {
-  local __RDBOX_CLUSTER_NAME
-  __RDBOX_CLUSTER_NAME=$1
-  showHeaderCommand "$__RDBOX_CLUSTER_NAME"
-  cmdWithIndent "__executor $__RDBOX_CLUSTER_NAME"
+  showHeaderCommand
+  cmdWithIndent "__executor $*"
   showVerifierCommand > /dev/null 2>&1
   return $?
 }
@@ -47,17 +45,44 @@ function __executor() {
   checkArgs "$@"
   ## .1 Create the cluster
   ##
+  local __RDBOX_DOMAIN_NAME
   local __workbase_dirs
   local __workdir_of_confs
+  local __workdir_of_tmps
   local __conffile_path
+  __RDBOX_DOMAIN_NAME=$2
+  __RDBOX_HOST_NAME=${3:-""}
   __workbase_dirs=$(getDirNameListOfWorkbase "${__RDBOX_CLUSTER_NAME}")
+  __workdir_of_tmps=$(echo "$__workbase_dirs" | awk -F ' ' '{print $4}')
   __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
   __conffile_path=${__workdir_of_confs}/modules/kind/kind/${__VERSION_OF_MANIFEST}/values.yaml
   if ! bash -c "kind get clusters | grep -c ${__RDBOX_CLUSTER_NAME} >/dev/null 2>&1"; then
     kind create cluster --config "${__conffile_path}" --name "${__RDBOX_CLUSTER_NAME}"
+    if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
+      __showMsgAboutSecurityTunnel "$(getPortnumberOfkubeapi "${__RDBOX_CLUSTER_NAME}")"
+      return 1
+    fi
   else
     echo "already exist for a cluster with the name ${__RDBOX_CLUSTER_NAME}"
   fi
+  return $?
+}
+
+function __showMsgAboutSecurityTunnel() {
+  local port
+  port=$1
+  echo ""
+  echo "## You have successfully built a KinD cluster"
+  echo "## But, The following operations are required in your environment (MacOS Container)"
+  echo "### First, execute the following command in **HostOS**:"
+  echo "    NOTE: the gost is a tunnel module [A simple security tunnel written in Golang](https://github.com/ginuerzh/gost/blob/master/README_en.md)"
+  echo "    $ cd \${A directory where you can download the gost module without problems}"
+  echo "    $ curl -qL -o gost.gz https://github.com/ginuerzh/gost/releases/download/v${__RDBOX_AUXILIARY_APP_OF_GOST_VERSION}/gost-darwin-amd64-${__RDBOX_AUXILIARY_APP_OF_GOST_VERSION}.gz"
+  echo "    $ gzip -d gost.gz"
+  echo "    $ chmod u+x gost"
+  echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}/127.0.0.1:${port}"
+  echo "### Next, execute the same command (rdbox create ...) again in **ContainerOS**"
+  echo ""
   return $?
 }
 

@@ -49,7 +49,7 @@ function executor() {
   if [[ ${fullpath_of_script} != "" ]]; then
     bash "${fullpath_of_script}" "${@:2}"
   else
-    echo "Invalid module name (${module_name} is not exist)"
+    echo "Invalid module name (${module_name} dose not exist)"
   fi
   return $?
 }

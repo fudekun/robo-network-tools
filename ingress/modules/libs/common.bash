@@ -11,6 +11,8 @@ __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
 __RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
 __RDBOX_NUM_INDENT=4
+__RDBOX_AUXILIARY_APP_OF_GOST_VERSION="2.11.2"
+__RDBOX_AUXILIARY_APP_OF_GOST_PORT=45321
 ## VALUE for internal using
 ##
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
@@ -407,20 +409,20 @@ function getDirNameListOfWorkbase() {
 }
 
 function getNetworkInfo() {
-  RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
-  RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
-    # EXTRAPOLATION
-  export RDBOX_NAME_DEFULT_NIC
+  # RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  # RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
+  #   # EXTRAPOLATION
+  export RDBOX_NAME_DEFULT_NIC="en0"
+  # # shellcheck disable=SC2015
+  # IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+  #                   sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
+  export IPV4_DEFAULT_NIC="172.16.0.110"
   # shellcheck disable=SC2015
-  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-                    sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-  export IPV4_DEFAULT_NIC
-  # shellcheck disable=SC2015
-  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-                    sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
-  export IPV6_DEFAULT_NIC
-  HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
-  export HOSTNAME_FOR_WCDNS_BASED_ON_IP
+  # IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+  #                   sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
+  export IPV6_DEFAULT_NIC="fe80::1ca6:70f1:80c6:699e"
+  # HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
+  export HOSTNAME_FOR_WCDNS_BASED_ON_IP="172-16-0-110"
 }
 
 function getContextName4Kubectl() {
@@ -677,5 +679,120 @@ function getApiversionBasedOnSemver() {
     __api_version=$(printf "v%dalpha%d" "${__major}" "${__build}")
   fi
   echo -n "${__api_version}"
+  return $?
+}
+
+#######################################
+# Get a Runtime Name
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A Runtime Name (Container or Host)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getRuntimeName() {
+  if host "gateway.docker.internal" > /dev/null 2>&1; then
+    echo -n "Container"
+  else
+    echo -n "Host"
+  fi
+  return $?
+}
+
+#######################################
+# Get a OS Name at the container
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A OS Name (MacOS or Windows or Linux)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getOsNameAtContainer() {
+  if host "docker.for.mac.host.internal" > /dev/null 2>&1; then
+    echo -n "MacOS"
+  elif host "docker.for.win.host.internal" > /dev/null 2>&1; then
+    echo -n "Windows"
+  else
+    echo -n "Linux"
+  fi
+  return $?
+}
+
+#######################################
+# Get a Port Number of the kubeapi-server
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A Port Number of the kubeapi-server (e.g. 35762)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getPortnumberOfkubeapi() {
+  local cluster_name
+  local port
+  local inspect_json
+  cluster_name="${1}"
+  inspect_json=$(docker inspect "${cluster_name}"-control-plane)
+  port=$(echo "${inspect_json}" | jq -r '.[].NetworkSettings.Ports."6443/tcp"[].HostPort')
+  if [[ "$port" =~ ^[0-9]+$ ]]; then
+    echo -n "${port}"
+  else
+    return 1
+  fi
+  return $?
+}
+
+#######################################
+# Determine if a security tunnel is required
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   true or false
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function isRequiredSecurityTunnel() {
+  local runtime_name
+  local os_name
+  runtime_name=$(getRuntimeName)
+  os_name=$(getOsNameAtContainer)
+  if [[ "${runtime_name}" == "Container" ]] && [[ "${os_name}" == "MacOS" ]]; then
+    echo -n "true"
+  else
+    echo -n "false"
+  fi
+  return $?
+}
+
+#######################################
+# Determine if a process with the specified name is running
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   true or false
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function isWorkingProcess() {
+  local process_name
+  process_name="${1}"
+  count=$(pgrep -f "${process_name}" | wc -l)
+  if [[ ${count} -ge 1 ]]; then
+    echo -n "true"
+  else
+    echo -n "false"
+  fi
   return $?
 }

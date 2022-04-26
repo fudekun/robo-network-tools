@@ -40,4 +40,4 @@ nodes:
     protocol: TCP
   extraMounts:
   - containerPath: /fromhost
-    hostPath: /tmp/hoge
+    hostPath: /tmp/tocontainer

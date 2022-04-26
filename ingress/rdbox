@@ -73,7 +73,9 @@ function exec_with_logger() {
     echo "    rdbox init --name ${cluster_name}"
     return 1
   fi
-  script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
+  local cmd
+  cmd="${fullpath_script} ${*:3}"
+  script --log-out /dev/null -q -c "${cmd}" 2>&1 || script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
     | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
       >> "${workdir_of_logs}/rdbox.log")
   return $?

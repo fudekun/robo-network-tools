@@ -64,14 +64,26 @@ function executor() {
   ##
   local cluster_name domain_name host_name
   checkArgs "$@"
+  host_name=${host_name:-""}
   ## Install KinD
   ##
   cmdWithLoding \
-    "installKinD ${cluster_name}" \
+    "installKinD ${cluster_name} ${domain_name} ${host_name}" \
     "Activating the K8s Cluster by KinD"
+  ## (optional)StartUp Security Tunnel
+  ##
+  if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
+    if [[ $(isWorkingProcess socat) == "false" ]]; then
+      echo "${__RDBOX_RAW_INDENT}Activating a Security Tunnel ..."
+      socat tcp-l:"$(getPortnumberOfkubeapi "${cluster_name}")",fork,reuseaddr \
+        tcp:gateway.docker.internal:"${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" \
+        > /dev/null 2>&1 &
+      sleep 2
+      echo "${__RDBOX_RAW_INDENT}Activating a Security Tunnel ...ok"
+    fi
+  fi
   ## SetUp ConfigMap
   ##
-  host_name=${host_name:-""}
   cmdWithLoding \
     "setupConfigMap ${cluster_name} ${domain_name} ${host_name}" \
     "Activating the cluster-info"
