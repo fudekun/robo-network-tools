@@ -49,7 +49,7 @@ RUN apt-get update \
 ### NOTES:
 ### - datawire => edge-stack
 ### - jetstack => cert-manager
-RUN helm repo add datawire https://getambassador.io/ \
+RUN helm repo add edge-stack https://s3.amazonaws.com/datawire-static-files/charts \
     && helm repo add metallb https://metallb.github.io/metallb \
     && helm repo add jetstack https://charts.jetstack.io \
     && helm repo add bitnami https://charts.bitnami.com/bitnami
