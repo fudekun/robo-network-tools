@@ -395,6 +395,53 @@ function isValidDomainname() {
   fi
 }
 
+#######################################
+# Determine if a security tunnel is required
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   true or false (String)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function isRequiredSecurityTunnel() {
+  local runtime_name
+  local os_name
+  runtime_name=$(getRuntimeName)
+  os_name=$(getOsNameAtContainer)
+  if [[ "${runtime_name}" == "Container" ]] && [[ "${os_name}" == "MacOS" ]]; then
+    echo -n "true"
+  else
+    echo -n "false"
+  fi
+  return $?
+}
+
+#######################################
+# Determine if a process with the specified name is running
+# Globals:
+#   None
+# Arguments:
+#   A Process Name String (e.g. socat)
+# Outputs:
+#   true or false (String)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function isWorkingProcess() {
+  local process_name
+  process_name="${1}"
+  count=$(pgrep -f "${process_name}" | wc -l)
+  if [[ ${count} -ge 1 ]]; then
+    echo -n "true"
+  else
+    echo -n "false"
+  fi
+  return $?
+}
+
 function getDirNameListOfWorkbase() {
   local __cluster_name="$1"
   RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
@@ -409,20 +456,20 @@ function getDirNameListOfWorkbase() {
 }
 
 function getNetworkInfo() {
-  # RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
-  # RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
-  #   # EXTRAPOLATION
-  export RDBOX_NAME_DEFULT_NIC="en0"
-  # # shellcheck disable=SC2015
-  # IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-  #                   sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-  export IPV4_DEFAULT_NIC="172.16.0.110"
+  RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
+    # EXTRAPOLATION
+  export RDBOX_NAME_DEFULT_NIC
   # shellcheck disable=SC2015
-  # IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-  #                   sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
-  export IPV6_DEFAULT_NIC="fe80::1ca6:70f1:80c6:699e"
-  # HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
-  export HOSTNAME_FOR_WCDNS_BASED_ON_IP="172-16-0-110"
+  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+                    sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
+  export IPV4_DEFAULT_NIC
+  # shellcheck disable=SC2015
+  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+                    sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
+  export IPV6_DEFAULT_NIC
+  HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
+  export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }
 
 function getContextName4Kubectl() {
@@ -746,53 +793,6 @@ function getPortnumberOfkubeapi() {
     echo -n "${port}"
   else
     return 1
-  fi
-  return $?
-}
-
-#######################################
-# Determine if a security tunnel is required
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   true or false (String)
-# Returns:
-#   0 if thing was gived assurance output, non-zero on error.
-#######################################
-function isRequiredSecurityTunnel() {
-  local runtime_name
-  local os_name
-  runtime_name=$(getRuntimeName)
-  os_name=$(getOsNameAtContainer)
-  if [[ "${runtime_name}" == "Container" ]] && [[ "${os_name}" == "MacOS" ]]; then
-    echo -n "true"
-  else
-    echo -n "false"
-  fi
-  return $?
-}
-
-#######################################
-# Determine if a process with the specified name is running
-# Globals:
-#   None
-# Arguments:
-#   A Process Name String (e.g. socat)
-# Outputs:
-#   true or false (String)
-# Returns:
-#   0 if thing was gived assurance output, non-zero on error.
-#######################################
-function isWorkingProcess() {
-  local process_name
-  process_name="${1}"
-  count=$(pgrep -f "${process_name}" | wc -l)
-  if [[ ${count} -ge 1 ]]; then
-    echo -n "true"
-  else
-    echo -n "false"
   fi
   return $?
 }

@@ -40,7 +40,7 @@ function main() {
   authorityKeyIdentifier=keyid,issuer:always
   basicConstraints=CA:FALSE
   keyUsage=keyEncipherment,dataEncipherment
-  extendedKeyUsage=serverAuth,clientAuth
+  extendedKeyUsage=clientAuth
   subjectAltName=@alt_names
 EOF
   return $?

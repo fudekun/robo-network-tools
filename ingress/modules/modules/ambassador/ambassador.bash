@@ -74,11 +74,13 @@ function __executor() {
   local __fqdn_for_ambassador_k8ssso
   local __private_key_file
   local __server_cert_file
+  local __aes_cert_file
   __base_fqdn=$(getBaseFQDN)
   __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
   __fqdn_for_ambassador_k8ssso=${__hostname_for_ambassador_k8ssso}.${__base_fqdn}
   __private_key_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.key
   __server_cert_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.crt
+  __aes_cert_file=${TEMP_DIR}/aes_cert.crt
   echo ""
   echo "### Issueing Private Key for ambassador ..."
   applyManifestByDI "${__namespace_for_ambassador}" \
@@ -96,6 +98,10 @@ function __executor() {
       | jq -r '.data["tls.key"]' \
       | base64 -d \
       > "${__private_key_file}"
+  kubectl -n "${__namespace_for_ambassador}" get secrets "${__fqdn_for_ambassador_k8ssso}" -o json \
+      | jq -r '.data["tls.crt"]' \
+      | base64 -d \
+      > "${__aes_cert_file}"
     ### NOTE
     ### As a temporary file to issue CSRs
   ## 3. Create a file a CNF and a certificate signing request with the CNF file.
@@ -157,7 +163,7 @@ function __executor() {
   else
     echo "The filters(${__hostname_for_ambassador_k8ssso}.${__namespace_for_ambassador}) is Not Found ...ok"
     waitForSuccessOfCommand \
-      "curl -fs --cacert ${__server_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
+      "curl -fs --cacert ${__aes_cert_file} https://${__fqdn_for_ambassador_k8ssso}/api | jq"
   fi
     ### NOTE
     ### Wait until to startup the Host
@@ -171,7 +177,7 @@ function __executor() {
   fi
   kubectl config set-cluster "${__ctx_name}" \
       --server=https://"${__fqdn_for_ambassador_k8ssso}" \
-      --certificate-authority="${__server_cert_file}" \
+      --certificate-authority="${__aes_cert_file}" \
       --embed-certs
   return $?
 }

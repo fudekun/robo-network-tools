@@ -19,7 +19,7 @@ spec:
     insecure:
       action: Route
   tlsSecret:
-    name: {{ .Values.ambassador.dynamics.k8ssso.hostname }}
+    name: {{ .Values.ambassador.dynamics.k8ssso.fqdn }}
 {{- end }}
 {{- end }}
 {{- end }}
