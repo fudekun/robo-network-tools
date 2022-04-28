@@ -483,20 +483,20 @@ function getDirNameListOfWorkbase() {
 }
 
 function getNetworkInfo() {
-  # RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
-  # RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
+  RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  RDBOX_NETWORK_DEFULT_NIC_NAME=$(printf %q "$RDBOX_NETWORK_DEFULT_NIC_NAME")
     # EXTRAPOLATION
-  export RDBOX_NAME_DEFULT_NIC="en0"
+  export RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME}
   # shellcheck disable=SC2015
-  # IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-  #                   sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-  export IPV4_DEFAULT_NIC="172.16.0.110"
+  RDBOX_NETWORK_DEFULT_NIC_IPV4=${RDBOX_NETWORK_DEFULT_NIC_IPV4:-$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NETWORK_DEFULT_NIC_NAME" || ifconfig "$RDBOX_NETWORK_DEFULT_NIC_NAME") | \
+                    sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')}
+  export RDBOX_NETWORK_DEFULT_NIC_IPV4=${RDBOX_NETWORK_DEFULT_NIC_IPV4}
   # shellcheck disable=SC2015
-  # IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-  #                   sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
-  export IPV6_DEFAULT_NIC="fe80::455:ebb3:3575:4f90"
-  HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
-  export HOSTNAME_FOR_WCDNS_BASED_ON_IP
+  RDBOX_NETWORK_DEFULT_NIC_IPV6=${RDBOX_NETWORK_DEFULT_NIC_IPV6:-$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NETWORK_DEFULT_NIC_NAME" || ifconfig "$RDBOX_NETWORK_DEFULT_NIC_NAME") | \
+                    sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')}
+  export RDBOX_NETWORK_DEFULT_NIC_IPV6=${RDBOX_NETWORK_DEFULT_NIC_IPV6}
+  __RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP=${RDBOX_NETWORK_DEFULT_NIC_IPV4//\./-}
+  export __RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP=${__RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP}
 }
 
 function getContextName4Kubectl() {
