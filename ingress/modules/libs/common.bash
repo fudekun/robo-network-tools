@@ -150,7 +150,7 @@ function launchSecurityTunnelAsNecessary() {
     ## return non-zero, if the k8s cluster is not working 
   fi
   if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
-    if [[ $(isWorkingProcess socat) == "false" ]]; then
+    if [[ $(hasWorkingProcess socat) == "false" ]]; then
       echo "Activating a Security Tunnel ..."
       if ! waitForSuccessOfCommand "> /dev/tcp/gateway.docker.internal/${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" 10 > /dev/null 2>&1; then
         echo "## The following operations are required in your environment (MacOS Container)"
@@ -457,7 +457,7 @@ function isRequiredSecurityTunnel() {
 # Returns:
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
-function isWorkingProcess() {
+function hasWorkingProcess() {
   local process_name
   process_name="${1}"
   count=$(pgrep -f "${process_name}" | wc -l)
@@ -469,6 +469,22 @@ function isWorkingProcess() {
   return $?
 }
 
+#######################################
+# Get a Path list of the Directoryes that use for working
+# Globals:
+#   (optional) RDBOX_WORKDIR_OF_WORK_BASE
+# Arguments:
+#   ClusterName String (e.g. rdbox)
+# Outputs:
+#   (a Space Separate Value)
+#   1: RDBOX_WORKDIR_OF_WORK_BASE  (e.g. ${HOME}/crobotics/rdbox)
+#   2: logs                        (e.g. ${HOME}/crobotics/rdbox/logs)
+#   3: outputs                     (e.g. ${HOME}/crobotics/rdbox/outputs)
+#   4: tmps                        (e.g. ${HOME}/crobotics/rdbox/tmps)
+#   5: confs                       (e.g. ${HOME}/crobotics/rdbox/confs)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getDirNameListOfWorkbase() {
   local __cluster_name="$1"
   RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
@@ -480,8 +496,25 @@ function getDirNameListOfWorkbase() {
   local __workdir_of_tmps=${RDBOX_WORKDIR_OF_WORK_BASE}/tmps
   local __workdir_of_confs=${RDBOX_WORKDIR_OF_WORK_BASE}/confs
   echo "${RDBOX_WORKDIR_OF_WORK_BASE}" "${__workdir_of_logs}" "${__workdir_of_outputs}" "${__workdir_of_tmps}" "${__workdir_of_confs}"
+  return $?
 }
 
+#######################################
+# Get a network info and Export ones
+# Globals:
+#   (optional) RDBOX_NETWORK_DEFULT_NIC_NAME
+#   (optional) RDBOX_NETWORK_DEFULT_NIC_IPV4
+#   (optional) RDBOX_NETWORK_DEFULT_NIC_IPV6
+# Arguments:
+#   None
+# Outputs:
+#   (export)
+#   RDBOX_NETWORK_DEFULT_NIC_NAME (e.g. en0)
+#   RDBOX_NETWORK_DEFULT_NIC_IPV4 (e.g. 172.16.0.110)
+#   RDBOX_NETWORK_DEFULT_NIC_IPV6 (e.g. fe80::455:ebb3:3575:4f90)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getNetworkInfo() {
   RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
   RDBOX_NETWORK_DEFULT_NIC_NAME=$(printf %q "$RDBOX_NETWORK_DEFULT_NIC_NAME")

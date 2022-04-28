@@ -61,8 +61,9 @@ function __executor() {
   kubectl create namespace "${__RDBOX_CLUSTER_INFO_NAMESPACE}"
   getNetworkInfo
     ### NOTE
-    ### These returning value are passed by EXPORT
-  __RDBOX_HOST_NAME=${__RDBOX_HOST_NAME:-$HOSTNAME_FOR_WCDNS_BASED_ON_IP}
+    ### Get a network info and Export ones
+    ### RDBOX_NETWORK_DEFULT_NIC_NAME, RDBOX_NETWORK_DEFULT_NIC_IPV4, RDBOX_NETWORK_DEFULT_NIC_IPV6
+  __RDBOX_HOST_NAME=${__RDBOX_HOST_NAME:-$__RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP}
     ### NOTE
     ### If no value is declared, WDNS will create a hostname following the general naming conventions.
   local __workbase_dirs
@@ -85,13 +86,13 @@ function __executor() {
       namespace: "${__RDBOX_CLUSTER_INFO_NAMESPACE}"
     data:
       name: ${__RDBOX_CLUSTER_NAME}
-      nic0.name:         "${RDBOX_NAME_DEFULT_NIC}"
+      nic0.name:         "${RDBOX_NETWORK_DEFULT_NIC_NAME}"
       nic0.host:         "${__RDBOX_HOST_NAME}"
       nic0.domain:       "${__RDBOX_DOMAIN_NAME}"
       nic0.base_fqdn:    "${__RDBOX_CLUSTER_NAME}.${__RDBOX_HOST_NAME}.${__RDBOX_DOMAIN_NAME}"
-      nic0.ipv4:         "${IPV4_DEFAULT_NIC}"
-      nic0.ipv4_hyphen:  "${HOSTNAME_FOR_WCDNS_BASED_ON_IP}"
-      nic0.ipv6:         "${IPV6_DEFAULT_NIC}"
+      nic0.ipv4:         "${RDBOX_NETWORK_DEFULT_NIC_IPV4}"
+      nic0.ipv4_hyphen:  "${__RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP}"
+      nic0.ipv6:         "${RDBOX_NETWORK_DEFULT_NIC_IPV6}"
       workdir.work_base:   "${__workdir_of_work_base}"
       workdir.logs:        "${__workdir_of_logs}"
       workdir.outputs:     "${__workdir_of_outputs}"

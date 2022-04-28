@@ -7,11 +7,14 @@ function showHeaderCommand() {
 }
 
 function main() {
+  local ret
   local module_name
   showHeaderCommand
   module_name=$(check_args "${@}")
   executor "${module_name}" "${@}"
-  showVerifierCommand $?
+  ret=$?
+  showVerifierCommand $ret
+  return $ret
 }
 
 function showVerifierCommand() {
