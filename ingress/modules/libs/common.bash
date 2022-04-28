@@ -17,10 +17,6 @@ __RDBOX_AUXILIARY_APP_OF_GOST_PORT=45321
 ##
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
 
-function cleanupShowLoading() {
-  tput cnorm
-}
-
 #######################################
 # Show Headder message
 # Arguments:
@@ -77,7 +73,7 @@ function showFooter() {
 function showLoading() {
   local mypid=$!
   local loadingText=$1
-  tput civis
+  tput civis ## (from here) the cursor invisible:
   trap cleanupShowLoading EXIT
   echo -ne "\r"
   sleep 1
@@ -93,8 +89,8 @@ function showLoading() {
     echo -ne "\033[32m/\033[m  $loadingText\r"
     sleep 0.25
   done
-  tput cnorm
-    ## For To Get Return Code
+  tput cnorm ## (to here) the cursor visible again:
+    ## (from here) For To Get Return Code
   set +euo > /dev/null 2>&1
   wait $mypid
   local exit_status=$?
@@ -104,8 +100,12 @@ function showLoading() {
     echo -e "\033[31mng\033[m $loadingText"
   fi
   set -euo > /dev/null 2>&1
-    ## For To Get Return Code
+    ## (to here) For To Get Return Code
   return "$exit_status"
+}
+
+function cleanupShowLoading() {
+  tput cnorm
 }
 
 function cmdWithLoding() {
@@ -142,21 +142,48 @@ function drawMaxColsSeparator() {
   printf "\033[${color}m%s\033[m\n" "${raw_separator}"
 }
 
+function launchSecurityTunnelAsNecessary() {
+  local port_no
+  if ! port_no="$(getPortnumberOfkubeapi "${cluster_name}" 2>/dev/null)"; then
+    return 1
+    ## NOTE
+    ## return non-zero, if the k8s cluster is not working 
+  fi
+  if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
+    if [[ $(isWorkingProcess socat) == "false" ]]; then
+      echo "Activating a Security Tunnel ..."
+      if ! waitForSuccessOfCommand "> /dev/tcp/gateway.docker.internal/${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" 10 > /dev/null 2>&1; then
+        echo "## The following operations are required in your environment (MacOS Container)"
+        echo "### Execute the following command in **HostOS**:"
+        echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}/127.0.0.1:${port_no}"
+        return 2
+      fi
+      socat tcp-l:"${port_no}",fork,reuseaddr \
+        tcp:gateway.docker.internal:"${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" \
+        > /dev/null 2>&1 &
+      echo "Activating a Security Tunnel ...ok"
+    fi
+  fi
+  return $?
+}
+
 #######################################
 # Wait for successful command
 #   - The command is executed periodically and continues until the maximum wait time is reached.
 # Arguments:
-#   Command
+#   Command String
+#   Timeout Number (sec)
 # Returns:
 #   0 if thing was success, non-zero on error.
 #######################################
 function waitForSuccessOfCommand() {
   local cmd
   local count
-  cmd=$(printf %q "$1" | sed "s/\\\//g")
+  local timeout=${2:-300}
+  cmd=$(printf %q "${1}" | sed "s/\\\//g")
   count=0
   while ! eval "${cmd} 2>/dev/null"; do
-    if [[ $count -gt 300 ]]; then
+    if [[ ${count} -gt ${timeout} ]]; then
       return 1
     fi
     sleep 1
@@ -456,18 +483,18 @@ function getDirNameListOfWorkbase() {
 }
 
 function getNetworkInfo() {
-  RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
-  RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
+  # RDBOX_NAME_DEFULT_NIC=${RDBOX_NAME_DEFULT_NIC:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  # RDBOX_NAME_DEFULT_NIC=$(printf %q "$RDBOX_NAME_DEFULT_NIC")
     # EXTRAPOLATION
-  export RDBOX_NAME_DEFULT_NIC
+  export RDBOX_NAME_DEFULT_NIC="en0"
   # shellcheck disable=SC2015
-  IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-                    sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
-  export IPV4_DEFAULT_NIC
+  # IPV4_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+  #                   sed -nEe 's/^[[:space:]]+inet[^[:alnum:]]+([0-9.]+).*$/\1/p')
+  export IPV4_DEFAULT_NIC="172.16.0.110"
   # shellcheck disable=SC2015
-  IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
-                    sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
-  export IPV6_DEFAULT_NIC
+  # IPV6_DEFAULT_NIC=$( (command -v ip &> /dev/null && ip addr show "$RDBOX_NAME_DEFULT_NIC" || ifconfig "$RDBOX_NAME_DEFULT_NIC") | \
+  #                   sed -nEe 's/^[[:space:]]+inet6[^[:alnum:]]+([0-9A-Za-z:.]+).*$/\1/p')
+  export IPV6_DEFAULT_NIC="fe80::455:ebb3:3575:4f90"
   HOSTNAME_FOR_WCDNS_BASED_ON_IP=${IPV4_DEFAULT_NIC//\./-}
   export HOSTNAME_FOR_WCDNS_BASED_ON_IP
 }

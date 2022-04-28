@@ -76,4 +76,23 @@ RUN apt-get update \
         net-tools \
         dnsutils \
         rsync \
-        socat
+        socat \
+        vim \
+        git
+
+## Setup krew (Plug-In manager for kubectl)
+## References: https://krew.sigs.k8s.io/docs/user-guide/quickstart/
+RUN cd "$(mktemp -d)" \
+    && OS="$(uname | tr '[:upper:]' '[:lower:]')" \
+    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" \
+    && KREW="krew-${OS}_${ARCH}" \
+    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
+    && tar zxvf "${KREW}.tar.gz" \
+    && ./"${KREW}" install krew \
+    && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> ${HOME}/.bashrc
+
+## Setup oidc-login (krew's Plug-In)
+## References: https://github.com/int128/kubelogin
+RUN export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH" \
+    && kubectl krew update \
+    && kubectl krew install oidc-login

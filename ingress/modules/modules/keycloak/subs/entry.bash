@@ -244,8 +244,9 @@ function main() {
       --exec-arg=get-token \
       --exec-arg=--oidc-issuer-url="${BASE_URL}"/auth/realms/"${cluster_name}" \
       --exec-arg=--oidc-client-id=ambassador \
-      --exec-arg=--oidc-client-secret="${client_secret}"
-
+      --exec-arg=--oidc-client-secret="${client_secret}" \
+      --exec-arg=--certificate-authority-data="$(< "${ROOTCA_FILE}" base64 | tr -d '\n' | tr -d '\r')" \
+      --exec-arg=--listen-address=0.0.0.0:8000
   ## Notify Verifier-Command
   ##
   showVerifierCommand "${rep_name}" "${BASE_URL}" > "$(getFullpathOfVerifyMsgs "${rep_name}")"

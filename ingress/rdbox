@@ -73,11 +73,26 @@ function exec_with_logger() {
     echo "    rdbox init --name ${cluster_name}"
     return 1
   fi
+  if ! launchSecurityTunnelAsNecessary "${cluster_name}"; then
+    local ret=$?
+    if [[ $ret -eq 2 ]]; then
+      ## The security tunnel on the HOSTOS side is not activated
+      return 2
+    fi
+  fi
   local cmd
   cmd="${fullpath_script} ${*:3}"
-  script --log-out /dev/null -q -c "${cmd}" 2>&1 || script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
-    | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
-      >> "${workdir_of_logs}/rdbox.log")
+  if script --log-out /dev/null -q -c "ifconfig" > /dev/null 2>&1; then
+    ## For Linux
+    script --log-out /dev/null -q -c "${cmd}" 2>&1 \
+      | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
+        >> "${workdir_of_logs}/rdbox.log")
+  else
+    ## For MacOS
+    script -q /dev/null "${fullpath_script}" "${@:3}" 2>&1 \
+      | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
+        >> "${workdir_of_logs}/rdbox.log")
+  fi
   return $?
 }
 
@@ -96,6 +111,9 @@ function delete() {
   cluster_name=$(get_cluster_name "${@}")
   fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH}/delete.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" "${cluster_name}"
+  if pkill -f socat; then
+    echo "Reset Security Tunnel"
+  fi
   return $?
 }
 
