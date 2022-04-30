@@ -882,7 +882,7 @@ function getOsNameAtHost() {
   fi
   local uname_str
   uname_str=$(uname -s)
-  if [[ "${uname_str:1:5}" == 'Linux' ]]; then
+  if [[ "${uname_str:0:5}" == 'Linux' ]]; then
     os_name='Linux'
   elif [[ "${uname_str:0:10}" == 'MINGW32_NT' ]]; then
     os_name='Windows'

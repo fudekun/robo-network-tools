@@ -29,7 +29,6 @@ function main() {
   elif [[ "${os_name}" == "Linux" ]]; then
     docker run -it --rm \
       --network host \
-      -p 8000:8000 \
       -v "$(pwd)":/rdbox \
       -v "${HOME}"/.kube/:/root/.kube \
       -v "${HOME}"/crobotics/:/root/crobotics \
