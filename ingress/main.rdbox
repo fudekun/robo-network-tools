@@ -135,7 +135,7 @@ function delete() {
   fullpath_script=${RDBOX_WORKDIR_OF_SCRIPTS_BASE}${__RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH}/delete.bash
   exec_with_logger "${fullpath_script}" "${cluster_name}" delete "${cluster_name}"
   if pkill -f socat; then
-    echo "Reset Security Tunnel"
+    echo "# Reset Security Tunnel"
   fi
   return $?
 }

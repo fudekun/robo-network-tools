@@ -863,6 +863,38 @@ function getOsNameAtContainer() {
 }
 
 #######################################
+# Get a OS Name at the Host
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A OS Name (MacOS or Windows or Linux)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getOsNameAtHost() {
+  local os_name
+  if [[ "$(uname)" == 'Darwin' ]]; then
+    os_name='MacOS'
+    echo -n ${os_name}
+    return 0
+  fi
+  local uname_str
+  uname_str=$(uname -s)
+  if [[ "${uname_str:1:5}" == 'Linux' ]]; then
+    os_name='Linux'
+  elif [[ "${uname_str:0:10}" == 'MINGW32_NT' ]]; then
+    os_name='Windows'
+  else
+    echo "Your platform ($(uname -a)) is not supported."
+    return 1
+  fi
+  echo -n ${os_name}
+  return 0
+}
+
+#######################################
 # Get a Port Number of the kubeapi-server
 # Globals:
 #   None

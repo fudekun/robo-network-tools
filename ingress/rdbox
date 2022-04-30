@@ -7,23 +7,37 @@ set -euo pipefail
 ###############################################################################
 
 function main() {
-  getNetworkInfo
-    ### NOTE
-    ### Get a network info and Export ones
-    ### RDBOX_NETWORK_DEFULT_NIC_NAME, RDBOX_NETWORK_DEFULT_NIC_IPV4, RDBOX_NETWORK_DEFULT_NIC_IPV6
   RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-new}
-  docker run -it --rm \
-    -p 8000:8000 \
-    -v "$(pwd)":/rdbox \
-    -v "${HOME}"/.kube/:/root/.kube \
-    -v "${HOME}"/crobotics/:/root/crobotics \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
-    -e RDBOX_NETWORK_DEFULT_NIC_IPV4="${RDBOX_NETWORK_DEFULT_NIC_IPV4}" \
-    -e RDBOX_NETWORK_DEFULT_NIC_IPV6="${RDBOX_NETWORK_DEFULT_NIC_IPV6}" \
-    -e RDBOX_TYPE_OF_SECRET_OPERATION="${RDBOX_TYPE_OF_SECRET_OPERATION}" \
-    rdbox/docker:20.10 \
-    "/rdbox/main.rdbox" "$@"
+  os_name=$(getOsNameAtHost)
+  if [[ "${os_name}" == "MacOS" ]]; then
+    getNetworkInfo
+      ### NOTE
+      ### Get a network info and Export ones
+      ### RDBOX_NETWORK_DEFULT_NIC_NAME, RDBOX_NETWORK_DEFULT_NIC_IPV4, RDBOX_NETWORK_DEFULT_NIC_IPV6
+    docker run -it --rm \
+      -p 8000:8000 \
+      -v "$(pwd)":/rdbox \
+      -v "${HOME}"/.kube/:/root/.kube \
+      -v "${HOME}"/crobotics/:/root/crobotics \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
+      -e RDBOX_NETWORK_DEFULT_NIC_IPV4="${RDBOX_NETWORK_DEFULT_NIC_IPV4}" \
+      -e RDBOX_NETWORK_DEFULT_NIC_IPV6="${RDBOX_NETWORK_DEFULT_NIC_IPV6}" \
+      -e RDBOX_TYPE_OF_SECRET_OPERATION="${RDBOX_TYPE_OF_SECRET_OPERATION}" \
+      rdbox/docker:20.10 \
+      "/rdbox/main.rdbox" "$@"
+  elif [[ "${os_name}" == "Linux" ]]; then
+    docker run -it --rm \
+      --network host \
+      -p 8000:8000 \
+      -v "$(pwd)":/rdbox \
+      -v "${HOME}"/.kube/:/root/.kube \
+      -v "${HOME}"/crobotics/:/root/crobotics \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e RDBOX_TYPE_OF_SECRET_OPERATION="${RDBOX_TYPE_OF_SECRET_OPERATION}" \
+      rdbox/docker:20.10 \
+      "/rdbox/main.rdbox" "$@"
+  fi
   return $?
 }
 
