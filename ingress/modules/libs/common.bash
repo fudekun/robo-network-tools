@@ -18,7 +18,7 @@ __RDBOX_AUXILIARY_APP_OF_GOST_PORT=45321
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
 
 #######################################
-# Show Headder message
+# Show the Headder message
 # Arguments:
 #   (optional)is_showing_logo boolean
 # Outputs:
@@ -46,7 +46,7 @@ function showHeader() {
 }
 
 #######################################
-# Show Footer message
+# Show the Footer message
 # Arguments:
 #   ReturnCode
 # Outputs:
@@ -70,54 +70,12 @@ function showFooter() {
   return $?
 }
 
-function showLoading() {
-  local mypid=$!
-  local loadingText=$1
-  tput civis ## (from here) the cursor invisible:
-  trap cleanupShowLoading EXIT
-  echo -ne "\r"
-  sleep 1
-  while kill -0 $mypid 2>/dev/null; do
-    echo -ne "\r\033[K"
-    echo -ne "  $loadingText\r"
-    echo -ne "\033[35m-\033[m  $loadingText\r"
-    sleep 0.25
-    echo -ne "\\  $loadingText\r"
-    sleep 0.25
-    echo -ne "\033[33m|\033[m  $loadingText\r"
-    sleep 0.25
-    echo -ne "\033[32m/\033[m  $loadingText\r"
-    sleep 0.25
-  done
-  tput cnorm ## (to here) the cursor visible again:
-    ## (from here) For To Get Return Code
-  set +euo > /dev/null 2>&1
-  wait $mypid
-  local exit_status=$?
-  if [ ${exit_status} = 0 ]; then
-    echo -e "\033[32mok\033[m $loadingText"
-  else
-    echo -e "\033[31mng\033[m $loadingText"
-  fi
-  set -euo > /dev/null 2>&1
-    ## (to here) For To Get Return Code
-  return "$exit_status"
-}
-
-function cleanupShowLoading() {
-  tput cnorm
-}
-
 function cmdWithLoding() {
   local cmd
   local message
   cmd=$(printf %q "$1" | sed "s/\\\//g")
   message="$2"
   eval "${cmd} & showLoading '${message} '"
-}
-
-function showIndent() {
-  sed "s/^/${__RDBOX_RAW_INDENT}/";
 }
 
 function cmdWithIndent() {
@@ -134,20 +92,93 @@ function cmdWithIndent() {
   fi
 }
 
+#######################################
+# Show the Loading message, until the calling command finishes.
+# Arguments:
+#   loading_text The string to display with the loading icon
+# Outputs:
+#   loading_text with the loading icon
+#   - the loading icon, Repeat 4 letter(- \ | /), every second.
+# Returns:
+#   Get a exit code by the caller's pid
+#######################################
+function showLoading() {
+  local mypid=$!
+  local loading_text=$1
+  local exit_status
+  tput civis                     ## (FROM here) the cursor invisible:
+  trap 'tput cnorm' EXIT
+  echo -ne "\r"
+  sleep 1
+  while kill -0 $mypid 2>/dev/null; do
+    echo -ne "\r\033[K"
+    echo -ne "  $loading_text\r"
+    echo -ne "\033[35m-\033[m  $loading_text\r"
+    sleep 0.25
+    echo -ne "\\  $loading_text\r"
+    sleep 0.25
+    echo -ne "\033[33m|\033[m  $loading_text\r"
+    sleep 0.25
+    echo -ne "\033[32m/\033[m  $loading_text\r"
+    sleep 0.25
+  done
+  tput cnorm                     ## (TO here) the cursor visible again:
+  #-------------------
+  set +euo > /dev/null 2>&1      ## (FROM here) For To Get Return Code
+  wait $mypid # Get a exit code by the caller's pid
+  exit_status=$?
+  if [[ ${exit_status} -eq 0 ]]; then
+    echo -e "\033[32mok\033[m $loading_text"
+  else
+    echo -e "\033[31mng\033[m $loading_text"
+  fi
+  set -euo > /dev/null 2>&1      ## (TO here) For To Get Return Code
+  #-------------------
+  return "$exit_status"
+}
+
+function showIndent() {
+  sed "s/^/${__RDBOX_RAW_INDENT}/";
+}
+
+#######################################
+# Shwo a separator of maximum width according to the terminal in use
+# Arguments:
+#   (optional) a separator charactor (e.g. #->default)
+#              - Anything but one letter.
+#   (optional) a color code (e.g. 32->default)
+#              - "32" is the code of white
+# Outputs:
+#   A separator strings (e.g. "###########################")
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
 function drawMaxColsSeparator() {
   local char=${1:-#}
   local color=${2:-32}
   local raw_separator
   raw_separator="$(seq -s "${char}" 0 $(($(tput cols)-1)) | tr -d '0-9')"
   printf "\033[${color}m%s\033[m\n" "${raw_separator}"
+  return $?
 }
 
+#######################################
+# launch The security tunnel (by the socat) as necessary
+# Globals:
+#   __RDBOX_AUXILIARY_APP_OF_GOST_PORT
+# Arguments:
+#   None
+# Returns:
+#   0 if thing was success, non-zero on error.
+#   1 if the k8s cluster was not working.
+#   2 if thing was Unable to communicate with security tunnel in HostOS
+#######################################
 function launchSecurityTunnelAsNecessary() {
   local port_no
   if ! port_no="$(getPortnumberOfkubeapi "${cluster_name}" 2>/dev/null)"; then
     return 1
     ## NOTE
-    ## return non-zero, if the k8s cluster is not working 
+    ## return non-zero, if the k8s cluster is not working
   fi
   if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
     if [[ $(hasWorkingProcess socat) == "false" ]]; then
