@@ -518,7 +518,7 @@ function hasWorkingProcess() {
 #######################################
 function getDirNameListOfWorkbase() {
   local __cluster_name="$1"
-  RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics/${__cluster_name}}
+  RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE:-/tmp/crobotics/${__cluster_name}}
   RDBOX_WORKDIR_OF_WORK_BASE=$(printf %q "$RDBOX_WORKDIR_OF_WORK_BASE")
   export RDBOX_WORKDIR_OF_WORK_BASE=${RDBOX_WORKDIR_OF_WORK_BASE}
     ### EXTRAPOLATION
@@ -910,7 +910,7 @@ function getPortnumberOfkubeapi() {
   local port
   local inspect_json
   cluster_name="${1}"
-  inspect_json=$(docker inspect "${cluster_name}"-control-plane)
+  inspect_json=$(sudo docker inspect "${cluster_name}"-control-plane)
   port=$(echo "${inspect_json}" | jq -r '.[].NetworkSettings.Ports."6443/tcp"[].HostPort')
   if [[ "$port" =~ ^[0-9]+$ ]]; then
     echo -n "${port}"

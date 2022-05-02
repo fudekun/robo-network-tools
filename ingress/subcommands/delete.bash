@@ -40,7 +40,7 @@ function delete_all() {
     kubectl config delete-context "${__ctx_name}"
   fi
   echo "Deleteing Cluster ..."
-  kind delete cluster --name "${__cluster_name}" 2>&1
+  sudo kind delete cluster --kubeconfig "${KUBECONFIG}" --name "${__cluster_name}" 2>&1
   return $?
 }
 

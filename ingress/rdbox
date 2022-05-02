@@ -17,23 +17,29 @@ function main() {
     docker run -it --rm \
       -p 8000:8000 \
       -v "$(pwd)":/rdbox \
-      -v "${HOME}"/.kube/:/root/.kube \
-      -v "${HOME}"/crobotics/:/root/crobotics \
+      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/crobotics:/tmp/crobotics \
       -v /var/run/docker.sock:/var/run/docker.sock \
+      -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
       -e RDBOX_NETWORK_DEFULT_NIC_IPV4="${RDBOX_NETWORK_DEFULT_NIC_IPV4}" \
       -e RDBOX_NETWORK_DEFULT_NIC_IPV6="${RDBOX_NETWORK_DEFULT_NIC_IPV6}" \
       -e RDBOX_TYPE_OF_SECRET_OPERATION="${RDBOX_TYPE_OF_SECRET_OPERATION}" \
+      -e LOCAL_UID="$(id -u "${USER}")" \
+      -e LOCAL_GID="$(id -g "${USER}")" \
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   elif [[ "${os_name}" == "Linux" ]]; then
     docker run -it --rm \
       --network host \
       -v "$(pwd)":/rdbox \
-      -v "${HOME}"/.kube/:/root/.kube \
-      -v "${HOME}"/crobotics/:/root/crobotics \
+      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/crobotics:/tmp/crobotics \
       -v /var/run/docker.sock:/var/run/docker.sock \
+      -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_TYPE_OF_SECRET_OPERATION="${RDBOX_TYPE_OF_SECRET_OPERATION}" \
+      -e LOCAL_UID="$(id -u "${USER}")" \
+      -e LOCAL_GID="$(id -g "${USER}")" \
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   fi

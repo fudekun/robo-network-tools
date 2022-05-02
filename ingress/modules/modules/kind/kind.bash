@@ -56,8 +56,8 @@ function __executor() {
   __workdir_of_tmps=$(echo "$__workbase_dirs" | awk -F ' ' '{print $4}')
   __workdir_of_confs=$(echo "$__workbase_dirs" | awk -F ' ' '{print $5}')
   __conffile_path=${__workdir_of_confs}/modules/kind/kind/${__VERSION_OF_MANIFEST}/values.yaml
-  if ! bash -c "kind get clusters | grep -c ${__RDBOX_CLUSTER_NAME} >/dev/null 2>&1"; then
-    kind create cluster --config "${__conffile_path}" --name "${__RDBOX_CLUSTER_NAME}"
+  if ! bash -c "sudo kind get clusters | grep -c ${__RDBOX_CLUSTER_NAME} >/dev/null 2>&1"; then
+    sudo kind create cluster --kubeconfig "${KUBECONFIG}" --config "${__conffile_path}" --name "${__RDBOX_CLUSTER_NAME}"
     if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
       __showMsgAboutSecurityTunnel "$(getPortnumberOfkubeapi "${__RDBOX_CLUSTER_NAME}")"
       return 1

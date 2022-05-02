@@ -78,6 +78,8 @@ RUN apt-get update \
         rsync \
         socat \
         vim \
+        sudo \
+        gosu \
         git
 
 ## Setup krew (Plug-In manager for kubectl)
@@ -96,3 +98,20 @@ RUN cd "$(mktemp -d)" \
 RUN export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH" \
     && kubectl krew update \
     && kubectl krew install oidc-login
+
+## Setup User and Group
+## References: https://qiita.com/Spritaro/items/602118d946a4383bd2bb
+## References: https://qiita.com/yohm/items/047b2e68d008ebb0f001
+ARG USERNAME=ubuntu
+ARG GROUPNAME=ubuntu
+ARG UID=1000
+ARG GID=1000
+ARG PASSWORD=password
+RUN groupadd -g $GID $GROUPNAME && \
+    useradd -m -s /bin/bash -u $UID -g $GID -G sudo $USERNAME && \
+    echo $USERNAME:$PASSWORD | chpasswd && \
+    echo "$USERNAME   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+COPY entrypoint.bash /usr/local/bin/entrypoint.bash
+RUN chmod +x /usr/local/bin/entrypoint.bash
+ENTRYPOINT ["/usr/local/bin/entrypoint.bash"]
+WORKDIR /home/$USERNAME/

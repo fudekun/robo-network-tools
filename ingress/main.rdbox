@@ -22,7 +22,7 @@ function main() {
       init "${@:2}"
       ;;
     logout)
-      logout "${@:2}"
+      __logout "${@:2}"
       ;;
     login)
       login "${@:2}"
@@ -165,7 +165,7 @@ function init() {
   return $ret
 }
 
-function logout() {
+function __logout() {
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
   kubectl config use-context kind-"${cluster_name}" > /dev/null 2>&1
