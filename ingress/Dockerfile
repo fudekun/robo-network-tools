@@ -44,28 +44,19 @@ RUN curl https://helm.baltorepo.com/organization/signing.asc \
 RUN apt-get update \
     && apt-get install -y \
         helm
-### Setup the repos that RDBOX depends on
-### Commands for confirmation: `helm repo list`
-### NOTES:
-### - datawire => edge-stack
-### - jetstack => cert-manager
-RUN helm repo add edge-stack https://s3.amazonaws.com/datawire-static-files/charts \
-    && helm repo add metallb https://metallb.github.io/metallb \
-    && helm repo add jetstack https://charts.jetstack.io \
-    && helm repo add bitnami https://charts.bitnami.com/bitnami
 
 ## Setup the kind
 RUN curl -L -o /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-amd64 \
-    && chmod u+x /usr/local/bin/kind
+    && chmod +x /usr/local/bin/kind
 
 ## Setup the yq
 RUN curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
-    && chmod u+x /usr/local/bin/yq
+    && chmod +x /usr/local/bin/yq
 
 ## Setup the gost
 RUN curl -L -o /tmp/gost.gz https://github.com/ginuerzh/gost/releases/download/v2.11.2/gost-linux-amd64-2.11.2.gz \
     && gunzip -c /tmp/gost.gz > /usr/local/bin/gost \
-    && chmod u+x /usr/local/bin/gost
+    && chmod +x /usr/local/bin/gost
 
 ## Setup the others
 RUN apt-get update \
@@ -81,23 +72,6 @@ RUN apt-get update \
         sudo \
         gosu \
         git
-
-## Setup krew (Plug-In manager for kubectl)
-## References: https://krew.sigs.k8s.io/docs/user-guide/quickstart/
-RUN cd "$(mktemp -d)" \
-    && OS="$(uname | tr '[:upper:]' '[:lower:]')" \
-    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" \
-    && KREW="krew-${OS}_${ARCH}" \
-    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
-    && tar zxvf "${KREW}.tar.gz" \
-    && ./"${KREW}" install krew \
-    && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> ${HOME}/.bashrc
-
-## Setup oidc-login (krew's Plug-In)
-## References: https://github.com/int128/kubelogin
-RUN export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH" \
-    && kubectl krew update \
-    && kubectl krew install oidc-login
 
 ## Setup User and Group
 ## References: https://qiita.com/Spritaro/items/602118d946a4383bd2bb
@@ -115,3 +89,20 @@ COPY entrypoint.bash /usr/local/bin/entrypoint.bash
 RUN chmod +x /usr/local/bin/entrypoint.bash
 ENTRYPOINT ["/usr/local/bin/entrypoint.bash"]
 WORKDIR /home/$USERNAME/
+
+## Setup krew (Plug-In manager for kubectl)
+## References: https://krew.sigs.k8s.io/docs/user-guide/quickstart/
+RUN cd "$(gosu ubuntu mktemp -d)" \
+    && OS="$(uname | tr '[:upper:]' '[:lower:]')" \
+    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" \
+    && KREW="krew-${OS}_${ARCH}" \
+    && gosu ubuntu curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
+    && gosu ubuntu tar zxvf "${KREW}.tar.gz" \
+    && gosu ubuntu ./"${KREW}" install krew \
+    && echo 'export PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:$PATH"' >> /home/ubuntu/.bashrc
+
+## Setup oidc-login (krew's Plug-In)
+## References: https://github.com/int128/kubelogin
+RUN PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:$PATH" \
+    && gosu ubuntu kubectl krew update \
+    && gosu ubuntu kubectl krew install oidc-login

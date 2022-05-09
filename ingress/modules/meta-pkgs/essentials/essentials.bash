@@ -98,12 +98,22 @@ executor() {
 initializeEssentials() {
   __executor() {
     local __workdir_of_confs
-    ## 1. Update Helm
+    ## 1. Setup the repos that RDBOX depends on
+    ## Commands for confirmation: `helm repo list`
+    ## NOTES:
+    ## - datawire => edge-stack
+    ## - jetstack => cert-manager
+    ##
+    helm repo add edge-stack https://s3.amazonaws.com/datawire-static-files/charts
+    helm repo add metallb https://metallb.github.io/metallb
+    helm repo add jetstack https://charts.jetstack.io
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    ## 2. Update Helm
     ##
     echo ""
     echo "### Updateing Helm ..."
     helm repo update
-    ## 2. Set up a ConfigMap for the meta-pkg of essentials
+    ## 3. Set up a ConfigMap for the meta-pkg of essentials
     ##
     echo ""
     echo "### Setting a ConfigMap for the meta-pkg of essentials ..."
