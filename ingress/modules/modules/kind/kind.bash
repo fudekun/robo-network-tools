@@ -61,6 +61,8 @@ function __executor() {
     if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
       __showMsgAboutSecurityTunnel "$(getPortnumberOfkubeapi "${__RDBOX_CLUSTER_NAME}")"
       return 1
+    else
+      sudo chown "${LOCAL_UID}":"${LOCAL_GID}" "${KUBECONFIG}"
     fi
   else
     echo "already exist for a cluster with the name ${__RDBOX_CLUSTER_NAME}"

@@ -7,6 +7,9 @@ set -euo pipefail
 ###############################################################################
 
 function main() {
+  work_dir=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics}
+  mkdir -p "${work_dir}"
+  mkdir -p "${HOME}/.kube"
   RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-new}
   os_name=$(getOsNameAtHost)
   if [[ "${os_name}" == "MacOS" ]]; then

@@ -310,6 +310,7 @@ function __generateDynamicsValuesForDI() {
     unlink "${__fullpath_of_output_values_latest_yaml}"
   fi
   eval "${__cmd}" > "${__fullpath_of_output_values_yaml}"
+  sed -i -e 's/##\n---\n#/##\n---\n#/g' "${__fullpath_of_output_values_yaml}"
   ln -s "${__fullpath_of_output_values_yaml}" "${__fullpath_of_output_values_latest_yaml}"
   echo -n "${__fullpath_of_output_values_yaml}"
   return $?
@@ -547,7 +548,13 @@ function getDirNameListOfWorkbase() {
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
 function getNetworkInfo() {
-  RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  local runtime_name
+  runtime_name=$(getRuntimeName)
+  if [[ "${runtime_name}" == "Container" ]] && [[ "${os_name}" == "MacOS" ]]; then
+    RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
+  else
+    RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep ^0.0.0.0 | grep -v ":" | awk '{print $8}')}
+  fi
   RDBOX_NETWORK_DEFULT_NIC_NAME=$(printf %q "$RDBOX_NETWORK_DEFULT_NIC_NAME")
     # EXTRAPOLATION
   export RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME}
