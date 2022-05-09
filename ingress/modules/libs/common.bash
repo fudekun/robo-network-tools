@@ -310,7 +310,23 @@ function __generateDynamicsValuesForDI() {
     unlink "${__fullpath_of_output_values_latest_yaml}"
   fi
   eval "${__cmd}" > "${__fullpath_of_output_values_yaml}"
-  sed -i -e 's/##\n---\n#/##\n---\n#/g' "${__fullpath_of_output_values_yaml}"
+  ## Format the YAML separator (---)
+  ##
+  sed -i -z 's/##\n---\n#/#/g' "${__fullpath_of_output_values_yaml}"
+    ## NOTE
+    ## Remove like below (If an empty separator exists at the middle of the file)
+    ##
+    ## ##
+    ## ---
+    ## #
+  sed -i -z 's/---\n# Source: [A-Za-z0-9 _/.\\-]*yaml\n##\n$//g' "${__fullpath_of_output_values_yaml}"
+    ## NOTE
+    ## Remove like below (If an empty separator exists at the end of the file)
+    ##
+    ## ---
+    ## # Source: template-engine/templates/cert-manager/manifests/cluster-issuer-ca.yaml
+    ## ##
+    ## $
   ln -s "${__fullpath_of_output_values_yaml}" "${__fullpath_of_output_values_latest_yaml}"
   echo -n "${__fullpath_of_output_values_yaml}"
   return $?
