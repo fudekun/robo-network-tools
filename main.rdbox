@@ -200,7 +200,7 @@ function login() {
 }
 
 function version() {
-  echo "${__RDBOX_VERSION}"
+  showHeader true
   return $?
 }
 

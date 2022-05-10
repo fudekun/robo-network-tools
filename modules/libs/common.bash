@@ -4,7 +4,7 @@
 
 ## FIXED VALUE
 ##
-__RDBOX_VERSION="v0.1.0"
+__RDBOX_APP_VERSION="v0.0.1"
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
@@ -42,6 +42,7 @@ function showHeader() {
     echo "          RDBOX  "
     echo "- A Robotics Developers BOX -"
   fi
+  echo "{'Application': '${__RDBOX_APP_VERSION}', 'TemplateEngine': 'v$(getVersionOfTemplateEngine)', 'Template': '$(getApiversionBasedOnSemver)'}"
   return $?
 }
 
@@ -795,11 +796,9 @@ function getIso8601DayTime() {
 #######################################
 function getVersionOfTemplateEngine() {
   local __dirpath_of_template_engine
-  local __basepath_of_input
   local __version_of_engine
   local __ret
   __dirpath_of_template_engine="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/helm/template-engine"
-  __basepath_of_input=templates/${__namespace}
   __version_of_engine=$(helm show chart "${__dirpath_of_template_engine}" | yq '.version')
   __ret=$?
   echo -n "${__version_of_engine}"
