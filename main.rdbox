@@ -3,6 +3,7 @@ set -euo pipefail
 
 ###############################################################################
 ## The base point of New RDBOX Systems
+## Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
 function main() {

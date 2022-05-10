@@ -43,7 +43,7 @@ function showVerifierCommand() {
   echo "      References: https://github.com/int128/kubelogin"
   echo "  ### **HostOS** Finally, Execute the following command"
   echo "  ### Your default browser will launch and you should perform the login operation"
-  echo "    kubectl config use-context $(getContextName4Kubectl)"
+  echo "    kubectl config use-context $(getKubectlContextName4SSO)"
   echo "    kubectl get node          # whatever is okay, just choose the one you like"
   return $?
 }
@@ -80,7 +80,7 @@ function __executor() {
   ## 2. Set Context
   ##
   local __ctx_name
-  __ctx_name=$(getContextName4Kubectl)
+  __ctx_name=$(getKubectlContextName4SSO)
   echo ""
   echo "### Setting Cluster Context ..."
   if ! kubectl config delete-context "${__ctx_name}" > /dev/null 2>&1; then

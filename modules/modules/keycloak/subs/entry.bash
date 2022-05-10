@@ -230,7 +230,7 @@ function main() {
   ## Set Context
   local client_secret
   local __ctx_name
-  __ctx_name=$(getContextName4Kubectl)
+  __ctx_name=$(getKubectlContextName4SSO)
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
   echo ""
   echo "### Setting Cluster Context ..."

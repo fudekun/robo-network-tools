@@ -79,10 +79,10 @@ function __showMsgAboutSecurityTunnel() {
   echo "### First, execute the following command in **HostOS**:"
   echo "    NOTE: the gost is a tunnel module [A simple security tunnel written in Golang](https://github.com/ginuerzh/gost/blob/master/README_en.md)"
   echo "    $ cd \${A directory where you can download the gost module without problems}"
-  echo "    $ curl -qL -o gost.gz https://github.com/ginuerzh/gost/releases/download/v${__RDBOX_AUXILIARY_APP_OF_GOST_VERSION}/gost-darwin-amd64-${__RDBOX_AUXILIARY_APP_OF_GOST_VERSION}.gz"
+  echo "    $ curl -qL -o gost.gz https://github.com/ginuerzh/gost/releases/download/v${__RDBOX_HELPFUL_APPS_OF_GOST_VERSION}/gost-darwin-amd64-${__RDBOX_HELPFUL_APPS_OF_GOST_VERSION}.gz"
   echo "    $ gzip -d gost.gz"
   echo "    $ chmod u+x gost"
-  echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}/127.0.0.1:${port}"
+  echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_HELPFUL_APPS_OF_GOST_PORT}/127.0.0.1:${port}"
   echo "### Next, execute the same command (rdbox create ...) again in **ContainerOS**"
   echo ""
   return $?

@@ -4,6 +4,7 @@ set -euo pipefail
 ###############################################################################
 ## A Kick script to use the RDBOX with Docker
 ## - Run it on **HostOS**
+## Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
 function main() {

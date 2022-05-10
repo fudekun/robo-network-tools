@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-## https://google.github.io/styleguide/shellguide.html
+###############################################################################
+## The collections of a function, which is general purpose
+## Style: https://google.github.io/styleguide/shellguide.html
+###############################################################################
 
 ## FIXED VALUE
 ##
@@ -12,8 +15,9 @@ __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
 __RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
 __RDBOX_NUM_INDENT=4
-__RDBOX_AUXILIARY_APP_OF_GOST_VERSION="2.11.2"
-__RDBOX_AUXILIARY_APP_OF_GOST_PORT=59999
+__RDBOX_HELPFUL_APPS_OF_GOST_VERSION="2.11.2"
+__RDBOX_HELPFUL_APPS_OF_GOST_PORT=59999
+__RDBOX_ESSENTIALS_KUBECTL_CONTEXT_NAME_PREFIX="sso"
 ## VALUE for internal using
 ##
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
@@ -32,7 +36,7 @@ function showHeader() {
   local is_showing_logo=${1:-false}
   drawMaxColsSeparator "=" "39"
   echo "[$(getIso8601DayTime)][$(getEpochSec)][$(basename "$0")]"
-  echo "# START"
+  echo "# BEGIN"
   if "${is_showing_logo}"; then
     echo ""
     echo "- This is an advanced IT platform for robotics and IoT developers -"
@@ -61,9 +65,9 @@ function showFooter() {
   local message
   result=${1:-0}
   if [[ "${result}" -eq 0 ]]; then
-    message="SUCCESS"
+    message="END (SUCCESS)"
   else
-    message="FAILED ${1}"
+    message="END (FAILED) ${1}"
   fi
   echo ""
   echo "# ${message}"
@@ -72,14 +76,39 @@ function showFooter() {
   return $?
 }
 
+#######################################
+# Show the Loading message, until the calling command finishes.
+# Arguments:
+#   Command (e.g. sudo apt update)
+#   Message (string to be displayed while executing the command specified in the argument)
+# Outputs:
+#   StdOut/StdErr of the specific Command
+#   Specific message with the loading icon=>"Repeat 4 letter(- \ | /)"
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
 function cmdWithLoding() {
   local cmd
   local message
   cmd=$(printf %q "$1" | sed "s/\\\//g")
   message="$2"
   eval "${cmd} & showLoading '${message} '"
+  return $?
 }
 
+#######################################
+# Show and Indent StdOut/StdErr of the specified command
+# - When there is output for a file descriptor other than 1 (other than StdOut), mark is given.
+# Arguments:
+#   Command (e.g. apt update)
+#   Mark    (Yes or No)
+# Outputs:
+#   StdOut/StdErr of the specific Command
+#   - When there is output for a file descriptor other than 1 (other than StdOut), mark is given.
+#   - Only when Yes is specified for "the Mark" argument.
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
 function cmdWithIndent() {
   local cmd
   local mark
@@ -88,14 +117,16 @@ function cmdWithIndent() {
   if [[ "$mark" == "YES" ]]; then
     local esc
     esc=$(printf '\033')
-    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[STDERR]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
+    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[2]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
   else
     eval "${cmd} 2>&1 | showIndent"
   fi
+  return $?
 }
 
 #######################################
-# Show the Loading message, until the calling command finishes.
+# Show the Loading message, until last command finishes.
+# - Based on the PID (get by "$!")
 # Arguments:
 #   loading_text The string to display with the loading icon
 # Outputs:
@@ -105,14 +136,14 @@ function cmdWithIndent() {
 #   Get a exit code by the caller's pid
 #######################################
 function showLoading() {
-  local mypid=$!
+  local last_pid=$!
   local loading_text=$1
   local exit_status
   tput civis                     ## (FROM here) the cursor invisible:
   trap 'tput cnorm' EXIT
   echo -ne "\r"
   sleep 1
-  while kill -0 $mypid 2>/dev/null; do
+  while kill -0 $last_pid 2>/dev/null; do
     echo -ne "\r\033[K"
     echo -ne "  $loading_text\r"
     echo -ne "\033[35m-\033[m  $loading_text\r"
@@ -127,7 +158,7 @@ function showLoading() {
   tput cnorm                     ## (TO here) the cursor visible again:
   #-------------------
   set +euo > /dev/null 2>&1      ## (FROM here) For To Get Return Code
-  wait $mypid # Get a exit code by the caller's pid
+  wait $last_pid # Get a exit code by the caller's pid
   exit_status=$?
   if [[ ${exit_status} -eq 0 ]]; then
     echo -e "\033[32mok\033[m $loading_text"
@@ -139,8 +170,16 @@ function showLoading() {
   return "$exit_status"
 }
 
+#######################################
+# N space characters are added to the beginning of the sentence in the output
+# - received by Pipe
+# - ${__RDBOX_RAW_INDENT} is a env value
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
 function showIndent() {
-  sed "s/^/${__RDBOX_RAW_INDENT}/";
+  sed "s/^/${__RDBOX_RAW_INDENT}/"
+  return $?
 }
 
 #######################################
@@ -167,7 +206,7 @@ function drawMaxColsSeparator() {
 #######################################
 # launch The security tunnel (by the socat) as necessary
 # Globals:
-#   __RDBOX_AUXILIARY_APP_OF_GOST_PORT
+#   __RDBOX_HELPFUL_APPS_OF_GOST_PORT
 # Arguments:
 #   None
 # Returns:
@@ -185,14 +224,14 @@ function launchSecurityTunnelAsNecessary() {
   if [[ $(isRequiredSecurityTunnel) == "true" ]]; then
     if [[ $(hasWorkingProcess socat) == "false" ]]; then
       echo "Activating a Security Tunnel ..."
-      if ! waitForSuccessOfCommand "> /dev/tcp/gateway.docker.internal/${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" 10 > /dev/null 2>&1; then
+      if ! waitForSuccessOfCommand "> /dev/tcp/gateway.docker.internal/${__RDBOX_HELPFUL_APPS_OF_GOST_PORT}" 10 > /dev/null 2>&1; then
         echo "## The following operations are required in your environment (MacOS Container)"
         echo "### Execute the following command in **HostOS**:"
-        echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}/127.0.0.1:${port_no}"
+        echo "    $ ./gost -L tcp://127.0.0.1:${__RDBOX_HELPFUL_APPS_OF_GOST_PORT}/127.0.0.1:${port_no}"
         return 2
       fi
       socat tcp-l:"${port_no}",fork,reuseaddr \
-        tcp:gateway.docker.internal:"${__RDBOX_AUXILIARY_APP_OF_GOST_PORT}" \
+        tcp:gateway.docker.internal:"${__RDBOX_HELPFUL_APPS_OF_GOST_PORT}" \
         > /dev/null 2>&1 &
       echo "Activating a Security Tunnel ...ok"
     fi
@@ -590,11 +629,21 @@ function getNetworkInfo() {
   export __RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP=${__RDBOX_HOSTNAME_FOR_WCDNS_BASED_ON_IP}
 }
 
-function getContextName4Kubectl() {
-  local prefix=${1:-sso}
+#######################################
+# Get the kubectl's context name for SSO
+# - oidc-login by krew
+# Arguments:
+#   (optional) prefix (e.g. sso)
+# Outputs:
+#   The context name of regulation (e.g. sso-k8s-cluster)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getKubectlContextName4SSO() {
+  local prefix=${1:-${__RDBOX_ESSENTIALS_KUBECTL_CONTEXT_NAME_PREFIX}}
   local context_name
   context_name=${prefix}-$(getClusterName)
-  echo -e "$context_name"
+  echo -n "$context_name"
 }
 
 function __getClusterinfoFromConfigmap() {

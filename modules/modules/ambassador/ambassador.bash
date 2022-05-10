@@ -175,7 +175,7 @@ function __executor() {
   echo ""
   echo "### Setting Cluster Context ..."
   local __ctx_name
-  __ctx_name=$(getContextName4Kubectl)
+  __ctx_name=$(getKubectlContextName4SSO)
   if ! kubectl config delete-cluster "${__ctx_name}" 2>/dev/null; then
     echo "The ClusterContext(cluster) is Not Found ...ok"
   fi

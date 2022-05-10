@@ -33,7 +33,7 @@ function delete_all() {
   local __cluster_name
   local __ctx_name
   __cluster_name=${1}
-  __ctx_name=$(getContextName4Kubectl)
+  __ctx_name=$(getKubectlContextName4SSO)
   echo "Deleteing Context ..."
   if kubectl config use-context kind-"${__cluster_name}" > /dev/null 2>&1; then
     kubectl config use-context kind-"${__cluster_name}"
