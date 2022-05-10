@@ -18,33 +18,18 @@ RUN apt-get update \
         gnupg2 \
         lsb-release
 ### Add Docker’s official GPG key:
+### Use the following command to set up the stable repository. To add the nightly or test repository, add the word nightly or test (or both) after the word stable in the commands below. Learn about nightly and test channels
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-    | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-### Use the following command to set up the stable repository. To add the nightly or test repository, add the word nightly or test (or both) after the word stable in the commands below. Learn about nightly and test channels.
-RUN echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-### Update the apt package index, and install the latest version of Docker Engine and containerd, or go to the next step to install a specific version:
-RUN apt-get update \
-    && apt-get install -y \
-        docker-ce=5:${VERSION_DOCKER_CE}.* \
-        docker-ce-cli=5:${VERSION_DOCKER_CE}.* \
-        containerd.io=${VERSION_CONTAINERD}.* \
-    && apt-mark hold \
-        docker-ce \
-        docker-ce-cli \
-        containerd.io
+    | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+      | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 ## Setup kubectl
+## References: https://kubernetes.io/ja/docs/tasks/tools/install-kubectl/
 RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | apt-key add - \
     && echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" \
       | tee -a /etc/apt/sources.list.d/kubernetes.list
-RUN apt-get update \
-    && apt-get install -y \
-        kubectl=${VERSION_KUBECTL}-00 \
-    && apt-mark hold \
-        kubectl
 
 ## Setup the helm
 ## References: https://helm.sh/ja/docs/intro/install/
@@ -54,18 +39,13 @@ RUN curl https://helm.baltorepo.com/organization/signing.asc \
     | apt-key add - \
     && echo "deb https://baltocdn.com/helm/stable/debian/ all main" \
       | tee /etc/apt/sources.list.d/helm-stable-debian.list
-RUN apt-get update \
-    && apt-get install -y \
-        helm=${VERSION_HELM}.* \
-    && apt-mark hold \
-        helm
 
 ## Setup the yq
 RUN curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
     && chmod +x /usr/local/bin/yq
 
 ## Setup the kind
-RUN curl -L -o /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/v${VERSION_KIND}/download/kind-linux-amd64 \
+RUN curl -L -o /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v${VERSION_KIND}/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
 
 ## Setup the gost
@@ -73,9 +53,14 @@ RUN curl -L -o /tmp/gost.gz https://github.com/ginuerzh/gost/releases/download/v
     && gunzip -c /tmp/gost.gz > /usr/local/bin/gost \
     && chmod +x /usr/local/bin/gost
 
-## Setup the others
+## Setup all
 RUN apt-get update \
     && apt-get install -y \
+        docker-ce=5:${VERSION_DOCKER_CE}.* \
+        docker-ce-cli=5:${VERSION_DOCKER_CE}.* \
+        containerd.io=${VERSION_CONTAINERD}.* \
+        kubectl=${VERSION_KUBECTL}-00 \
+        helm=${VERSION_HELM}.* \
         jq \
         iproute2 \
         iputils-ping \
@@ -86,7 +71,16 @@ RUN apt-get update \
         vim \
         sudo \
         gosu \
-        git
+        git \
+        bash-completion \
+    && apt-mark hold \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        kubectl \
+        helm \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 ## Setup User and Group
 ## References: https://qiita.com/Spritaro/items/602118d946a4383bd2bb
@@ -114,7 +108,9 @@ RUN cd "$(gosu ubuntu mktemp -d)" \
     && gosu ubuntu curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
     && gosu ubuntu tar zxvf "${KREW}.tar.gz" \
     && gosu ubuntu ./"${KREW}" install krew \
-    && echo 'export PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:$PATH"' >> /home/ubuntu/.bashrc
+    && echo 'export PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:$PATH"' >> /home/ubuntu/.bashrc \
+    && echo "source <(kubectl completion bash)" >> /home/ubuntu/.bashrc \
+    && echo "source <(helm completion bash)" >> /home/ubuntu/.bashrc
 
 ## Setup oidc-login (krew's Plug-In)
 ## References: https://github.com/int128/kubelogin

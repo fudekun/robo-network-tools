@@ -565,8 +565,10 @@ function getDirNameListOfWorkbase() {
 #######################################
 function getNetworkInfo() {
   local runtime_name
+  local os_name
   runtime_name=$(getRuntimeName)
-  if [[ "${runtime_name}" == "Container" ]] && [[ "${os_name}" == "MacOS" ]]; then
+  os_name=$(getOsNameAtHost)
+  if [[ "${runtime_name}" == "Host" ]] && [[ "${os_name}" == "MacOS" ]]; then
     RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
   else
     RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep ^0.0.0.0 | grep -v ":" | awk '{print $8}')}

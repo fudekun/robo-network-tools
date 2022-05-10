@@ -108,7 +108,7 @@ function exec_with_logger() {
       | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
         > "${log_file_path}")
   fi
-  echo "# Finalizing logger ...(Max 10s)"
+  echo "# Finalizing logger ...(Please Max 10s wait)"
   sleep 5
   return $?
 }
