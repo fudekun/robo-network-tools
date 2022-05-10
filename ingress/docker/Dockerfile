@@ -1,5 +1,12 @@
 FROM ubuntu:22.04
 
+ARG VERSION_KIND
+ARG VERSION_KUBECTL
+ARG VERSION_DOCKER_CE
+ARG VERSION_CONTAINERD
+ARG VERSION_HELM
+ARG VERSION_GOST
+
 ## Setup the docker-ce
 ## References: https://docs.docker.com/engine/install/ubuntu/
 ##
@@ -20,6 +27,10 @@ RUN echo \
 ### Update the apt package index, and install the latest version of Docker Engine and containerd, or go to the next step to install a specific version:
 RUN apt-get update \
     && apt-get install -y \
+        docker-ce=5:${VERSION_DOCKER_CE}.* \
+        docker-ce-cli=5:${VERSION_DOCKER_CE}.* \
+        containerd.io=${VERSION_CONTAINERD}.* \
+    && apt-mark hold \
         docker-ce \
         docker-ce-cli \
         containerd.io
@@ -31,6 +42,8 @@ RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg \
       | tee -a /etc/apt/sources.list.d/kubernetes.list
 RUN apt-get update \
     && apt-get install -y \
+        kubectl=${VERSION_KUBECTL}-00 \
+    && apt-mark hold \
         kubectl
 
 ## Setup the helm
@@ -43,18 +56,20 @@ RUN curl https://helm.baltorepo.com/organization/signing.asc \
       | tee /etc/apt/sources.list.d/helm-stable-debian.list
 RUN apt-get update \
     && apt-get install -y \
+        helm=${VERSION_HELM}.* \
+    && apt-mark hold \
         helm
-
-## Setup the kind
-RUN curl -L -o /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-amd64 \
-    && chmod +x /usr/local/bin/kind
 
 ## Setup the yq
 RUN curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
     && chmod +x /usr/local/bin/yq
 
+## Setup the kind
+RUN curl -L -o /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/v${VERSION_KIND}/download/kind-linux-amd64 \
+    && chmod +x /usr/local/bin/kind
+
 ## Setup the gost
-RUN curl -L -o /tmp/gost.gz https://github.com/ginuerzh/gost/releases/download/v2.11.2/gost-linux-amd64-2.11.2.gz \
+RUN curl -L -o /tmp/gost.gz https://github.com/ginuerzh/gost/releases/download/v${VERSION_GOST}/gost-linux-amd64-${VERSION_GOST}.gz \
     && gunzip -c /tmp/gost.gz > /usr/local/bin/gost \
     && chmod +x /usr/local/bin/gost
 
@@ -85,7 +100,7 @@ RUN groupadd -g $GID $GROUPNAME && \
     useradd -m -s /bin/bash -u $UID -g $GID -G sudo $USERNAME && \
     echo $USERNAME:$PASSWORD | chpasswd && \
     echo "$USERNAME   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-COPY entrypoint.bash /usr/local/bin/entrypoint.bash
+COPY ./files/entrypoint.bash /usr/local/bin/entrypoint.bash
 RUN chmod +x /usr/local/bin/entrypoint.bash
 ENTRYPOINT ["/usr/local/bin/entrypoint.bash"]
 WORKDIR /home/$USERNAME/
