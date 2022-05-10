@@ -125,6 +125,7 @@ function __bash() {
     fi
   fi
   /bin/bash
+  return $?
 }
 
 function create() {

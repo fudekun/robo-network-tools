@@ -100,8 +100,8 @@ function cmdWithLoding() {
 # Show and Indent StdOut/StdErr of the specified command
 # - When there is output for a file descriptor other than 1 (other than StdOut), mark is given.
 # Arguments:
-#   Command (e.g. apt update)
-#   Mark    (Yes or No)
+#   Command            (e.g. apt update)
+#   (optional)is_showing_mark    boolean
 # Outputs:
 #   StdOut/StdErr of the specific Command
 #   - When there is output for a file descriptor other than 1 (other than StdOut), mark is given.
@@ -111,10 +111,10 @@ function cmdWithLoding() {
 #######################################
 function cmdWithIndent() {
   local cmd
-  local mark
+  local is_showing_mark
   cmd=$(printf %q "$1" | sed "s/\\\//g")
-  mark="${2:-"YES"}" # YES or NO
-  if [[ "$mark" == "YES" ]]; then
+  is_showing_mark="${2:-true}"
+  if "$is_showing_mark"; then
     local esc
     esc=$(printf '\033')
     eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[2]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
