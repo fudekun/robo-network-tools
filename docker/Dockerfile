@@ -108,7 +108,7 @@ RUN cd "$(gosu ubuntu mktemp -d)" \
     && gosu ubuntu curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
     && gosu ubuntu tar zxvf "${KREW}.tar.gz" \
     && gosu ubuntu ./"${KREW}" install krew \
-    && echo 'export PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:$PATH"' >> /home/ubuntu/.bashrc \
+    && echo 'export PATH="${KREW_ROOT:-/home/ubuntu/.krew}/bin:/rdbox:$PATH"' >> /home/ubuntu/.bashrc \
     && echo "source <(kubectl completion bash)" >> /home/ubuntu/.bashrc \
     && echo "source <(helm completion bash)" >> /home/ubuntu/.bashrc
 

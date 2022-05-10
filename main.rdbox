@@ -116,6 +116,13 @@ function exec_with_logger() {
 function __bash() {
   local cluster_name
   cluster_name=$(get_cluster_name "${@}")
+  if ! launchSecurityTunnelAsNecessary "${cluster_name}"; then
+    local ret=$?
+    if [[ $ret -eq 2 ]]; then
+      ## The security tunnel on the HOSTOS side is not activated
+      return 2
+    fi
+  fi
   /bin/bash
 }
 

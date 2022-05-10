@@ -11,6 +11,10 @@ function main() {
   mkdir -p "${work_dir}"
   mkdir -p "${HOME}/.kube"
   RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-new}
+  if [[ -f /.dockerenv ]]; then
+    "/rdbox/main.rdbox" "$@"
+    return $?
+  fi
   os_name=$(getOsNameAtHost)
   if [[ "${os_name}" == "MacOS" ]]; then
     getNetworkInfo
