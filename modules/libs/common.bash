@@ -4,7 +4,8 @@
 
 ## FIXED VALUE
 ##
-__RDBOX_APP_VERSION="v0.0.1"
+RDBOX_APP_VERSION="v0.0.1"
+##
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
@@ -42,7 +43,7 @@ function showHeader() {
     echo "          RDBOX  "
     echo "- A Robotics Developers BOX -"
   fi
-  echo "{'Application': '${__RDBOX_APP_VERSION}', 'TemplateEngine': 'v$(getVersionOfTemplateEngine)', 'Template': '$(getApiversionBasedOnSemver)'}"
+  echo "{'Application': '${RDBOX_APP_VERSION}', 'TemplateEngine': 'v$(getVersionOfTemplateEngine)', 'Template': '$(getApiversionBasedOnSemver)'}"
   return $?
 }
 

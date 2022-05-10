@@ -201,6 +201,7 @@ function login() {
 
 function version() {
   showHeader true
+  echo ""
   return $?
 }
 

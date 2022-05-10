@@ -3,6 +3,9 @@ set -euo pipefail
 
 function showHeaderCommand() {
   showHeader
+  echo ""
+  echo "---"
+  echo "# Deleteing Cluster ..."
   return $?
 }
 

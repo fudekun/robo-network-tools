@@ -9,19 +9,19 @@ function showHeaderCommand() {
 }
 
 function checkArgs() {
-  RDBOX_TYPE_OF_SECRET_OPERATION=${RDBOX_TYPE_OF_SECRET_OPERATION:-"new"}
-  if [[ "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "new" || "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "recycle" ]]; then
-    readonly RDBOX_TYPE_OF_SECRET_OPERATION=$RDBOX_TYPE_OF_SECRET_OPERATION
+  RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT=${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-"new"}
+  if [[ "${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT}" == "new" || "${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT}" == "recycle" ]]; then
+    readonly RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT=$RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT
   else
-    echo "**ERROR**  Invalid Environment Variable (RDBOX_TYPE_OF_SECRET_OPERATION)" >&2
+    echo "**ERROR**  Invalid Environment Variable (RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT)" >&2
     echo "  - Expect: new|recycle" >&2
-    echo "  - Actual: ${RDBOX_TYPE_OF_SECRET_OPERATION}" >&2
+    echo "  - Actual: ${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT}" >&2
     return 1
   fi
-  if [[ "${RDBOX_TYPE_OF_SECRET_OPERATION}" == "recycle" ]]; then
+  if [[ "${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT}" == "recycle" ]]; then
     if [ ! -e "$(getFullpathOfHistory)" ]; then
       echo "**ERROR**  No history file found. Please generate a new RootCA." >&2
-      echo "  - Expect: Unset Environment Variable (RDBOX_TYPE_OF_SECRET_OPERATION)" >&2
+      echo "  - Expect: Unset Environment Variable (RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT)" >&2
       return 1
     fi
   fi
@@ -79,7 +79,7 @@ function __executor() {
   echo "### Setting CA ..."
   __setupSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__base_fqdn}"
     ### NOTE
-    ### Use the environment variable "RDBOX_TYPE_OF_SECRET_OPERATION" to switch
+    ### Use the environment variable "RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT" to switch
     ### between issuing a new certificate or using a past certificate.
   return $?
 }
@@ -94,9 +94,9 @@ function __setupSecrets() {
   readonly __base_fqdn="$3"
   __history_file=$(getFullpathOfHistory)
   readonly __history_file
-  if [[ "$RDBOX_TYPE_OF_SECRET_OPERATION" == "new" ]]; then
+  if [[ "$RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT" == "new" ]]; then
     __issueNewSecrets "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}" "${__base_fqdn}"
-  elif [[ "$RDBOX_TYPE_OF_SECRET_OPERATION" == "recycle" ]]; then
+  elif [[ "$RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT" == "recycle" ]]; then
     __issueSecretsUsingExistingHistory "${__namespace_for_certmanager}" "${__hostname_for_certmanager_main}" "${__history_file}"
   else
     echo "Please generate a new RootCA."

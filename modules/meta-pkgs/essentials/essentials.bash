@@ -28,7 +28,7 @@ checkArgs() {
       echo "  (recommend: Use automatic settings)"
       echo "| Name                               | e.g.                            |"
       echo "| ---------------------------------- | ------------------------------- |"
-      echo "| RDBOX_TYPE_OF_SECRET_OPERATION     | (default)new or recycle         |"
+      echo "| RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT     | (default)new or recycle         |"
       return 1
     fi
   fi
