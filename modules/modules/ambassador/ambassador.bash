@@ -52,6 +52,7 @@ function __executor() {
   __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_ambassador}" confs helm)
   helm -n "${__namespace_for_ambassador}" upgrade --install "${__hostname_for_ambassador_main}" edge-stack/edge-stack \
+      --version 7.3.2 \
       --create-namespace \
       --wait \
       --timeout 600s \

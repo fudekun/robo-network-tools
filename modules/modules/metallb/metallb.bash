@@ -46,6 +46,7 @@ function __executor() {
     ### Get ConfigValue MetalLB with L2 Mode
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_metallb}" confs helm)
   helm -n "${__namespace_for_metallb}" upgrade --install "${__hostname_for_metallb_main}" metallb/metallb \
+      --version 0.12.1 \
       --create-namespace \
       --wait \
       --timeout 600s \

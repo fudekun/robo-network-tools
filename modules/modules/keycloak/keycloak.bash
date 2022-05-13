@@ -70,6 +70,7 @@ function __executor() {
   __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_keycloak}" confs helm)
   helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
+    --version 7.1.18 \
     --create-namespace \
     --wait \
     --timeout 600s \
