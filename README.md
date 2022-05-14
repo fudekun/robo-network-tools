@@ -1,6 +1,6 @@
-# Embody the ideal of The Cloud Robotics by [the RDBOX(Robotics Developers BOX)](https://github.com/rdbox-intec/rdbox)
+# [RDBOX(Robotics Developers BOX)](https://github.com/rdbox-intec/rdbox): embodies the ideal of a cloud robotics
 
-Here we are developing the next generation of **the RDBOX** (Please call me "ði άːrdíː bäks")
+This repository is developing the next generation of **the RDBOX** (Please call me "ði άːrdíː bäks")
 
 This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
 Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
