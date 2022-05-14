@@ -1,6 +1,6 @@
 # Embody the ideal of The Cloud Robotics by [the RDBOX(Robotics Developers BOX)](https://github.com/rdbox-intec/rdbox)
 
-Here we are developing the next generation of **the RDBOX (ði άːrdíː bäks)**
+Here we are developing the next generation of **the RDBOX** (Please call me "ði άːrdíː bäks")
 
 This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
 Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
@@ -73,8 +73,10 @@ cd rdbox_next
 ### Dockerイメージを作る
 
 ```bash
-$ bash docker/setup.bash
+bash docker/setup.bash
+```
 
+```bash
 ~ omit ~
 
 Removing intermediate container 6defb90ca35d
@@ -92,8 +94,10 @@ Successfully tagged rdbox/docker:20.10
 `rdbox init`コマンドで構築するクラスターの名称の決定、作業ディレクトリの作成、設定ファイルの取得などを実施します。以下の通り、`--name rdbox`ではクラスター名をrdboxとして設定しています。
 
 ```bash
-$ ./rdbox init --name rdbox
+./rdbox init --name rdbox
+```
 
+```bash
 ~ omit ~
 
 # END (SUCCESS)
@@ -173,8 +177,10 @@ Kubernetesクラスターとコンテナネットワークを構築します。
 オプションで `--host ${YOUR_HOST_NAME}`が指定できます。これは名前解決可能なローカルドメインが存在する場合にだけ指定してください。何も入力しない場合はワイルドカードDNSサービスがサポートする書式`デフォルトNICのIPv4アドレスをハイフン区切りとしたもの(e.g. 192-168-22-222)`が自動的に利用されます。
 
 ```bash
-$ ./rdbox create --name rdbox --module k8s-cluster --domain nip.io
+./rdbox create --name rdbox --module k8s-cluster --domain nip.io
+```
 
+```bash
 ~ omit ~
 
 ## USAGE
@@ -223,8 +229,10 @@ KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジ
 先程と同様に`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。`--name rdbox`は`init`で指定したクラスターの名称を指定。  `--module k8s-essentials`では今回構築するモジュールの種別を指定。（このセットアップは、マシンスペックにもよりますが10分程度かかる場合があります。）
 
 ```bash
-$ ./rdbox create --name rdbox --module essentials
+./rdbox create --name rdbox --module essentials
+```
 
+```bash
 ~ omit ~
 
 ## USAGE
@@ -373,7 +381,10 @@ URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
 
 ```bash
 # コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
-$ rdbox login --name rdbox
+rdbox login --name rdbox
+```
+
+```bash
 error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": executable file not found in $PATH
 
 Please visit the following URL in your browser manually: http://localhost:8000
@@ -459,7 +470,10 @@ $ kubectl port-forward -n test-rdbox deploy/nginx-deployment 8888:80
 #### ログアウト
 
 ```bash
-$ rdbox logout --name rdbox
+rdbox logout --name rdbox
+```
+
+```bash
 Success SSO Logout
 ```
 
@@ -477,7 +491,10 @@ Password： `password`
 
 ```bash
 # コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
-$ rdbox login --name rdbox
+rdbox login --name rdbox
+```
+
+```bash
 error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": executable file not found in $PATH
 
 Please visit the following URL in your browser manually: http://localhost:8000
@@ -549,9 +566,12 @@ $ kubectl port-forward -n guest deploy/nginx-deployment 8888:80
 不要になった環境を削除したい場合は、ホストマシンで以下のコマンドを実行して下さい
 
 ```bash
-$ cd ${ソースコードをクローンした場所}
-$ ./rdbox logout --name rdbox
-$ ./rdbox delete --name rdbox
+cd ${ソースコードをクローンした場所}
+./rdbox logout --name rdbox
+./rdbox delete --name rdbox
+```
+
+```bash
 =====================
 [2022-05-13T03:22:29+0000][1652412149.3937433][delete.bash]
 # BEGIN
