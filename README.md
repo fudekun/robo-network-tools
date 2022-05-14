@@ -1,7 +1,9 @@
-# The RDBOX built with a single node
+# Embody the ideal of The Cloud Robotics by [the RDBOX(Robotics Developers BOX)](https://github.com/rdbox-intec/rdbox)
 
-Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
-Faster and easier than ever [Our RDBOX](https://github.com/rdbox-intec/rdbox)
+Here we are developing the next generation of **the RDBOX (ði άːrdíː bäks)**
+
+This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
+Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
 
 ## ROS2アプリとの連携
 
@@ -10,6 +12,8 @@ ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-N
 - （準備中） [SROS2 with OIDC(OpenID Connect) 〜ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox_next)
 
 ## RDBOX-Next環境構築手順
+
+### 注意（テスト状況）
 
 本手順は、以下の環境でのテストを実施しました（2022-05-13）。  
 いずれも**amd64** 環境です。
@@ -23,6 +27,16 @@ ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-N
   - Ubuntu20.04.4
     - 5.10.16.3-microsoft-standard-WSL2
   - Docker-CE （20.10.14）
+
+### 注意(製品グレード)
+
+KinD (Kubernetes in Docker) は、ローカルの開発やCIに使用することを想定したKubernetesクラスタです。  
+本番環境での使用は想定していませんのでご注意下さい。  
+
+`built with a single node`なRDBOXは、KinDで作った環境でクラウドロボティクスの利点を確認して頂くために開発しました。  
+理解するとそれなしで開発するのが困難になるかもしれません。  
+そのようなユーザに対して、本番環境での利用を想定した構成への移行をスムーズに行うための「仕組み」も準備中です。  
+詳細はロードマップをご覧ください。
 
 ### 事前準備
 
