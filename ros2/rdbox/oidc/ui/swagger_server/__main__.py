@@ -4,11 +4,12 @@ import connexion
 from keycloak import KeycloakOpenID
 from swagger_server import encoder
 
-keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-110.nip.io/auth/",
-                          realm_name="rdbox",
-                          client_id="ros2",
-                          client_secret_key="dZoR9DkaxorF0LPKoEjWdb34vJbiQkCS",
+keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
+                          realm_name="ros2_oidc",
+                          client_id="amcl",
+                          client_secret_key="fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF",
                           verify=False)
+redirect_url = 'http://rdbox.172-16-0-132.nip.io:8080/gettoken'
 
 
 def main():

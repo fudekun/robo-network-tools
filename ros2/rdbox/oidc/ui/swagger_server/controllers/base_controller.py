@@ -1,8 +1,5 @@
 import flask
-from swagger_server.__main__ import keycloak
-
-
-redirect_url = 'http://localhost:8080/gettoken'
+from swagger_server.__main__ import keycloak, redirect_url
 
 
 def get_token(code=None, session_state=None):  # noqa: E501
