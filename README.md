@@ -7,9 +7,11 @@ Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
 
 ## ROS2アプリとの連携
 
-ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-Next環境構築手順」に従って基礎的な環境を構築して下さい
+1. [SROS2 with OIDC(OpenID Connect) 〜ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc)
 
-- （準備中） [SROS2 with OIDC(OpenID Connect) 〜ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox_next)
+  ![SROS2_with_OIDC](/docs/imgs/SROS2_with_OIDC.jpeg)
+
+※ ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-Next環境構築手順」に従って基礎的な環境を構築して下さい
 
 ## RDBOX-Next環境構築手順
 
