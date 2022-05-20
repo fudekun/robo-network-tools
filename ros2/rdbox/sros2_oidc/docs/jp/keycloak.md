@@ -194,4 +194,5 @@ ros2_oidcのプログラムの設定に必要となる情報を列挙する、Cl
 - server_url
 - realm_name
 - client_id
-- client_secret_key
+- client_secret_ke
+- redirect_url

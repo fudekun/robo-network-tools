@@ -31,4 +31,195 @@ OIDCはWebサービスではスタンダードな認証規約の一つである�
 
 手順は、別ページ["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
 
-### sros2_oidcのデモ
+### ソースコード
+
+#### コピーしてください
+
+クローンした`sros2_oidc`のソースコードを含むrdboxディレクトリを、あなたのROS2用作業ディレクトリにコピーしてください。
+
+```bash
+git clone -b insiders https://github.com/rdbox-intec/rdbox
+cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}
+```
+
+### 環境固有設定
+
+[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため設定する。
+
+- server_url
+- realm_name
+- client_id
+- client_secret_key
+- redirect_url
+  - 以下を設定したが、アクセス元に合わせて`localhost` or `ユーザ環境に合わせたFQDN`を選択する。
+    - `http://localhost:8080/gettoken`
+    - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
+      - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
+
+[sros2_oidc/relaying_party/main.py#L15-L20](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/relaying_party/main.py#L15-L20)
+
+  ```bash
+  keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
+                            realm_name="ros2_oidc",
+                            client_id="amcl",
+                            client_secret_key="********************",
+                            verify=False)
+  redirect_url = 'http://rdbox.172-16-0-132.nip.io:8080/gettoken'
+  ```
+
+[jwt_listener.py#L23-L27](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/resource_server/jwt_listener.py#L23-L27)
+
+  ```bash
+  keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
+                            realm_name="ros2_oidc",
+                            client_id="amcl",
+                            client_secret_key="********************",
+                            verify=False)
+  ```
+
+### ビルド
+
+  ```bash
+  cd ${YOUR_ROS2_WS}
+  colcon build --packages-select sros2_oidc
+  ```
+
+## SROS2（for sros2_oidc）
+
+### このデモで必要なファイル用のフォルダを作成
+
+これから、このデモに必要なすべてのファイルを格納するフォルダを作成します。
+
+```bash
+mkdir ~/sros2_demo
+```
+
+### キーストア、鍵、証明書の生成
+
+#### Generate a keystore
+
+```bash
+$ cd ~/sros2_demo
+$ ros2 security create_keystore demo_keystore
+creating keystore: demo_keystore
+creating new CA key/cert pair
+creating governance file: demo_keystore/enclaves/governance.xml
+creating signed governance file: demo_keystore/enclaves/governance.p7s
+all done! enjoy your keystore in demo_keystore
+cheers!
+```
+
+#### TalkerとListenerのノードの鍵や証明書を生成
+
+※FoxyはReadme.mdが違うので注意。絶対にBranchを確認すること
+
+```bash
+$ ros2 security create_key demo_keystore /sros2_oidc/jwt_talker
+creating key for identity: '/sros2_oidc/jwt_talker'
+creating cert and key
+creating permission
+```
+
+```bash
+$ ros2 security create_key demo_keystore /sros2_oidc/jwt_listener
+creating key for identity: '/sros2_oidc/jwt_listener'
+creating cert and key
+creating permission
+```
+
+### 環境変数定義
+
+設定し忘れないように`.bashrc`等に設定しておく。
+
+```bash
+export ROS_SECURITY_KEYSTORE=~/sros2_demo/demo_keystore
+export ROS_SECURITY_ENABLE=true
+export ROS_SECURITY_STRATEGY=Enforce
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+```
+
+## sros2_oidcのデモ
+
+### 事前準備
+
+本チュートリアルでは、[Robotis社のTurtleBot3](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/)を題材として使用させて頂きます。まずはTurtleBot3に関する環境の設定を行います。
+
+- Turtlebot3環境をインストール
+  - [TurtleBot3 Quick Start Guide](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/)
+  - [TurtleBot3 Simulation](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation)
+
+### シミュレータを起動
+
+```bash
+export TURTLEBOT3_MODEL=burger
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+### ナビゲーションを起動
+
+```bash
+export TURTLEBOT3_MODEL=burger
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:=$HOME/map.yaml
+```
+
+### rvizで初期位置を設定
+
+「2D Pose Estimate」ボタンをクリックして、ロボットの初期位置を入力する。
+
+### sros2_oidcを起動
+
+#### RP
+
+```bash
+$ ros2 run sros2_oidc rp --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_talker
+~ omit ~
+[INFO] [1653024071.293409261] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_talker
+```
+
+#### ResourceServer
+
+```bash
+$ ros2 run sros2_oidc resource --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
+~ omit ~
+[INFO] [1653024090.440248408] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_listener
+```
+
+### ブラウザから`sros2_oidcのWebUI`にアクセスする
+
+アクセス元に合わせて`localhost` or `ユーザ環境に合わせたFQDN`を選択し、ブラウザからアクセスする。
+
+- `http://localhost:8080/`
+- `http://${ユーザ環境に合わせたFQDN}:8080/`
+  - e.g. `http://rdbox.172.16-0-132.nip.io:8080/`
+
+以下のような画面が表示されるので、「ログイン」する。
+
+  ![UI_Home.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Home.jpg)
+
+ログインでは、Keycloakの作成したrealmが用意したログイン画面にリダイレクトされるため、必要な情報を入力し、ログイン操作を実施する。
+
+  ![UI_Keycloak_login.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Keycloak_login.jpg)
+
+sros2_oidcのRPに初回ログインした時には、連携する情報について同意を求める画面が表示されます（今回はlocation）。続けるためには同意が必要です。
+
+  ![GrantPage.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/GrantPage.jpg)
+
+ログイン及び、同意が取れた場合は、ユーザに許可されたサービスが表示されます。「Come to me!!」ボタンをクリックすると[冒頭の動画](https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4)のように、ロボットを移動させることができます。
+
+  ![UI_ServiceList.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_ServiceList.jpg)
+
+## 技術解説
+
+Comming Soon!!
+
+## ロードマップ
+
+- [ ] 各設定をコード直書きから、環境変数 or 設定ファイルで実施できるようにする
+- [ ] JWTをString.msgで受け取ってから、任意のROS Message形式に変換できるようにする
+  - [ ] 外部クラスを外挿できるような仕組み
+  - [ ] トピックの指定
+- [ ] 高速なレスポンスが欲しい場合のオプションを用意する（トークンイントロスペクションではなく、ローカルで検証する方法の実装）
+
+## Licence
+
+Licensed under the [MIT](https://github.com/rdbox-intec/rdbox/blob/insiders/LICENSE) license.
