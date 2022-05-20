@@ -15,7 +15,7 @@ jwt_talker = None
 keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
                           realm_name="ros2_oidc",
                           client_id="amcl",
-                          client_secret_key="fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF",
+                          client_secret_key="********************",
                           verify=False)
 redirect_url = 'http://rdbox.172-16-0-132.nip.io:8080/gettoken'
 
