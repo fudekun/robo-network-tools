@@ -39,7 +39,7 @@ OIDCはWebサービスではスタンダードな認証規約の一つである�
 
 ```bash
 git clone -b insiders https://github.com/rdbox-intec/rdbox
-cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}
+cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 ```
 
 ### 環境固有設定
@@ -81,7 +81,7 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}
 
   ```bash
   cd ${YOUR_ROS2_WS}
-  colcon build --packages-select sros2_oidc
+  colcon build --packages-select sros2_oidc talker_goal_pose
   ```
 
 ## SROS2（for sros2_oidc）
@@ -229,6 +229,7 @@ Comming Soon!!
   - [ ] 外部クラスを外挿できるような仕組み
   - [ ] トピックの指定
 - [ ] 高速なレスポンスが欲しい場合のオプションを用意する（トークンイントロスペクションではなく、ローカルで検証する方法の実装）
+- [ ] 全経路の完全な暗号化
 
 ## Licence
 
