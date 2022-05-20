@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+###############################################################################
+## A Kick script to use the RDBOX with Docker
+## - Run it on **HostOS**
+## Style: https://google.github.io/styleguide/shellguide.html
+###############################################################################
+
+function main() {
+  initial_directory
+  ## Run in the Container
+  ##
+  if [[ -f /.dockerenv ]]; then
+    ### Note
+    ### Probably any Container can be used
+    ### References: https://github.com/moby/moby/blob/master/daemon/initlayer/setup_unix.go#L30
+    "/rdbox/main.rdbox" "$@"
+    return $?
+  fi
+  ## Run in the Host
+  ##
+  os_name=$(getOsNameAtHost)
+  if [[ "${os_name}" == "MacOS" ]]; then
+    getNetworkInfo
+      ### NOTE
+      ### Get a network info and Export ones
+      ### RDBOX_NETWORK_DEFULT_NIC_NAME, RDBOX_NETWORK_DEFULT_NIC_IPV4, RDBOX_NETWORK_DEFULT_NIC_IPV6
+    docker run -it --rm \
+      -p 8000:8000 \
+      -v "$(pwd)":/rdbox \
+      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/crobotics:/tmp/crobotics \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e KUBECONFIG=/tmp/.kube/config \
+      -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
+      -e RDBOX_NETWORK_DEFULT_NIC_IPV4="${RDBOX_NETWORK_DEFULT_NIC_IPV4}" \
+      -e RDBOX_NETWORK_DEFULT_NIC_IPV6="${RDBOX_NETWORK_DEFULT_NIC_IPV6}" \
+      -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
+      -e LOCAL_UID="$(id -u "${USER}")" \
+      -e LOCAL_GID="$(id -g "${USER}")" \
+      rdbox/docker:20.10 \
+      "/rdbox/main.rdbox" "$@"
+  elif [[ "${os_name}" == "Linux" ]]; then
+    docker run -it --rm \
+      --network host \
+      -v "$(pwd)":/rdbox \
+      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/crobotics:/tmp/crobotics \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e KUBECONFIG=/tmp/.kube/config \
+      -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
+      -e LOCAL_UID="$(id -u "${USER}")" \
+      -e LOCAL_GID="$(id -g "${USER}")" \
+      rdbox/docker:20.10 \
+      "/rdbox/main.rdbox" "$@"
+  fi
+  return $?
+}
+
+function initial_directory() {
+  work_dir=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics}
+  mkdir -p "${work_dir}"
+  mkdir -p "${HOME}/.kube"
+}
+
+## Set the base directory for RDBOX scripts!!
+##
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")" || exit 1; pwd)}
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
+  ### EXTRAPOLATION
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
+main "$@"
+exit $?

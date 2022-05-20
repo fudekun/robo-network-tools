@@ -1,0 +1,11 @@
+# Default values for metallb.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Refer to https://metallb.universe.tf/configuration/ for
+# available options.
+configInline:
+  address-pools:
+  - name: default
+    protocol: layer2
+    addresses: []

@@ -1,0 +1,59 @@
+##
+{{- if .Values.keycloak }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if and .Values.keycloak.dynamics.main.rbac (hasKey .Values.keycloak.dynamics.main "rbac")}}
+{{- if and .Values.keycloak.dynamics.main.rbac.create (hasKey .Values.keycloak.dynamics.main.rbac "create")}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-grp:cluster-admin
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: bitnami.keycloak
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+subjects:
+- kind: Group
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: guest
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: bitnami.keycloak
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-grp:guest
+  namespace: guest
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: bitnami.keycloak
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+subjects:
+- kind: Group
+  name: guest
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

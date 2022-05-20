@@ -1,0 +1,20 @@
+##
+{{- if .Values.keycloak }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+keycloak:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.keycloak.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.keycloak.dynamics.main.hostname }}
+      fqdn: "{{ .Values.keycloak.dynamics.main.hostname }}.{{ .Values.keycloak.dynamics.common.baseFqdn }}"
+      {{- if .Values.keycloak.dynamics.main.tlsContext }}
+      tlsContext:
+        create: {{ .Values.keycloak.dynamics.main.tlsContext.create | default false }}
+      {{- end }}
+      {{- if .Values.keycloak.dynamics.main.rbac }}
+      rbac:
+        create: {{ .Values.keycloak.dynamics.main.rbac.create | default false }}
+      {{- end }}
+{{- end }}
+{{- end }}

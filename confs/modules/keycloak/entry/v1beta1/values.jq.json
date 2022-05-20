@@ -1,0 +1,159 @@
+{
+  "id": $cluster_name,
+  "realm": $cluster_name,
+  "displayName": $cluster_name,
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en",
+    "ja"
+  ],
+  "userManagedAccessAllowed": true,
+  "defaultDefaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "groups"
+  ],
+  "defaultOptionalClientScopes": [
+    "offline_access",
+    "address",
+    "phone",
+    "microprofile-jwt"
+  ],
+  "groups": [
+    {
+      "name": $preset_group_name,
+      "realmRoles": [
+        "admin",
+        "user"
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "realm-admin"
+        ],
+        "account": [
+          "manage-account"
+        ]
+      }
+    },
+    {
+      "name": "guest",
+      "realmRoles": [
+        "user"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": $preset_cadmi_name,
+      "firstName": $first_name,
+      "lastName": $last_name,
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "credentials": [
+        {
+          "type": "password",
+          "hashedSaltedValue": $hashed_salted_value,
+          "salt": $salt,
+          "hashIterations": $hash_iterations,
+          "counter": 0,
+          "algorithm": "pbkdf2-sha256",
+          "digits": 0,
+          "period": 0,
+          "createdDate": $created_date,
+          "config": {
+          }
+        }
+      ],
+      "disableableCredentialTypes": [
+        "password"
+      ],
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ],
+      "notBefore": 0,
+      "groups": [
+        $preset_group_name
+      ]
+    },
+    {
+      "username": "guest",
+      "firstName": "guest",
+      "lastName": "guest",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "credentials": [
+        {
+          "type": "password",
+          "hashedSaltedValue": "R6TI3MRwDs6jn4yO9NwmWb4tuJnootGl6ICT/dedu3mgcnXJc0HPDkAxvStGLmKDR4Eeh4GkyVAq3O6jU7sbhg==",
+          "salt": "JDUkbmswdk5mN3FPQ3NFbHdNTw==",
+          "hashIterations": 27500,
+          "counter": 0,
+          "algorithm": "pbkdf2-sha256",
+          "digits": 0,
+          "period": 0,
+          "createdDate": $created_date,
+          "config": {
+          }
+        }
+      ],
+      "disableableCredentialTypes": [
+        "password"
+      ],
+      "notBefore": 0,
+      "groups": [
+        "guest"
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "offline_access",
+        "description": "${role_offline-access}",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "user",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      }
+    ]
+  }
+}

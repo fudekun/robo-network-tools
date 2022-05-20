@@ -1,0 +1,36 @@
+##
+{{- if .Values.certManager }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if and .Values.certManager.dynamics.common.isSelfsigned (hasKey .Values.certManager.dynamics.common "isSelfsigned")}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-issuer-selfsigned-{{ .Release.Name }}.{{ .Values.certManager.dynamics.common.baseFqdn }}
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: jetstack.cert-manager
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  isCA: true
+  commonName: "{{ .Values.certManager.dynamics.common.baseFqdn }}"
+  dnsNames:
+    - {{ .Values.certManager.dynamics.common.baseFqdn }}
+    - "*.{{ .Values.certManager.dynamics.common.baseFqdn }}"
+  secretName: {{ .Values.certManager.dynamics.common.baseFqdn }}
+  duration: {{ .Values.certManager.di.certificate.duration }}
+  {{- if .Values.certManager.di.certificate.privateKey }}
+  privateKey: {{- include "common.tplvalues.render" ( dict "value" .Values.certManager.di.certificate.privateKey "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.certManager.di.certificate.subject }}
+  subject: {{- include "common.tplvalues.render" ( dict "value" .Values.certManager.di.certificate.subject "context" $) | nindent 4 }}
+  {{- end }}
+  issuerRef:
+    name: cluster-issuer-selfsigned-{{ .Release.Name }}
+    kind: ClusterIssuer
+    group: cert-manager.io
+{{- end }}
+{{- end }}
+{{- end }}

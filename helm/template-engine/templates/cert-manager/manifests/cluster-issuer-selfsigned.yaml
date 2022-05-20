@@ -1,0 +1,19 @@
+##
+{{- if .Values.certManager }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if and .Values.certManager.dynamics.common.isSelfsigned (hasKey .Values.certManager.dynamics.common "isSelfsigned")}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: cluster-issuer-selfsigned-{{ .Release.Name }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: jetstack.cert-manager
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  selfSigned: {}
+{{- end }}
+{{- end }}
+{{- end }}
