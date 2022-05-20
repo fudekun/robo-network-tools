@@ -208,6 +208,16 @@ sros2_oidcのRPに初回ログインした時には、連携する情報につ�
 
   ![UI_ServiceList.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_ServiceList.jpg)
 
+この時、`Resource Server`はユーザ属性内容を解釈し、以下のように位置情報を取り出せていることがわかります。
+
+  ```bash
+  $ ros2 run sros2_oidc resource --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
+  ~ omit ~
+  [INFO] [1653024090.440248408] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_listener
+  ~ omit ~
+  [INFO] [1653028094.165181655] [jwt_listener]: Accept: [3.0,2.3]
+  ```
+
 ## 技術解説
 
 Comming Soon!!
