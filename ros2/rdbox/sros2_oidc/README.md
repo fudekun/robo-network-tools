@@ -1,4 +1,4 @@
-# SROS2 with OIDC(OpenID Connect) 〜ロボットが安全に人を識別するための技術〜
+# SROS2 with OIDC(OpenID Connect) ：ロボットが安全に人を識別するための技術
 
 ## Video
 
@@ -23,6 +23,12 @@ OIDCはWebサービスではスタンダードな認証規約の一つである�
 
 まず、SROS2が動くROS2 Foxy環境を準備します。
 
-手順は、我々が記載した[SROS2をセットアップしてみよう](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。
+手順は、我々が記載した["SROS2をセットアップしてみよう"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。
 
-### keycloak（OP）のセットアップ
+### OpenID Provider（OP, Keycloakを使用）のセットアップ
+
+次に、OpenID Provider（OP, Keycloakを使用）に対して、`sros2_oidc用のレルム`、`Relaying Prty`、`ユーザ`等を順に追加していきます。
+
+手順は、別ページ["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
+
+### sros2_oidcのデモ
