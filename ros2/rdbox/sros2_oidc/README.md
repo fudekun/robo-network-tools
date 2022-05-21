@@ -179,7 +179,7 @@ $ ros2 run sros2_oidc rp --ros-args --remap use_sim_time:=True --enclave /sros2_
 #### ResourceServer
 
 ```bash
-$ ros2 run sros2_oidc resource --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
+$ ros2 run sros2_oidc resource --ros-args -p package_name:='talker_goal_pose' -p executable_name:='goal_pose' --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
 ~ omit ~
 [INFO] [1653024090.440248408] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_listener
 ```

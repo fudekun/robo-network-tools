@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import json
+import os
+import shutil
 import subprocess
-
-from geometry_msgs.msg import PoseStamped
 
 from keycloak import KeycloakOpenID
 
@@ -39,6 +38,14 @@ class JwtListener(Node):
                                             'sros2_oidc',
                                             self.sros2_oidc_callback,
                                             10)
+        self.declare_parameter('package_name')
+        self.declare_parameter('executable_name')
+        self.package_name = self.get_parameter('package_name')\
+            .get_parameter_value().string_value
+        self.executable_name = self.get_parameter('executable_name')\
+            .get_parameter_value().string_value
+        self.get_logger().info('Specified conversion module: [ros2 run %s %s]'
+                               % (self.package_name, self.executable_name))
 
     def sros2_oidc_callback(self, msg):
         try:
@@ -47,16 +54,19 @@ class JwtListener(Node):
                 raise ValueError('token_info.active is false')
         except ValueError as e:
             raise ValueError(e)
-        except Exception as e:
+        except Exception as e:      # noqa:B902
             raise e
         raw_json = json.dumps(userinfo)
         param = "info:='{}'".format(raw_json)
+        ros2_path = shutil.which('ros2')
+        if ros2_path is None:
+            raise AttributeError('a path of ros2 not found')
         env = os.environ.copy()
         env['ROS_SECURITY_ENABLE'] = 'false'
-        subprocess.Popen(['ros2',
+        subprocess.Popen([ros2_path,
                           'run',
-                          'talker_goal_pose',
-                          'goal_pose',
+                          self.package_name,
+                          self.executable_name,
                           '--ros-args',
                           '-p', param],
                          env=env)

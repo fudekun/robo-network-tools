@@ -11,31 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-import os
 import json
-
-import rclpy
+import sys
 
 from geometry_msgs.msg import PoseStamped
 
-from std_msgs.msg import String
+import rclpy
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = rclpy.create_node('relay')
+    node = rclpy.create_node('talker_goal_pose')
     node.declare_parameter('info', '{}')
-    token_info = node.get_parameter('info').get_parameter_value().string_value
+    token_info = node.get_parameter('info')\
+        .get_parameter_value().string_value
     pub = node.create_publisher(PoseStamped, 'goal_pose', 10)
     try:
         token_dict = json.loads(token_info)
-        if 'location' not in token_dict:
-            raise KeyError('location not in token_info')
-    except KeyError as e:
-        raise KeyError(e)
-    except Exception as e:
+    except Exception as e:     # noqa:B902
         raise e
+    if 'location' not in token_dict:
+        raise KeyError('location not in token_info')
     raw_location = token_dict['location']
     x_pos, y_pos = [float(val) for val in raw_location.split(',')]
     pose = PoseStamped()
