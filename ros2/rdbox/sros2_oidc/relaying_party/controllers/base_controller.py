@@ -51,6 +51,7 @@ def get_token(code=None, session_state=None, state=None):  # noqa: E501
     keycloak.decode_token(raw_token['access_token'],
                           key=KEYCLOAK_PUBLIC_KEY,
                           options=options)
+    # Redirect Success page
     resp = flask.redirect('/ros2', code=302)
     resp.set_cookie('RDBOX_ACCESS_TOKEN',
                     raw_token['access_token'],
