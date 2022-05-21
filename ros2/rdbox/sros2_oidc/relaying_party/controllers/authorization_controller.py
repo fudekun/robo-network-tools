@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""https://connexion.readthedocs.io/en/latest/security.html detail it."""
+
 from flask import current_app
 
 import six
@@ -20,8 +22,21 @@ from werkzeug.exceptions import Unauthorized
 
 
 def check_AuthBearer(token):
-    keycloak = current_app.config['keycloak']
-    token_info = keycloak.introspect(token)
+    """Check auth beare.
+
+    In the case of an illegal token,
+    six.raise_from(Unauthorized, e) is sent and a 401.
+
+    :param token: Bearer token string
+    :type token: str
+    :returns: Dict of jwt clame
+    :rtype: dict
+    """
+    try:
+        keycloak = current_app.config['keycloak']
+        token_info = keycloak.introspect(token)
+    except Exception as e:              # noqa:B902
+        six.raise_from(Unauthorized, e)
     if token_info['active'] is False:
         six.raise_from(Unauthorized, Exception)
     return token_info
