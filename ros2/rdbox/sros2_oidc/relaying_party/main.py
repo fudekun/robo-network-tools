@@ -1,4 +1,18 @@
-#!/usr/bin/env python3
+# Copyright 2022 Intec Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
 
 import connexion
 
@@ -12,12 +26,13 @@ from relaying_party.jwt_talker import JwtTalker
 
 jwt_talker = None
 
-keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
-                          realm_name="ros2_oidc",
-                          client_id="amcl",
-                          client_secret_key="fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF",
+keycloak = KeycloakOpenID(server_url=os.environ['SROS2_OIDC_OP_SERVER_URL'],
+                          realm_name=os.environ['SROS2_OIDC_OP_REALM_NAME'],
+                          client_id=os.environ['SROS2_OIDC_OP_CLIENT_ID'],
+                          client_secret_key=os.environ[
+                              'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
                           verify=False)
-redirect_url = 'http://rdbox.172-16-0-132.nip.io:8080/gettoken'
+redirect_url = os.environ['SROS2_OIDC_OP_REDIRECT_URL']
 
 
 def main():
@@ -31,6 +46,8 @@ def main():
     if jwt_talker is None:
         jwt_talker = JwtTalker()
     app.run(port=8080)
+    jwt_talker.destroy_node()
+    rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

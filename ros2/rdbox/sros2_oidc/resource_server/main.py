@@ -12,13 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import os
 import sys
+
+from keycloak import KeycloakOpenID
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
 
 from resource_server.jwt_listener import JwtListener
+
+keycloak = KeycloakOpenID(server_url=os.environ['SROS2_OIDC_OP_SERVER_URL'],
+                          realm_name=os.environ['SROS2_OIDC_OP_REALM_NAME'],
+                          client_id=os.environ['SROS2_OIDC_OP_CLIENT_ID'],
+                          client_secret_key=os.environ[
+                              'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
+                          verify=False)
 
 
 def main(args=None):

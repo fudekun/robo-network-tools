@@ -16,18 +16,11 @@ import os
 import shutil
 import subprocess
 
-from keycloak import KeycloakOpenID
-
 from rclpy.node import Node
 
+from relaying_party.main import keycloak
+
 from std_msgs.msg import String
-
-
-keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
-                          realm_name="ros2_oidc",
-                          client_id="amcl",
-                          client_secret_key="fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF",
-                          verify=False)
 
 
 class JwtListener(Node):
