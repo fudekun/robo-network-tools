@@ -15,8 +15,12 @@
 import flask
 from flask import current_app
 
+import six
 
-def get_token(code=None, session_state=None):  # noqa: E501
+from werkzeug.exceptions import Forbidden
+
+
+def get_token(code=None, session_state=None, state=None):  # noqa: E501
     """get_token
 
      # noqa: E501
@@ -25,9 +29,13 @@ def get_token(code=None, session_state=None):  # noqa: E501
     :type code: str
     :param session_state: 
     :type session_state: str
+    :param state: 
+    :type state: str
 
     :rtype: str
     """
+    if state == current_app.config['state']:
+        six.raise_from(Forbidden)
     keycloak = current_app.config['keycloak']
     redirect_url = current_app.config['redirect_url']
     raw_token = keycloak.token(code=code,
@@ -74,7 +82,9 @@ def login():  # noqa: E501
     """
     keycloak = current_app.config['keycloak']
     redirect_url = current_app.config['redirect_url']
+    state = current_app.config['state']
     url = keycloak.auth_url(redirect_url)
+    url += '&state={}'.format(state)
     return flask.redirect(url, code=302)
 
 

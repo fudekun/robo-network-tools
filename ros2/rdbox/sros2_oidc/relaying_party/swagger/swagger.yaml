@@ -78,6 +78,13 @@ paths:
         explode: true
         schema:
           type: string
+      - name: state
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK

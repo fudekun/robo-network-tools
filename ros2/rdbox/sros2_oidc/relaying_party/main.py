@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+
 import os
 
 import connexion
@@ -45,6 +47,7 @@ def main():
     app.app.config['jwt_talker'] = jwt_talker
     app.app.config['keycloak'] = keycloak
     app.app.config['redirect_url'] = redirect_url
+    app.app.config['state'] = uuid.uuid4()
     app.run(port=8080, debug=True)
     jwt_talker.destroy_node()
     rclpy.try_shutdown()

@@ -17,7 +17,8 @@ class TestBaseController(BaseTestCase):
         
         """
         query_string = [('code', 'code_example'),
-                        ('session_state', 'session_state_example')]
+                        ('session_state', 'session_state_example'),
+                        ('state', 'state_example')]
         response = self.client.open(
             '/gettoken',
             method='GET',
