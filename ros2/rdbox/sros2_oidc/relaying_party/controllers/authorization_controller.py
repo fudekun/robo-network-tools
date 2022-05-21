@@ -1,18 +1,27 @@
-from relaying_party.main import keycloak
-from werkzeug.exceptions import Unauthorized
+# Copyright 2022 Intec Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from flask import current_app
+
 import six
 
-"""
-controller generated to handled auth operation described at:
-https://connexion.readthedocs.io/en/latest/security.html
-"""
+from werkzeug.exceptions import Unauthorized
 
 
 def check_AuthBearer(token):
-    try:
-        token_info = keycloak.introspect(token)
-        if token_info['active'] is False:
-            six.raise_from(Unauthorized, Exception)
-    except Exception as e:
-        six.raise_from(Unauthorized, e)
+    keycloak = current_app.config['keycloak']
+    token_info = keycloak.introspect(token)
+    if token_info['active'] is False:
+        six.raise_from(Unauthorized, Exception)
     return token_info

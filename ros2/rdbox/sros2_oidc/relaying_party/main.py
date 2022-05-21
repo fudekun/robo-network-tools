@@ -24,17 +24,6 @@ from relaying_party import encoder
 from relaying_party.jwt_talker import JwtTalker
 
 
-jwt_talker = None
-
-keycloak = KeycloakOpenID(server_url=os.environ['SROS2_OIDC_OP_SERVER_URL'],
-                          realm_name=os.environ['SROS2_OIDC_OP_REALM_NAME'],
-                          client_id=os.environ['SROS2_OIDC_OP_CLIENT_ID'],
-                          client_secret_key=os.environ[
-                              'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
-                          verify=False)
-redirect_url = os.environ['SROS2_OIDC_OP_REDIRECT_URL']
-
-
 def main():
     app = connexion.App(__name__, specification_dir='./swagger/')
     app.app.json_encoder = encoder.JSONEncoder
@@ -42,9 +31,20 @@ def main():
                 arguments={'title': 'sros2_oidc'},
                 pythonic_params=True)
     rclpy.init()
-    global jwt_talker
-    if jwt_talker is None:
-        jwt_talker = JwtTalker()
+    jwt_talker = JwtTalker()
+    keycloak = KeycloakOpenID(server_url=os.environ[
+                                'SROS2_OIDC_OP_SERVER_URL'],
+                              realm_name=os.environ[
+                                'SROS2_OIDC_OP_REALM_NAME'],
+                              client_id=os.environ[
+                                'SROS2_OIDC_OP_CLIENT_ID'],
+                              client_secret_key=os.environ[
+                                'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
+                              verify=False)
+    redirect_url = os.environ['SROS2_OIDC_OP_REDIRECT_URL']
+    app.app.config['jwt_talker'] = jwt_talker
+    app.app.config['keycloak'] = keycloak
+    app.app.config['redirect_url'] = redirect_url
     app.run(port=8080)
     jwt_talker.destroy_node()
     rclpy.try_shutdown()
