@@ -18,8 +18,14 @@
           .find(row => row.startsWith(cookie_name))
           .split('=')[1];
         } catch(e) {
-          alert('Invalid token (TimeOut or UnAuthorized)')
+          alert('Invalid token (TimeOut or Unauthorized)')
           window.location.href = '/'
+          return
+        }
+        if (access_token === '') {
+          alert('Require authentication')
+          window.location.href = '/'
+          return
         }
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
@@ -27,18 +33,25 @@
         xhr.responseType = "blob";
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4) {
-                if (success) success(url, xhr.response); 
+                if (success) success(url, xhr.response, xhr.status); 
             }
         };
         xhr.send(null);
       }
-      function success(url, response) {
+      function success(url, response, status) {
         if (url === '/logout') {
           document.cookie = "RDBOX_ACCESS_TOKEN=; expires=0";
           document.cookie = "RDBOX_REFRESH_TOKEN=; expires=0";
           window.location.href = '/'
         }
-        alert('Your order accepted')
+        if (status >= 400) {
+          document.cookie = "RDBOX_ACCESS_TOKEN=; expires=0";
+          document.cookie = "RDBOX_REFRESH_TOKEN=; expires=0";
+          alert('Require authentication')
+          window.location.href = '/'
+        } else {
+          alert('Your order accepted')
+        }
       }
     </script>
   </body>

@@ -58,6 +58,17 @@ class TestBaseController(BaseTestCase):
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
+    def test_ros2(self):
+        """Test case for ros2
+
+        
+        """
+        response = self.client.open(
+            '/ros2',
+            method='GET')
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
 
 if __name__ == '__main__':
     import unittest

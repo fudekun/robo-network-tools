@@ -45,7 +45,7 @@ def main():
     app.app.config['jwt_talker'] = jwt_talker
     app.app.config['keycloak'] = keycloak
     app.app.config['redirect_url'] = redirect_url
-    app.run(port=8080)
+    app.run(port=8080, debug=True)
     jwt_talker.destroy_node()
     rclpy.try_shutdown()
 

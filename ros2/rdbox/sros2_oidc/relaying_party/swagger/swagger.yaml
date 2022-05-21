@@ -92,6 +92,21 @@ paths:
                 schema:
                   type: string
       x-openapi-router-controller: relaying_party.controllers.base_controller
+  /ros2:
+    get:
+      tags:
+      - ros2_amcl
+      operationId: ros2
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                example: <html><a href=/login>Login</a></html>
+                x-content-type: text/html
+      x-openapi-router-controller: relaying_party.controllers.base_controller
   /ros2/amcl/come_to_me:
     get:
       tags:

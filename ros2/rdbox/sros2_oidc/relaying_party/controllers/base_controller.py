@@ -33,7 +33,17 @@ def get_token(code=None, session_state=None):  # noqa: E501
     raw_token = keycloak.token(code=code,
                                grant_type='authorization_code',
                                redirect_uri=redirect_url)
-    resp = flask.send_from_directory('static/ros2', 'index.html')
+    # Verify the TOKEN
+    KEYCLOAK_PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\n'
+    KEYCLOAK_PUBLIC_KEY += keycloak.public_key()
+    KEYCLOAK_PUBLIC_KEY += '\n-----END PUBLIC KEY-----'
+    options = {'verify_signature': True,
+               'verify_aud': True,
+               'verify_exp': True}
+    keycloak.decode_token(raw_token['access_token'],
+                          key=KEYCLOAK_PUBLIC_KEY,
+                          options=options)
+    resp = flask.redirect('/ros2', code=302)
     resp.set_cookie('RDBOX_ACCESS_TOKEN',
                     raw_token['access_token'],
                     int(raw_token['expires_in']))
@@ -80,3 +90,14 @@ def logout():  # noqa: E501
     refresh_token = flask.request.headers.get('Authorization')
     keycloak.logout(refresh_token[7:])
     return flask.redirect('/', code=302)
+
+
+def ros2():
+    """ros2
+
+    # noqa: E501
+
+
+    :rtype: str
+    """
+    return flask.send_from_directory('static/ros2', 'index.html')
