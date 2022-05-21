@@ -44,7 +44,7 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 
 ### 環境固有設定
 
-[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため設定する。
+[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため環境変数として設定する必要がある。
 
 - server_url
 - realm_name
@@ -56,26 +56,15 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
     - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
 
-[sros2_oidc/relaying_party/main.py#L15-L20](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/relaying_party/main.py#L15-L20)
+サンプル： `SROS2_OIDC_OP_`プレフィックスを除いた文字列が、Keycloakでの設定値と対応している。
 
-  ```bash
-  keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
-                            realm_name="ros2_oidc",
-                            client_id="amcl",
-                            client_secret_key="********************",
-                            verify=False)
-  redirect_url = 'http://rdbox.172-16-0-132.nip.io:8080/gettoken'
-  ```
-
-[jwt_listener.py#L23-L27](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/resource_server/jwt_listener.py#L23-L27)
-
-  ```bash
-  keycloak = KeycloakOpenID(server_url="https://keycloak.rdbox.172-16-0-132.nip.io/auth/",
-                            realm_name="ros2_oidc",
-                            client_id="amcl",
-                            client_secret_key="********************",
-                            verify=False)
-  ```
+```bash
+export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/auth/
+export SROS2_OIDC_OP_REALM_NAME=ros2_oidc
+export SROS2_OIDC_OP_CLIENT_ID=amcl
+export SROS2_OIDC_OP_CLIENT_SECRET_KEY=fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF
+export SROS2_OIDC_OP_REDIRECT_URL=http://rdbox.172-16-0-132.nip.io:8080/gettoken
+```
 
 ### ビルド
 
@@ -224,10 +213,8 @@ Comming Soon!!
 
 ## ロードマップ
 
-- [ ] 各設定をコード直書きから、環境変数 or 設定ファイルで実施できるようにする
-- [ ] JWTをString.msgで受け取ってから、任意のROS Message形式に変換できるようにする
-  - [ ] 外部クラスを外挿できるような仕組み
-  - [ ] トピックの指定
+- [x] 各設定をコード直書きから、環境変数 or 設定ファイルで実施できるようにする
+- [x] JWTをString.msgで受け取ってから、任意のROS Message形式に変換できるようにする
 - [ ] 高速なレスポンスが欲しい場合のオプションを用意する（トークンイントロスペクションではなく、ローカルで検証する方法の実装）
 - [ ] 全経路の完全な暗号化
 
