@@ -16,9 +16,9 @@ import os
 import shutil
 import subprocess
 
-from rclpy.node import Node
+from keycloak import KeycloakOpenID
 
-from relaying_party.main import keycloak
+from rclpy.node import Node
 
 from std_msgs.msg import String
 
@@ -39,10 +39,19 @@ class JwtListener(Node):
             .get_parameter_value().string_value
         self.get_logger().info('Specified conversion module: [ros2 run %s %s]'
                                % (self.package_name, self.executable_name))
+        self.keycloak = KeycloakOpenID(server_url=os.environ[
+                                           'SROS2_OIDC_OP_SERVER_URL'],
+                                       realm_name=os.environ[
+                                           'SROS2_OIDC_OP_REALM_NAME'],
+                                       client_id=os.environ[
+                                           'SROS2_OIDC_OP_CLIENT_ID'],
+                                       client_secret_key=os.environ[
+                                           'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
+                                       verify=False)
 
     def sros2_oidc_callback(self, msg):
         try:
-            userinfo = keycloak.introspect(msg.data)
+            userinfo = self.keycloak.introspect(msg.data)
             if userinfo['active'] is False:
                 raise ValueError('token_info.active is false')
         except ValueError as e:
