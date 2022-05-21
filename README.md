@@ -67,9 +67,20 @@ sudo apt-get instalol -y \
 
 ### ソースコードのダウンロード
 
+ブランチに注意して下さい。
+
 ```bash
-git clone https://github.com/rdbox-intec/rdbox_next.git
-cd rdbox_next
+git clone -b insiders https://github.com/rdbox-intec/rdbox.git
+cd rdbox
+```
+
+`insiders`ブランチになっていることを確認します。
+
+```bash
+$ git branch
+  develop
+* insiders
+  master
 ```
 
 ### Dockerイメージを作る
