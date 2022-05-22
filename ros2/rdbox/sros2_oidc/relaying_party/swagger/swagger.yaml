@@ -4,7 +4,7 @@ info:
   description: Demo SROS2 app secured with OIDC(Keycloak)
   license:
     name: MIT
-    url: https://github.com/rdbox-intec/rdbox_next/blob/main/LICENSE
+    url: https://github.com/rdbox-intec/rdbox/blob/insiders/LICENSE
   version: 0.0.1
 servers:
 - url: http://localhost:8080
@@ -88,16 +88,19 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            Set-Cookie:
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: RDBOX_SESSIONID=abcde12345; Path=/; HttpOnly
           content:
             text/html:
               schema:
                 type: string
                 example: <html><a href=/login>Login</a></html>
                 x-content-type: text/html
-            headers:
-              x-Authorization:
-                schema:
-                  type: string
       x-openapi-router-controller: relaying_party.controllers.base_controller
   /ros2:
     get:
@@ -113,12 +116,20 @@ paths:
                 type: string
                 example: <html><a href=/login>Login</a></html>
                 x-content-type: text/html
-      x-openapi-router-controller: relaying_party.controllers.base_controller
+      x-openapi-router-controller: relaying_party.controllers.ros2_amcl_controller
   /ros2/amcl/come_to_me:
     get:
       tags:
       - ros2_amcl
       operationId: come_to_me
+      parameters:
+      - name: csrf
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -130,6 +141,7 @@ paths:
                 x-content-type: text/html
       security:
       - AuthBearer: []
+      - CookieAuth: []
       - openId:
         - openid
       x-openapi-router-controller: relaying_party.controllers.ros2_amcl_controller
@@ -140,6 +152,11 @@ components:
       type: http
       scheme: bearer
       x-bearerInfoFunc: relaying_party.controllers.authorization_controller.check_AuthBearer
+    CookieAuth:
+      type: apiKey
+      name: RDBOX_SESSIONID
+      in: cookie
+      x-apikeyInfoFunc: relaying_party.controllers.authorization_controller.check_CookieAuth
     openId:
       type: openIdConnect
       description: "URI to retrieve OpenID Provider settings, defined in OpenID Connect\

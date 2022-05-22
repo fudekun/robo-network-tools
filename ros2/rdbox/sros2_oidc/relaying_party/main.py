@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
-
 import os
+import random
+import string
+from datetime import timedelta
 
 import connexion
 
@@ -32,8 +33,15 @@ def main():
     app.add_api('swagger.yaml',
                 arguments={'title': 'sros2_oidc'},
                 pythonic_params=True)
+    # Session
+    password_characters = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(random.choice(password_characters) for i in range(32))
+    app.app.secret_key = password
+    app.app.permanent_session_lifetime = timedelta(minutes=3)
+    # ROS2
     rclpy.init()
     jwt_talker = JwtTalker()
+    # OIDC
     keycloak = KeycloakOpenID(server_url=os.environ[
                                 'SROS2_OIDC_OP_SERVER_URL'],
                               realm_name=os.environ[
@@ -44,10 +52,11 @@ def main():
                                 'SROS2_OIDC_OP_CLIENT_SECRET_KEY'],
                               verify=False)
     redirect_url = os.environ['SROS2_OIDC_OP_REDIRECT_URL']
+    # Save the instances
     app.app.config['jwt_talker'] = jwt_talker
     app.app.config['keycloak'] = keycloak
     app.app.config['redirect_url'] = redirect_url
-    app.app.config['state'] = uuid.uuid4()
+    # Start this server
     app.run(port=8080, debug=True)
     jwt_talker.destroy_node()
     rclpy.try_shutdown()

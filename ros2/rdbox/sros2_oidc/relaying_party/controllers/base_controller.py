@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+
 import flask
-from flask import current_app
+from flask import current_app, session
 
 import six
 
@@ -34,8 +36,10 @@ def get_token(code=None, session_state=None, state=None):  # noqa: E501
 
     :rtype: str
     """
-    if state == current_app.config['state']:
+    if state == session['state']:
         six.raise_from(Forbidden)
+    else:
+        session.pop('state')
     keycloak = current_app.config['keycloak']
     redirect_url = current_app.config['redirect_url']
     raw_token = keycloak.token(code=code,
@@ -51,13 +55,14 @@ def get_token(code=None, session_state=None, state=None):  # noqa: E501
     keycloak.decode_token(raw_token['access_token'],
                           key=KEYCLOAK_PUBLIC_KEY,
                           options=options)
+    unique_key = str(uuid.uuid4())
+    session['RDBOX_SESSIONID'] = unique_key
+    session['RDBOX_ACCESS_TOKEN'] = raw_token['access_token']
+    session['RDBOX_REFRESH_TOKEN'] = raw_token['refresh_token']
     # Redirect Success page
     resp = flask.redirect('/ros2', code=302)
-    resp.set_cookie('RDBOX_ACCESS_TOKEN',
-                    raw_token['access_token'],
-                    int(raw_token['expires_in']))
-    resp.set_cookie('RDBOX_REFRESH_TOKEN',
-                    raw_token['refresh_token'],
+    resp.set_cookie('RDBOX_SESSIONID',
+                    unique_key,
                     int(raw_token['refresh_expires_in']))
     return resp
 
@@ -83,7 +88,8 @@ def login():  # noqa: E501
     """
     keycloak = current_app.config['keycloak']
     redirect_url = current_app.config['redirect_url']
-    state = current_app.config['state']
+    state = uuid.uuid4()
+    session['state'] = state
     url = keycloak.auth_url(redirect_url)
     url += '&state={}'.format(state)
     return flask.redirect(url, code=302)
@@ -97,18 +103,16 @@ def logout():  # noqa: E501
 
     :rtype: str
     """
+    if flask.request.headers.get('Authorization', None) is None:
+        refresh_token = session.get('RDBOX_REFRESH_TOKEN', None)
+    else:
+        refresh_token = flask.request.headers.get('Authorization')[7:]
     keycloak = current_app.config['keycloak']
-    refresh_token = flask.request.headers.get('Authorization')
-    keycloak.logout(refresh_token[7:])
-    return flask.redirect('/', code=302)
-
-
-def ros2():
-    """ros2
-
-    # noqa: E501
-
-
-    :rtype: str
-    """
-    return flask.send_from_directory('static/ros2', 'index.html')
+    if refresh_token is not None:
+        keycloak.logout(refresh_token)
+    session.clear()
+    resp = flask.redirect('/', code=302)
+    resp.set_cookie('RDBOX_SESSIONID',
+                    '',
+                    0)
+    return resp

@@ -14,7 +14,7 @@
 
 """https://connexion.readthedocs.io/en/latest/security.html detail it."""
 
-from flask import current_app
+from flask import current_app, session, request
 
 import six
 
@@ -40,3 +40,11 @@ def check_AuthBearer(token):
     if token_info['active'] is False:
         six.raise_from(Unauthorized, Exception)
     return token_info
+
+
+def check_CookieAuth(api_key, required_scopes):
+    if api_key == session.get('RDBOX_SESSIONID', None):
+        ret = check_AuthBearer(session['RDBOX_ACCESS_TOKEN'])
+    else:
+        six.raise_from(Unauthorized, Exception)
+    return ret

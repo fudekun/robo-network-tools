@@ -7,7 +7,7 @@ setup(
     name=package_name,
     version='0.0.1',
     packages=find_packages(),
-    package_data={'': ['swagger/swagger.yaml', 'static/*/*.html']},
+    package_data={'': ['swagger/swagger.yaml', 'static/*/*.html', 'templates/*.html']},
     include_package_data=True,
     data_files=[
         ('share/ament_index/resource_index/packages',
