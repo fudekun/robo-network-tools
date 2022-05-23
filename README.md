@@ -45,7 +45,7 @@ KinDによってKubernetesのComponent（**Control Plane** / **Node**）を1つ�
 - 通信の暗号化
   - [cert-manager](https://cert-manager.io) で実現
 - リクエストの認証・認可（ユーザやデバイスをグループもしくは個別に管理）
-  - [keycloak](keycloak) で実現
+  - [keycloak](https://www.keycloak.org) で実現
 
 Node内の緑色のボックスは「ワークロード」の集合体として捉えて下さい。  
 このあとに追加されていくクラウドロボティクスの為のアプリケーションは、  
