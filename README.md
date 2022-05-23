@@ -97,7 +97,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAME
 
 ```bash
 sudo apt-get update
-sudo apt-get instalol -y \
+sudo apt-get install -y \
     git
 ```
 
