@@ -3,6 +3,8 @@
 
 # RDBOX (A Robotics Developers BOX)
 
+**[The insider preview is now available (in the "insiders" branch)](https://github.com/rdbox-intec/rdbox/tree/insiders)**
+
 RDBOX is an advanced IT platform for robotics and IoT developers that highly integrates cloud-native and edge computing technologies.  
 
 [![CircleCI](https://circleci.com/gh/rdbox-intec/image-builder-rpi.svg?style=svg)](https://circleci.com/gh/rdbox-intec/image-builder-rpi)
