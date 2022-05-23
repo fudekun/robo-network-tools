@@ -14,10 +14,10 @@
 import uuid
 
 import flask
-from flask import current_app, session
+from flask import current_app, session, make_response
 
 
-def come_to_me(token_info, csrf=None):  # noqa: E501
+def come_to_me(token_info):  # noqa: E501
     """come_to_me
 
     # noqa: E501
@@ -25,6 +25,7 @@ def come_to_me(token_info, csrf=None):  # noqa: E501
 
     :rtype: str
     """
+    csrf = flask.request.cookies.get('_ros2.amcl.come_to_me.csrf', None)
     if flask.request.headers.get('Authorization', None) is None:
         raw_taken = session.get('RDBOX_ACCESS_TOKEN', None)
         if raw_taken is not None:
@@ -39,7 +40,11 @@ def come_to_me(token_info, csrf=None):  # noqa: E501
         return 'Invalid token (TimeOut or Unauthorized)'
     jwt_talker = current_app.config['jwt_talker']
     jwt_talker.publish(raw_taken)
-    return 'Success'
+    resp = make_response('Success')
+    resp.set_cookie('_ros2.amcl.come_to_me.csrf',
+                    '',
+                    0)
+    return resp
 
 
 def ros2():
@@ -52,4 +57,8 @@ def ros2():
     """
     csrf = str(uuid.uuid4())
     session['/ros2/amcl/come_to_me/csrf'] = csrf
-    return flask.render_template('ros2.html', csrf=csrf)
+    resp = make_response(flask.render_template('ros2.html'))
+    resp.set_cookie('_ros2.amcl.come_to_me.csrf',
+                    csrf,
+                    300)
+    return resp
