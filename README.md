@@ -5,15 +5,52 @@ This repository is developing the next generation of **the RDBOX** (Please call 
 This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
 Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
 
-## ROS2アプリとの連携
+## ROS2アプリとの連携例
 
-1. [SROS2 with OIDC(OpenID Connect) 〜ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc)
-
-  ![SROS2_with_OIDC](/docs/imgs/SROS2_with_OIDC.jpeg)
+1. [SROS2 with OIDC(OpenID Connect) :ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc)
+    ![SROS2_with_OIDC](/docs/imgs/SROS2_with_OIDC.jpeg)
 
 ※ ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-Next環境構築手順」に従って基礎的な環境を構築して下さい
 
 ## RDBOX-Next環境構築手順
+
+### 新旧RDBOXの差
+
+構築しただけのKubernetesクラスタは何の役目も果たすことはできません。入れ物です。  
+この入れ物に対して、様々なワークロードの集合体（アプリケーション）を追加していくことで利用者は利便性を享受することができます。  
+これは従来のRDBOXでもおこなってきたことです。  
+
+次世代ROBOXでは、闇雲にワークロードを追加していくのではなく、  
+安全にクラウドロボティクスを使う上で、欠かすことの出来ない **3つの要素** を定義しました。
+
+1. 通信の制御
+2. 通信の暗号化
+3. リクエストの認証・認可（ユーザやデバイスを、グループもしくは個別に管理）
+
+「**3つの要素** を満たしたワークロードが、ユーザが意識せずに自由に追加できる環境」を目指して、開発が絶賛進行中です。
+
+### システム構成
+
+KinDによってKubernetesのComponent（**Control Plane** / **Node**）を1つのDockerコンテナ内に構築します。  
+※ Kubernetesの構築方法はKinD以外にも様々用意
+
+定義したクラウドロボティクスに欠かせない3つの要素の、  
+実態として `「essentials」メタパッケージ` がワークロード内に初期構築されます。  
+これらは、以下の図のようなシステム構成を採ります。  
+
+![Component_of_RDBOX-NX.png](/docs/imgs/Component_of_RDBOX-NX.png)
+
+- 通信の制御
+  - [metallb](https://metallb.universe.tf) や [ambassador](https://www.getambassador.io/products/edge-stack/) 等で実現
+- 通信の暗号化
+  - [cert-manager](https://cert-manager.io) で実現
+- リクエストの認証・認可（ユーザやデバイスをグループもしくは個別に管理）
+  - [keycloak](keycloak) で実現
+
+Node内の緑色のボックスは「ワークロード」の集合体として捉えて下さい。  
+このあとに追加されていくクラウドロボティクスの為のアプリケーションは、  
+初期構築した `「essentials」メタパッケージ` の働きによって、  
+**3つの要素** を満たした状態で使い始めることができます。
 
 ### 注意（テスト状況）
 
@@ -30,13 +67,12 @@ Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
     - 5.10.16.3-microsoft-standard-WSL2
   - Docker-CE （20.10.14）
 
-### 注意(製品グレード)
+### 注意(品質について)
 
 KinD (Kubernetes in Docker) は、ローカルの開発やCIに使用することを想定したKubernetesクラスタです。  
 本番環境での使用は想定していませんのでご注意下さい。  
 
 `built with a single node`なRDBOXは、KinDで作った環境でクラウドロボティクスの利点を確認して頂くために開発しました。  
-理解するとそれなしで開発するのが困難になるかもしれません。  
 そのようなユーザに対して、本番環境での利用を想定した構成への移行をスムーズに行うための「仕組み」も準備中です。  
 詳細はロードマップをご覧ください。
 
