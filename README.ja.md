@@ -5,38 +5,38 @@ This repository is developing the next generation of **the RDBOX** (Please call 
 This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
 Faster and easier than [previously RDBOX](https://github.com/rdbox-intec/rdbox)
 
-## Examples of working with ROS2 application
+## ROS2アプリとの連携例
 
-NOTE - Before implementing the working with ROS2 application, please build a basic environment according to the ["RDBOX-Next Environment Building Steps"](#rdbox-next-environment-building-steps) described below.
-
-1. [SROS2 with OIDC(OpenID Connect) - Technology for robots to authenticate and authorize a human](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc)
+1. [SROS2 with OIDC(OpenID Connect) :ロボットが人を認証・認可するための技術〜](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc)
     ![SROS2_with_OIDC](/docs/imgs/SROS2_with_OIDC.jpeg)
 
-## RDBOX-Next Environment Building Steps
+※ ROS2アプリとの連携を実施する前に、以下に記載する「RDBOX-Next環境構築手順」に従って基礎的な環境を構築して下さい
 
-### Previous vs New
+## RDBOX-Next環境構築手順
 
-A just-built Kubernetes cluster cannot serve any purpose. It is an empty box, so to speak.  
-In Kubernetes, users can benefit from the convenience of easy adding a collection of various workloads to this empty box.  
-This benefit is also available in the previous RDBOX.
+### 新旧RDBOXの差
 
-In the next generation ROBOX, we are not just to add workloads blindly.  
-Therefore, our development team has defined **three elements** that are essential for safe and convenient use of cloud robotics.
+構築しただけのKubernetesクラスタは何の役目も果たすことはできません。入れ物です。  
+この入れ物に対して、様々なワークロードの集合体（アプリケーション）を追加していくことで利用者は利便性を享受することができます。  
+これは従来のRDBOXでもおこなってきたことです。  
 
-  1. Control of communications
-  2. Encryption of communications
-  3. Authentication and authorization of requests
-     - Users and devices can be managed as a group or individually
+次世代ROBOXでは、ただやみくもにワークロードを追加していくのではありません。  
+開発チームでは、クラウドロボティクス技術を安全かつ便利に使うために必要な**3つの要素**を定義しました。
 
-Development is underway with the goal of creating "an infrastructure to which workloads that satisfy the **Three Elements**" can be easily added.
+  1. 通信の制御
+  2. 通信の暗号化
+  3. リクエストの認証・認可
+     - ユーザやデバイスを、グループもしくは個別に管理
 
-### System overview
+「**3つの要素** を充足したワークロードが、簡単に追加できるインフラ」を目指して、開発が絶賛進行中です。
 
-Build Kubernetes Components (**Control Plane** / **Node**) in a single Docker container using KinD  
-NOTE - In addition to using KinD, we are preparing a method for building Kubernetes for use in a production environment.
+### システム構成
 
-The `"essentials" meta-package` is initially built in the workload as the instances of the three elements.  
-These systems are set up as shown in the figure.  
+KinDを使ってKubernetesのComponent（**Control Plane** / **Node**）を1つのDockerコンテナ内に構築します。  
+※ Kubernetesの構築方法はKinDを使う以外にも、本番環境での利用を想定した方法も準備中です。
+
+3つの要素の実態として `「essentials」メタパッケージ` がワークロード内に初期構築されます。  
+これらは、以下の図のようなシステム構成を採ります。  
 
 ![Component_of_RDBOX-NX.png](/docs/imgs/Component_of_RDBOX-NX.png)
 
