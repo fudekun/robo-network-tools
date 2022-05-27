@@ -17,32 +17,33 @@ OIDCはWebサービスではスタンダードな認証規約の一つである�
 
 ![OIDC_Flow.png](/ros2/rdbox/sros2_oidc/docs/imgs/OIDC_Flow.png)
 
-## 構築手順
+## Environment Building Steps
 
-### SROS2のセットアップ
+### Setup of SROS2
 
 まず、SROS2が動くROS2 Foxy環境を準備します。
 
 手順は、我々が記載した["SROS2をセットアップしてみよう"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。
 
-### OpenID Provider（OP, Keycloakを使用）のセットアップ
+### Setup of OpenID Provider (OP)
 
-次に、OpenID Provider（OP, Keycloakを使用）に対して、`sros2_oidc用のレルム`、`Relaying Prty`、`ユーザ`等を順に追加していきます。
+次に、OpenID Provider（OP）をセットアップする。OPとしてKeycloakを使用する。  
+Keycloakは、RDBOXの初期セットアップでインストールする`essentials meta-package`で既にセットアップ済みです。  
+Keycloakに対して、`sros2_oidc用のレルム`、`Relaying Prty`、`ユーザ`等を順に追加していく。
 
-手順は、別ページ["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
+手順は、["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
 
-### ソースコード
+### Copy the sros2_oidc directory to the ROS2 working directory
 
-#### コピーしてください
-
-クローンした`sros2_oidc`のソースコードを含むrdboxディレクトリを、あなたのROS2用作業ディレクトリにコピーしてください。
+クローンしたrdboxリポジトリ（insidersブランチ）の中に、`sros2_oidc`のソースコードを含むディレクトリがあります。  
+`sros2_oidc`ディレクトリをあなたのROS2用作業ディレクトリにコピーしてください。
 
 ```bash
 git clone -b insiders https://github.com/rdbox-intec/rdbox
 cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 ```
 
-### 環境固有設定
+### Set up a specific value for each user's environment
 
 [OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため環境変数として設定する必要がある。
 
@@ -66,28 +67,22 @@ export SROS2_OIDC_OP_CLIENT_SECRET_KEY=fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF
 export SROS2_OIDC_OP_REDIRECT_URL=http://rdbox.172-16-0-132.nip.io:8080/gettoken
 ```
 
-### ビルド
+### Build the source code
 
   ```bash
   cd ${YOUR_ROS2_WS}
+  sudo pip3 install -r ${YOUR_ROS2_WS}/src/rdbox/sros2_oidc/requirements.txt
   colcon build --packages-select sros2_oidc talker_goal_pose
   ```
 
 ## SROS2（for sros2_oidc）
 
-### このデモで必要なファイル用のフォルダを作成
-
-これから、このデモに必要なすべてのファイルを格納するフォルダを作成します。
-
-```bash
-mkdir ~/sros2_demo
-```
-
-### キーストア、鍵、証明書の生成
+### Generate keystore, keys, certificates
 
 #### Generate a keystore
 
 ```bash
+$ mkdir ~/sros2_demo
 $ cd ~/sros2_demo
 $ ros2 security create_keystore demo_keystore
 creating keystore: demo_keystore
@@ -98,9 +93,7 @@ all done! enjoy your keystore in demo_keystore
 cheers!
 ```
 
-#### TalkerとListenerのノードの鍵や証明書を生成
-
-※FoxyはReadme.mdが違うので注意。絶対にBranchを確認すること
+#### Generate keys and certificates for the Talker node
 
 ```bash
 $ ros2 security create_key demo_keystore /sros2_oidc/jwt_talker
@@ -109,6 +102,8 @@ creating cert and key
 creating permission
 ```
 
+#### Generate keys and certificates for the Listener node
+
 ```bash
 $ ros2 security create_key demo_keystore /sros2_oidc/jwt_listener
 creating key for identity: '/sros2_oidc/jwt_listener'
@@ -116,9 +111,9 @@ creating cert and key
 creating permission
 ```
 
-### 環境変数定義
+### Define environment variables
 
-設定し忘れないように`.bashrc`等に設定しておく。
+必要に応じて`.bashrc`等に追記しておくとよい。
 
 ```bash
 export ROS_SECURITY_KEYSTORE=~/sros2_demo/demo_keystore
@@ -127,9 +122,9 @@ export ROS_SECURITY_STRATEGY=Enforce
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ```
 
-## sros2_oidcのデモ
+## Let's try sros2_oidc
 
-### 事前準備
+### Prerequisites
 
 本チュートリアルでは、[Robotis社のTurtleBot3](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/)を題材として使用させて頂きます。まずはTurtleBot3に関する環境の設定を行います。
 
@@ -137,27 +132,27 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
   - [TurtleBot3 Quick Start Guide](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/)
   - [TurtleBot3 Simulation](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation)
 
-### シミュレータを起動
+### Launch the simulator
 
 ```bash
 export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
-### ナビゲーションを起動
+### Launch the navigation
 
 ```bash
 export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:=$HOME/map.yaml
 ```
 
-### rvizで初期位置を設定
+### Set initial position with rviz
 
 「2D Pose Estimate」ボタンをクリックして、ロボットの初期位置を入力する。
 
-### sros2_oidcを起動
+### Launch the sros2_oidc
 
-#### RP
+#### Relaying Party (RP)
 
 ```bash
 $ ros2 run sros2_oidc rp --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_talker
@@ -165,7 +160,7 @@ $ ros2 run sros2_oidc rp --ros-args --remap use_sim_time:=True --enclave /sros2_
 [INFO] [1653024071.293409261] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_talker
 ```
 
-#### ResourceServer
+#### Resource Server
 
 ```bash
 $ ros2 run sros2_oidc resource --ros-args -p package_name:='talker_goal_pose' -p executable_name:='goal_pose' --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
@@ -173,7 +168,7 @@ $ ros2 run sros2_oidc resource --ros-args -p package_name:='talker_goal_pose' -p
 [INFO] [1653024090.440248408] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/sros2_oidc/jwt_listener
 ```
 
-### ブラウザから`sros2_oidcのWebUI`にアクセスする
+### Access `sros2_oidc's WebUI` from a browser
 
 アクセス元に合わせて`localhost` or `ユーザ環境に合わせたFQDN`を選択し、ブラウザからアクセスする。
 
@@ -207,11 +202,11 @@ sros2_oidcのRPに初回ログインした時には、連携する情報につ�
   [INFO] [1653028094.165181655] [jwt_listener]: Accept: [3.0,2.3]
   ```
 
-## 技術解説
+## Technology
 
 Comming Soon!!
 
-## ロードマップ
+## Roadmap
 
 - [x] 各設定をコード直書きから、環境変数 or 設定ファイルで実施できるようにする
 - [x] JWTをString.msgで受け取ってから、任意のROS Message形式に変換できるようにする
