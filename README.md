@@ -40,17 +40,17 @@ These systems are set up as shown in the figure.
 
 ![Component_of_RDBOX-NX.png](/docs/imgs/Component_of_RDBOX-NX.png)
 
-- 通信の制御
-  - [metallb](https://metallb.universe.tf) や [ambassador](https://www.getambassador.io/products/edge-stack/) 等で実現
-- 通信の暗号化
-  - [cert-manager](https://cert-manager.io) で実現
-- リクエストの認証・認可（ユーザやデバイスをグループもしくは個別に管理）
-  - [keycloak](https://www.keycloak.org) で実現
+- Control of communications
+  - Use [metallb](https://metallb.universe.tf), [ambassador](https://www.getambassador.io/products/edge-stack/), etc.
+- Encryption of communications
+  - Use [cert-manager](https://cert-manager.io), etc.
+- Authentication and authorization of requests
+  - Use [keycloak](https://www.keycloak.org), etc.
 
-Node内の緑色のボックスは「ワークロード」の集合体として捉えて下さい。  
-このあとに追加されていくクラウドロボティクスの為のアプリケーションは、  
-初期構築した `「essentials」メタパッケージ` の働きによって、  
-**3つの要素** を満たした状態で使い始めることができます。
+The green boxed paragraph in the Node should be viewed as a collection of "workloads".  
+Various applications for cloud robotics that you can add at yourself.  
+(The dashboard and prometheus in the figure. And, this is but one small example.)
+**These applications can be started as workloads that satisfy the three elements**.
 
 ### 注意（テスト状況）
 
