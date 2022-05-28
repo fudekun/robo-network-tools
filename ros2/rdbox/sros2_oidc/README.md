@@ -1,5 +1,7 @@
 # SROS2 with OIDC(OpenID Connect) - Technology for robots to authenticate and authorize a human
 
+[Japanese README](/ros2/rdbox/sros2_oidc/README.ja.md)
+
 ## Video
 
 <!-- markdownlint-disable MD034 -->
