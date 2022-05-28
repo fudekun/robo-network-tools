@@ -5,7 +5,7 @@
 ## Video
 
 <!-- markdownlint-disable MD034 -->
-https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4
+https://user-images.githubusercontent.com/40556102/170811723-17f9c6eb-4f3b-41bd-8b64-799535ce5009.mp4
 
 ## Concepts
 
