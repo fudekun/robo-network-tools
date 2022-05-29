@@ -7,17 +7,53 @@
 <!-- markdownlint-disable MD034 -->
 https://user-images.githubusercontent.com/40556102/170811723-17f9c6eb-4f3b-41bd-8b64-799535ce5009.mp4
 
-## Concepts
+## System component
 
-協働型ロボットとして、人と綿密に関わって動くロボットが増えている。その中で「誰が何を命令したか？」「誰にどのようなサービスを提供可能か？」等、「管理・監査・証跡」もしくは「個人に最適化した役務提供」等を目的に、個人を認識（≒認証・認可）する必要性が発生している。利用者の属性（氏名・権限・位置情報等）や認証（顔・指紋等）に基づき、役務提供する場合、個人情報保護が課題となる。しかし現状、多くの現場でそれらの個人情報をロボット上PCに保存して運用していないだろうか。研究段階や利用者の人数が少ないうちは顕在化しないが、社会システムとしてロボット活用が一般化した時には問題となる可能性が高い。
-
-この課題に対して、我々は「sros2_oidc」というパッケージを開発・公開した。本パッケージのアプローチでは、認証規約として[OIDC(OpenID Connect)](https://openid.net/connect/)を採用し、SROS2と組み合わせてロボット終端まで利用者情報を安全な経路で伝送するという方式を採る。
+The following figure is assumed to move a mobile robot based on "user attributes (only the location)".
 
 ![system architecture.jpeg](/ros2/rdbox/sros2_oidc/docs/imgs/EN_system_architecture.jpeg)
 
-OIDCはWebサービスではスタンダードな認証規約の一つである。ロボットに対してはユーザから同意が得られた最小限の情報だけ（例えば位置情報のみ）を連携することや、遠隔から利用権限を即時停止するなどその用途は多岐に渡る。また、OIDCで取り扱いに注意が必要な「アクセスToken」を、セキュリティを確保した上で「Relaying Party（OIDCとROS2の橋渡しを行う）」から、「Resource Server（実際に情報を受け取って命令を実行するロボット）」へ受け渡しするために「SROS2」を利用している（図2）。「PKI(公開鍵基盤)/セキュリティ規則を記述したXML」に基づくアクセス制御を行うSROS2は、固定されたノード間の通信において強みを発揮する。一方で、鍵の管理コストが、利用者が増えるたび増大するといった問題点もある。本パッケージのような橋渡しのための仕組みは、管理コストの低減に役立つことが期待できる。
+Organize the flow of information, focusing on entities that are associated with ROS engineers.
+
+### Entities
+
+- Terminal
+  - Web browser (PC / Phone / on a robot)
+- Relaying Party
+  - A http server
+    - Registered in the OP
+  - A node of the ROS
+    - Publish a OIDC access token
+- Resource Server
+  - A node of the ROS
+    - Subscribe a OIDC access token
+- OIDC Access Token
+  - Authority to access user attributes
+  - Effective only for a very short time
+  - JWT format: Header, Payload, Signature are encoded separately using Base64url Encoding, and concatenated using periods
+
+### Flow of information
+
+1. Terminal: Authenticate the user. Then check user's Authorization.
+   - Permission
+   - Grant (by the agreement page)
+2. Relaying Party: Receive a OIDC access token (JWT format) and publish it as a SROS2 topic (msgs.String)
+3. Resource Server: Receive a OIDC access token and verify it by querying the OP.
+4. Resource Server: Retrieve (location) information. Then move a mobile robot based on "user attribute (location)”
+   - Retrieve a (location) information from: including in a token / querying the OP
+
+### Authorization Code Flow
+
+The OIDC Authorization Code Flow is typically explained difficult commentary.  
+Therefore, the figure below was arranged using ROS entities.
 
 ![OIDC_Flow.png](/ros2/rdbox/sros2_oidc/docs/imgs/OIDC_Flow.png)
+
+It is noteworthy that no personal information is received to the ROS node.
+
+- Receive only very short time tokens
+- Delegate authn/authz by full use of the http redirects
+- Not even passing a access token to user's terminal
 
 ## Environment Building Steps
 
