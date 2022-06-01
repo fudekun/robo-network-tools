@@ -59,15 +59,19 @@ OIDC Authorization Code Flowは、一般的に難しい解説がされていま�
 
 ### SROS2のセットアップ
 
-まず、SROS2が動くROS2 Foxy環境を準備します。
+SROS2が動くROS2 Foxy環境を準備します。
 
-手順は、我々が記載した["SROS2をセットアップしてみよう"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。
+手順は、我々が記載した["SROS2をセットアップしてみよう"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。  
+最新の手順及び、技術的な詳細は、[ros2/sros2: GitHub](https://github.com/ros2/sros2)をご確認下さい。
 
 ### OpenID Provider（OP, Keycloakを使用）のセットアップ
 
-次に、OpenID Provider（OP, Keycloakを使用）に対して、`sros2_oidc用のレルム`、`Relaying Prty`、`ユーザ`等を順に追加していきます。
+次に、OpenID Provider(OP)を設定します。OPとしてKeycloakを使用します。  
+Keycloakは、[RDBOXの初期セットアップ](https://github.com/rdbox-intec/rdbox/tree/insiders)にてインストールする`essentials meta-package`で既にセットアップ済みです。  
+（このチュートリアルは、[RDBOXの初期セットアップ](https://github.com/rdbox-intec/rdbox/tree/insiders)が完了している前提で記載してあります。）  
+このチュートリアルでは、Keycloakに対して、`sros2_oidc用のレルム`、`Relaying Party`、`ユーザ`等を順に追加していく。
 
-手順は、別ページ["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
+手順は、["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
 
 ### ソースコード
 
@@ -82,7 +86,7 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 
 ### 環境固有設定
 
-[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため環境変数として設定する必要がある。
+[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、内容がユーザによって異なる。そのため環境変数として設定する必要がある。
 
 - server_url
 - realm_name
@@ -93,8 +97,6 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
     - `http://localhost:8080/gettoken`
     - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
-
-サンプル： `SROS2_OIDC_OP_`プレフィックスを除いた文字列が、Keycloakでの設定値と対応している。
 
 ```bash
 export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/auth/
@@ -155,8 +157,6 @@ creating permission
 ```
 
 ### 環境変数定義
-
-設定し忘れないように`.bashrc`等に設定しておく。
 
 ```bash
 export ROS_SECURITY_KEYSTORE=~/sros2_demo/demo_keystore
@@ -223,15 +223,17 @@ $ ros2 run sros2_oidc resource --ros-args -p package_name:='talker_goal_pose' -p
 
   ![UI_Home.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Home.jpg)
 
-ログインでは、Keycloakの作成したrealmが用意したログイン画面にリダイレクトされるため、必要な情報を入力し、ログイン操作を実施する。
+「ログイン」リンクをクリックすると、Keycloakの作成したrealmが用意したログイン画面にリダイレクトされます。  
+必要な情報を入力し、ログイン操作を実施する。
 
   ![UI_Keycloak_login.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Keycloak_login.jpg)
 
-sros2_oidcのRPに初回ログインした時には、連携する情報について同意を求める画面が表示されます（今回はlocation）。続けるためには同意が必要です。
+sros2_oidcのRPに初回ログインした時には、連携する情報について同意を求める画面が表示されます（今回はlocation）。  
+学習を続けるため、アクセス許可を与えます。
 
   ![GrantPage.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/GrantPage.jpg)
 
-ログイン及び、同意が取れた場合は、ユーザに許可されたサービスが表示されます。「Come to me!!」ボタンをクリックすると[冒頭の動画](https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4)のように、ロボットを移動させることができます。
+ログイン及び、同意が取れた場合は、ユーザに許可されたサービスが表示されます。「Come to me!!」リンクをクリックすると[冒頭の動画](https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4)のように、ロボットを移動させることができます。
 
   ![UI_ServiceList.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_ServiceList.jpg)
 

@@ -59,22 +59,25 @@ It is noteworthy that no personal information is received to the ROS node.
 
 ### Setup of SROS2
 
-まず、SROS2が動くROS2 Foxy環境を準備します。
+Prepare a "ROS2 Foxy" environment in which SROS2 runs.
 
-手順は、我々が記載した["SROS2をセットアップしてみよう"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/SROS2_setup.md)も参考になります。
+You can also refer to our article ["Let's Set Up the SROS2"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/en/SROS2_setup.md) for instructions.
+
+Please check [ros2/sros2: GitHub](https://github.com/ros2/sros2) for the latest instructions and technical details.
 
 ### Setup of OpenID Provider (OP)
 
-次に、OpenID Provider（OP）をセットアップする。OPとしてKeycloakを使用する。  
-Keycloakは、RDBOXの初期セットアップでインストールする`essentials meta-package`で既にセットアップ済みです。  
-Keycloakに対して、`sros2_oidc用のレルム`、`Relaying Prty`、`ユーザ`等を順に追加していく。
+Next, set up an OpenID Provider (OP). Use Keycloak as OP.  
+Keycloak is already set up in the `essentials meta-package` installed with the [initial setup of RDBOX](https://github.com/rdbox-intec/rdbox/tree/insiders).  
+（This tutorial assumes that the [initial setup of RDBOX](https://github.com/rdbox-intec/rdbox/tree/insiders) has been completed.）  
+In this tutorial, `Realm` for sros2_oidc, `Relaying Party`, `User`, etc. will be added to the Keycloak.
 
-手順は、["SROS2_OIDC（Keycloak操作）"](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md)をご確認下さい。
+Please check [SROS2_OIDC (Keycloak operation)](https://github.com/rdbox-intec/rdbox/tree/insiders/ros2/rdbox/sros2_oidc/docs/en/keycloak.md) for the instructions.
 
 ### Copy the sros2_oidc directory to the ROS2 working directory
 
-クローンしたrdboxリポジトリ（insidersブランチ）の中に、`sros2_oidc`のソースコードを含むディレクトリがあります。  
-`sros2_oidc`ディレクトリをあなたのROS2用作業ディレクトリにコピーしてください。
+In the rdbox repository (insiders branch) that you cloned, you will find a directory containing the source code for `sros2_oidc`.  
+Copy the `sros2_oidc` directory to your working directory for ROS2.
 
 ```bash
 git clone -b insiders https://github.com/rdbox-intec/rdbox
@@ -83,19 +86,17 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 
 ### Set up a specific value for each user's environment
 
-[OpenID Providr構築時に再確認が必要とした各項目](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/jp/keycloak.md#credentials%E3%82%BF%E3%83%96)は、ユーザによって異なるものであるため環境変数として設定する必要がある。
+[Each item reconfirmed at the time of OpenID Providr construction](https://github.com/rdbox-intec/rdbox/blob/insiders/ros2/rdbox/sros2_oidc/docs/en/keycloak.md#credentials%20tab), the contents will vary from user to user. Therefore, they need to be set as environment variables.
 
 - server_url
 - realm_name
 - client_id
 - client_secret_key
 - redirect_url
-  - 以下を設定したが、アクセス元に合わせて`localhost` or `ユーザ環境に合わせたFQDN`を選択する。
+  - Select `localhost` or `FQDNs for user environments` as appropriate for the access source.
     - `http://localhost:8080/gettoken`
-    - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
+    - `http://${FQDNs for user environments}:8080/gettoken`
       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
-
-サンプル： `SROS2_OIDC_OP_`プレフィックスを除いた文字列が、Keycloakでの設定値と対応している。
 
 ```bash
 export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/auth/
@@ -151,8 +152,6 @@ creating permission
 
 ### Define environment variables
 
-必要に応じて`.bashrc`等に追記しておくとよい。
-
 ```bash
 export ROS_SECURITY_KEYSTORE=~/sros2_demo/demo_keystore
 export ROS_SECURITY_ENABLE=true
@@ -164,9 +163,10 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 ### Prerequisites
 
-本チュートリアルでは、[Robotis社のTurtleBot3](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/)を題材として使用させて頂きます。まずはTurtleBot3に関する環境の設定を行います。
+In this tutorial, we will use [Robotis' TurtleBot3](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/) as our subject matter. overwhelming gratitude!!  
+First, we will set up the environment for TurtleBot3.
 
-- Turtlebot3環境をインストール
+- Official Documentations
   - [TurtleBot3 Quick Start Guide](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/)
   - [TurtleBot3 Simulation](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation)
 
@@ -186,7 +186,7 @@ ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:
 
 ### Set initial position with rviz
 
-「2D Pose Estimate」ボタンをクリックして、ロボットの初期位置を入力する。
+Click the "2D Pose Estimate" button to input the initial position of the robot.
 
 ### Launch the sros2_oidc
 
@@ -208,29 +208,34 @@ $ ros2 run sros2_oidc resource --ros-args -p package_name:='talker_goal_pose' -p
 
 ### Access `sros2_oidc's WebUI` from a browser
 
-アクセス元に合わせて`localhost` or `ユーザ環境に合わせたFQDN`を選択し、ブラウザからアクセスする。
+Access from a browser.  
+Select `localhost` or `FQDNs for user environments` as appropriate for the access source.
 
 - `http://localhost:8080/`
-- `http://${ユーザ環境に合わせたFQDN}:8080/`
+- `http://${FQDNs for user environments}:8080/`
   - e.g. `http://rdbox.172.16-0-132.nip.io:8080/`
 
-以下のような画面が表示されるので、「ログイン」する。
+The following screen will be displayed, so log in.
 
   ![UI_Home.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Home.jpg)
 
-ログインでは、Keycloakの作成したrealmが用意したログイン画面にリダイレクトされるため、必要な情報を入力し、ログイン操作を実施する。
+Clicking the `Login link` will redirect you to the `Login screen` provided by the Keycloak-created realm.  
+Enter the required information and conduct the login operation.
 
   ![UI_Keycloak_login.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_Keycloak_login.jpg)
 
-sros2_oidcのRPに初回ログインした時には、連携する情報について同意を求める画面が表示されます（今回はlocation）。続けるためには同意が必要です。
+When you log in to sros2_oidc's RP for the first time, you will be asked to grant permission for the information to be linked (in this case, location).  
+Grant access to continue learning.
 
   ![GrantPage.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/GrantPage.jpg)
 
-ログイン及び、同意が取れた場合は、ユーザに許可されたサービスが表示されます。「Come to me!!」ボタンをクリックすると[冒頭の動画](https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4)のように、ロボットを移動させることができます。
+If agreement is obtained from the user, the services authorized to the user will be displayed.  
+Clicking on the "Come to me!" link to move the robot, as shown in the [video](https://user-images.githubusercontent.com/40556102/169439356-1eccb2bc-7004-42bd-8611-8813a87c739b.mp4) at the beginning of this article.
 
   ![UI_ServiceList.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/UI_ServiceList.jpg)
 
-この時、`Resource Server`はユーザ属性内容を解釈し、以下のように位置情報を取り出せていることがわかります。
+At this time, the `Resource Server` is retrieved as user attributes (location information).  
+(as in the stdout shown in the example)
 
   ```bash
   $ ros2 run sros2_oidc resource --ros-args --remap use_sim_time:=True --enclave /sros2_oidc/jwt_listener
@@ -246,10 +251,10 @@ Comming Soon!!
 
 ## Roadmap
 
-- [x] 各設定をコード直書きから、環境変数 or 設定ファイルで実施できるようにする
-- [x] JWTをString.msgで受け取ってから、任意のROS Message形式に変換できるようにする
-- [ ] 高速なレスポンスが欲しい場合のオプションを用意する（トークンイントロスペクションではなく、ローカルで検証する方法の実装）
-- [ ] 全経路の完全な暗号化
+- [x] Enable each setting to be implemented in environment variables or configuration files instead of writing directly in code
+- [x] To be able to receive JWT in String.msg and then convert it to any ROS Message format
+- [ ] Provide an option if a fast response is desired (implement a local verification method instead of token introspection)
+- [ ] Full encryption of all routes
 
 ## Licence
 

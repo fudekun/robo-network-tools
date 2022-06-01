@@ -1,4 +1,4 @@
-# SROS2_OIDC（Keycloak操作）
+# SROS2_OIDC (Keycloak operation)
 
 keycloakにてユーザ属性として、位置情報を追加する。
 
@@ -185,7 +185,7 @@ Default Client Scopes の「Assigned Default Client Scopes」ボックスが「l
 
   ![client_client_scope.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/client_client_scope.jpg)
 
-### Credentialsタブ
+### Credentials tab
 
 Secretを記録しておく。これはros2_oidcのプログラムの設定に必要となる情報となる。
 
