@@ -1,61 +1,62 @@
 # Let's Set Up the SROS2
 
-## 参考とした一次資料
+## Reference
 
-本記事では、公式ドキュメントを参照しながら環境構築した際に、感じた過不足やそもそもの誤りを補記したものとなっている。
+This article is a supplement to the excesses and errors felt in the official tutorial.
 
 - [ros2/sros2: tools to generate and distribute keys for SROS 2](https://github.com/ros2/sros2)
 - [Building ROS 2 on Ubuntu Linux — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/Ubuntu-Development-Setup.html)
 - [Working with eProsima Fast DDS — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/DDS-Implementations/Working-with-eProsima-Fast-DDS.html)
 
-また、本手順は、以下の環境でのテストを実施しました（2022-05-12）。  
-いずれも**amd64** 環境です。
+We tested in the following environments (May 12, 2022)  
+Both are **amd64** environments.
 
 - Ubuntu 20.04.4
   - 5.13.0-41-generic
   - ROS2 Foxy
   - FastDDS
 
-## ROS2の公式手順に則り環境構築
+## Environment Building Steps
 
-### DebianパッケージでFoxyをインストール
+### Install Foxy with Debian package
 
-- [Installing ROS 2 via Debian Packages — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/Ubuntu-Install-Debians.html)
-- 気をつけなければ行けないのがGPGキーのURLが古いママになっているので最新のやつを使うように。
-  - [ROS Discourse](https://discourse.ros.org/t/ros-gpg-key/20671)
+1. [Installing ROS 2 via Debian Packages — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/Ubuntu-Install-Debians.html)
+   - NOTE - The URL for the GPG key described in the official documentation is out of date. Please change it to use the latest one.
+      > [ROS Discourse](https://discourse.ros.org/t/ros-gpg-key/20671)
 
-  ```bash
-  sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-  ```
+      ```bash
+      sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+      ```
 
-- rosdepをセットアップ
+2. Setup rosdep
+   - Note - rosdep is a command-line tool for installing system dependencies.
+     > [ros\-infrastructure/rosdep: rosdep multi\-package manager system dependency tool](https://github.com/ros-infrastructure/rosdep)
 
-  ```bash
-  sudo apt install python3-rosdep2
-  rosdep update
-  ```
+   ```bash
+   sudo apt install python3-rosdep2
+   rosdep update
+   ```
 
-- colconをセットアップ
-  - colcon は ROS ビルドツール `catkin_make`, `catkin_make_isolated`, `catkin_tools` および `ament_tools` のイテレーションです。colconの設計の詳細については、[このドキュメント](https://design.ros2.org/articles/build_tool.html)を参照してください。
+3. Setup colcon
+   - NOTE - colcon is an iteration of the ROS build tools `catkin_make`, `catkin_make_isolated`, `catkin_tools` and `ament_tools`.
+      > [design.ros2.org](https://design.ros2.org/articles/build_tool.html)
 
-  ```bash
-  sudo apt install python3-colcon-common-extensions
-  ```
+      ```bash
+      sudo apt install python3-colcon-common-extensions
+      ```
 
-### ワークスペースを作る
+### Creating a workspace
 
 [Creating a workspace — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Tutorials/Workspace/Creating-A-Workspace.html)
 
 ```bash
 cd ~
 mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-# なにかソースコードがあればsrcに保存する
-cd ..
+cd ~/ros2_ws
 colcon build
 ```
 
-### Foxyソースコードをビルドできるようにする
+### Build Foxy source code
 
 [Building ROS 2 on Ubuntu Linux — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/Ubuntu-Development-Setup.html)
 
@@ -98,7 +99,7 @@ sudo apt install --no-install-recommends -y \
   libcunit1-dev
 ```
 
-#### ROSコード取得
+#### Get the source code
 
 ```bash
 mkdir -p ~/ros2_ws/src
@@ -107,7 +108,7 @@ wget https://raw.githubusercontent.com/ros2/ros2/foxy/ros2.repos
 vcs import src < ros2.repos
 ```
 
-#### rosdepを使った依存関係のインストール
+#### Install dependencies using rosdep
 
 ```bash
 sudo rosdep init
@@ -115,29 +116,27 @@ rosdep update
 rosdep install --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext-dds-5.3.1 urdfdom_headers"
 ```
 
-注意: (Linux Mint のような) Ubuntu ベースのディストリビューションを使っ ていて、そのディストリビューションであることが分からない場合、`Unsupported OS [mint]`  のようなエラーメッセージが表示されます。この場合、上記のコマンドに  `--os=ubuntu:focal` を追加してください。
+#### Install a DDS Implementation
 
-#### 追加DDS実装のインストール
+If you want to use a DDS or RTPS vendor other than the default eProsima Fast RTPS, you can find instructions [here](https://docs.ros.org/en/foxy/Installation/DDS-Implementations.html).
 
-デフォルトのeProsimaのFast RTPS以外のDDSまたはRTPSベンダーを使用したい場合は、[こちら](https://docs.ros.org/en/foxy/Installation/DDS-Implementations.html)で手順を確認できます。
+**Important NOTE**  
+The `colcon build --symlink-install` command should be run in a new environment that does not source other installations.
 
-**※注意1**  
-ROS 2 を別の方法で既にインストールしている場合 (Debians またはバイナリ配布)、`colcon build --symlink-install`を他のインストールをソースとしない新しい環境で実行することを確認してください。
+- **Make sure your `.bashrc` does not include `source /opt/ros/${ROS_DISTRO}/setup.bash`**
+- **You can verify that the installed ROS2 is not the source with the command `printenv | grep -i ROS`**
+  - The output should be empty
 
-- **.bashrc に source `/opt/ros/${ROS_DISTRO}/setup.bash` がないことを確認してください**
-- **ROS 2がソースになっていないことは、printenv | grep -i ROSというコマンドで確認することができます。出力は空であるべきです。**
+#### Install FastDDS in Security Mode
 
-**※注意2**  
-すべてのサンプルのコンパイルに問題があり、そのためにビルドが成功しない場合、[CATKIN_IGNORE](https://github.com/ros-infrastructure/rep/blob/master/rep-0128.rst) と同じ方法で `COLCON_IGNORE` を使用してサブツリーを無視したり、ワークスペースからフォルダーを削除したりすることが可能です。例えば、大きなOpenCVライブラリのインストールを避けたい場合です。例えば、大きな OpenCV ライブラリのインストールを避けたい場合、`cam2image` デモ・ディレクトリで `touch COLCON_IGNORE` を実行し、ビルド・プロセスからそれを除外するだけです。
+- [Working with eProsima Fast DDS — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/DDS-Implementations/Working-with-eProsima-Fast-DDS.html)
+  - Please read "Build from source code" in this study.
+- [8\. Security — Fast DDS 2\.6\.0 documentation](https://fast-dds.docs.eprosima.com/en/latest/fastdds/security/security.html)
+  > By default, Fast DDS does not compile any security support, but it can be activated adding `-DSECURITY=ON` at CMake configuration step. For more information about Fast DDS compilation, see [Linux installation from sources](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#linux-sources) and [Windows installation from sources](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_windows.html#windows-sources).
 
-#### 追加DDSとして、FastDDSを「Securityモード」でインストールする
+##### Install and configure dependent packages
 
-- 参考1：[Working with eProsima Fast DDS — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/DDS-Implementations/Working-with-eProsima-Fast-DDS.html)
-  - 今回は特に「Build from source codeを参照」
-- 参考2：[8\. Security — Fast DDS 2\.6\.0 documentation](https://fast-dds.docs.eprosima.com/en/latest/fastdds/security/security.html)
-  > デフォルトでは、Fast DDS はセキュリティサポートを一切コンパイルしませんが、CMake の設定ステップで -DSECURITY=ON を追加して有効にすることができます。Fast DDS のコンパイルに関する詳細は、「ソースからの Linux インストール」および「ソースからの Windows インストール」を参照してください。
-
-rosdep指定以外の依存パッケージをインストール・設定する
+Resolves dependencies that rosdep cannot resolve.
 
 ```bash
 sudo apt install cmake g++ python3-pip wget git
@@ -151,25 +150,25 @@ p11-kit list-modules
 openssl engine pkcs11 -t
 ```
 
-最後に、colcon buildを実行します。
+Finally, execute `colcon build`.
 
 ```bash
-colcon build --symlink-install --parallel-workers 4 --cmake-args -DSECURITY=ON
+colcon build --symlink-install --cmake-args -DSECURITY=ON
 ```
 
-## デモを動かしてみる
+## Running samples
 
 [sros2/SROS2\_Linux\.md at master · ros2/sros2](https://github.com/ros2/sros2/blob/master/SROS2_Linux.md)
 
-### このデモで必要なファイル用のフォルダを作成します
+### Create a folder for the files needed for this demo
 
-これから、このデモに必要なすべてのファイルを格納するフォルダを作成します。
+Create a directory to store key files, etc.
 
 ```bash
 mkdir ~/sros2_demo
 ```
 
-### キーストア、鍵、証明書の生成
+### Keystore, key, and certificate generation
 
 #### Generate a keystore
 
@@ -184,7 +183,7 @@ all done! enjoy your keystore in demo_keystore
 cheers!
 ```
 
-Keystore作成後のディレクトリ構成は以下の通りとなる。
+The directory structure after keystore creation will be as follows.
 
 ```bash
 $ tree
@@ -205,9 +204,10 @@ $ tree
 4 directories, 8 files
 ```
 
-#### TalkerとListenerのノードの鍵や証明書を生成する
+#### Generate keys and certificates for Talker and Listener nodes
 
-※FoxyはReadme.mdが違うので注意。絶対にBranchを確認すること
+The contents of Foxy's README.md have been substantially revised from the contents of master's README.md.  
+Check the Branch when referring to official documentation.
 
 ```bash
 $ ros2 security create_key demo_keystore /talker_listener/talker
@@ -287,7 +287,7 @@ $ tree
 7 directories, 22 files
 ```
 
-### 環境変数定義
+### Environment Variables
 
 ```bash
 export ROS_SECURITY_KEYSTORE=~/sros2_demo/demo_keystore
@@ -296,11 +296,12 @@ export ROS_SECURITY_STRATEGY=Enforce
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ```
 
-### 動かしてみよう
+### Let's try it
 
 #### Talker
 
-コマンドのはじめにセキュリティ・ディレクトリがあることが報告される。
+The output to stdout reports that a security directory has been detected.
+> [rcl]: Found security directory:
 
 ```bash
 $ ros2 run demo_nodes_cpp talker --ros-args --enclave /talker_listener/talker
@@ -312,6 +313,9 @@ $ ros2 run demo_nodes_cpp talker --ros-args --enclave /talker_listener/talker
 
 #### Listener
 
+The output to stdout reports that a security directory has been detected.
+> [rcl]: Found security directory:
+
 ```bash
 ros2 run demo_nodes_py listener --ros-args --enclave /talker_listener/listener
 [INFO] [1652340696.157994402] [rcl]: Found security directory: /home/ubuntu/sros2_demo/demo_keystore/enclaves/talker_listener/listener
@@ -319,8 +323,3 @@ ros2 run demo_nodes_py listener --ros-args --enclave /talker_listener/listener
 [INFO] [1652340697.444044110] [listener]: I heard: [Hello World: 185]
 [INFO] [1652340698.445647789] [listener]: I heard: [Hello World: 186]
 ```
-
-#### その他雑感
-
-- Topic Listには何も出ない（隠匿されている）
-- データサイズが大きくなる（3倍ぐらい）306 -> 916

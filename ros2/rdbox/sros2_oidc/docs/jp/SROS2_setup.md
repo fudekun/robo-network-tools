@@ -2,7 +2,7 @@
 
 ## 参考とした一次資料
 
-本記事では、公式ドキュメントを参照しながら環境構築した際に、感じた過不足やそもそもの誤りを補記したものとなっている。
+本記事は、公式チュートリアルで感じた過不足を補足するものです。
 
 - [ros2/sros2: tools to generate and distribute keys for SROS 2](https://github.com/ros2/sros2)
 - [Building ROS 2 on Ubuntu Linux — ROS 2 Documentation: Foxy documentation](https://docs.ros.org/en/foxy/Installation/Ubuntu-Development-Setup.html)
@@ -49,9 +49,7 @@
 ```bash
 cd ~
 mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-# なにかソースコードがあればsrcに保存する
-cd ..
+cd ~/ros2_ws
 colcon build
 ```
 
@@ -319,8 +317,3 @@ ros2 run demo_nodes_py listener --ros-args --enclave /talker_listener/listener
 [INFO] [1652340697.444044110] [listener]: I heard: [Hello World: 185]
 [INFO] [1652340698.445647789] [listener]: I heard: [Hello World: 186]
 ```
-
-#### その他雑感
-
-- Topic Listには何も出ない（隠匿されている）
-- データサイズが大きくなる（3倍ぐらい）306 -> 916
