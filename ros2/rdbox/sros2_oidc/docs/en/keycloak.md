@@ -1,195 +1,194 @@
 # SROS2_OIDC (Keycloak operation)
 
-keycloakにてユーザ属性として、位置情報を追加する。
+The goal of this tutorial： Add `location information` as a user attribute in keycloak.
 
 ## Realm
 
-まず、Super管理者でログインして、新規に「レルム」を作成する。
+1. Login as a Super-Administrator  
+NOTE - The login information for the Super-Administrator account is output to the console, when the `essential meta-packages` of `RDBOX` was setuped by you.
 
-※ アカウント設定は、Kubernetesクラスタ構築時のコンソール出力内容を参考に取得して下さい。
-
-レルム名が表示されている（Masterやrdboxコマンドで設定したクラスタの名称になっている）エリアにマウスオーバーすると、「Add realm」ボタンが表示されるのでクリックする。
+2. Create a new "realm". Click on a `Add realm` button  
+NOTE - Mouse over area where the realm name (Master, or the name of the cluster you have set up) is displayed, and a button will appear.
 
   ![Add_realm_button.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_realm_button.jpg)
 
-### Add realm画面
+### Add realm screen
 
-任意の名前を入力して、「Create」ボタンをクリック。（ここでは、ros2_oidcとする。）
+1. Enter any name and click the `Create` button. (In this case, we will use `ros2_oidc`)
 
   ![Add_realm_page.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_realm_page.jpg)
 
-### realmの詳細設定
+### Advanced settings for realm
 
-Createボタンクリック後は、作成したレルム（ros2_oidc）に関する個別設定画面に遷移する。以下のような設定を実施する。
+1. Click the `Create` button, the page moves to the individual setting for the realm (ros2_oidc).  
+2. After the page moves to the next screen, the following settings are to be implemented.  
+NOTE - Be sure to click the `Save` button after changing the settings. (To ensure that your changes are applied.)
 
-タブの移動前に「Save」ボタンをクリックして変更内容が確実に反映されるように気をつける。
-
-- Generalタブを選択して、User-Managed AccessチェックをONにする。
-  - 一般ユーザによるアカウント設定画面を検証する場合に必要。
-- Loginタブを選択して、 Login with emailチェックをOFFにする。
+- Click the `General` tab and turn on the `User-Managed Access` check.
+  - Required when testing the operation of the `Manage account` screen by a normal user.
+- Click the `Login` tab and turn off the `Login with email` check.
 
   ![Realm_Settings_general.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Realm_Settings_general.jpg)
 
-## User（管理ユーザ追加）
+## User（Add realm administrator）
 
-Super管理者を使い続けることはKeycloakの利用において推奨できないため、今作成したRealmの管理者（User）を作成する。
+Using Super Administrators more than necessary is not recommended in the use of Keycloak.  
+Therefore, create a Realm-specific administrator (User) that you have just created.
 
-左ペインの「Users」をクリック。Users画面（Lookupタブ）の「Add User」ボタンをクリックし、「Add user」画面に遷移する。
+1. Click on "Users" in the left pane. Click the `Add User` button on the Users page. (You will be moved to the `Add user` page.)  
 
-- 各項目を任意に設定。
-  - Required User Actionsに「Configure OTP」などを設定するとOTPによる二要素認証をサポートできる。
-- 「Save」ボタンをクリックして、内容を保存する。
+- Each item is set as optional.
+  - More advanced authentication can be supported by setting `Required User Actions`.（Two-factor authentication by OTP, etc.）
+
+NOTE - Be sure to click the `Save` button after changing the settings. (To ensure that your changes are applied.)
 
   ![Add_user_page.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_user_page.jpg)
 
-### 管理ユーザの詳細設定
+### Advanced Settings for Administrator User
 
-Createボタンクリック後は、作成したユーザ（任意の名前）に関する個別設定画面に遷移する。
+After clicking the `Save` button, You will be moved to the `Individual settings` page for a created user (any name).
 
-#### Credentials設定
+#### Setting Credentials
 
-Credentialsタブをクリックして、初期パスワードを設定する。「Set Password」エリアを入力し、「Set Password」ボタンをクリックして内容を保存する。
-
-（TemporaryがONになっている場合は次回ログイン操作時にパスワードの再設定が求められるようにしてくれます。）
+1. Click on the `Credentials` tab and set the initial password.  
+2. Fill in each text box in the "Set Password" area and click the `Set Password` button to save the contents.  
+NOTE - If `Temporary` is turned on, it will required to reset your password when you log in for the first time.
 
   ![User_Credentials.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/User_Credentials.jpg)
 
-#### Client Roles設定
+#### Setting Client Roles
 
-- Role Mappingsタブをクリックして、Client Rolesを設定する。管理者として、管理画面にアクセスしユーザ作成、ROS2クライアントの追加という業務を行うための権限を付与する。
-- Client Rolesのセレクトボックスから「account」を選択
-  - Assigned Rolesに以下を追加
+1. Click on the `Role Mappings` tab and set Client Roles.  
+NOTE - Grant authority to conduct responsible for as a Realm Administrator. (Access the administration page to create users, add ROS2 clients, etc.)
+
+- Select "account" from the `Client Roles` select box
+  - Add the following to `Assigned Roles`
     - manage-account
-- Client Rolesのセレクトボックスから「realm-management」を選択
-  - Assigned Rolesに以下を追加
-    - 全て
+- Select "realm-management" from the `Client Roles` select box
+  - Add the following to `Assigned Roles`
+    - Everything
 
   ![User_RoleMapping_ClientRole_Account.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/User_RoleMapping_ClientRole_Account.jpg)
 
-### アカウント切り替え
+### Switching accounts
 
-#### Super管理者をログアウト
+#### Logout of the Super-Administrator
 
-右上のアカウント名表示部にマウスオーバーすると、「Sign Out」という選択が出てくるのでクリックする。
+1. Mouse over the account name field in the upper right corner, and the `Sign Out` link will appear. Click on it to sign out from the Super-Administrator.
 
   ![SignOut.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/SignOut.jpg)
 
-#### 作成したRealm管理者としてログイン
+#### Login as the Realm administrator you created
 
-- 作成したRealmに対応した管理画面にログインする。※アカウント設定は、Kubernetesクラスタ構築時のコンソール出力内容を参考に取得して下さい。
+1. Login to the management page for the Realm you created; the URL is as follows
 
   ```bash
-  https://${ユーザ環境に合わせたFQDN}/auth/realms/${任意のRealm名}/protocol/openid-connect/auth?client_id=security-admin-console
+  https://${FQDNs for user environments}/auth/realms/${The name of realm you created}/protocol/openid-connect/auth?client_id=security-admin-console
   ```
 
-- 新規ログインの場合、パスワードの更新要求や2FAのセットアップが求められるかもしれないが従う。
-- ログインができており、左ペインにが以下の通りになっていることを確認する。（権限が正しく付与されていれば全て表示されている。）
+- At first login: You may be prompted to update your password and/or set up 2FA.
+- Make sure the left pane looks like this:
+  - If permissions are correctly granted, all items will be displayed.
 
   ![Keycloak_Admin_Console-ros2_oidc_leftpain.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Keycloak_Admin_Console-ros2_oidc_leftpain.jpg)
 
-#### アカウント切り替え（その他）
+#### Add a normal user
 
-検証の必要に応じて、一般ユーザを追加する。（手順はここまでの記述が参考となる、User個別設定画面のRole Mappingsタブでの設定内容には気をつけること。）
+1. Add normal users as needed for testing. (Up to here chapters becomes a great reference)
 
-## User（位置情報を設定）
+## User (Setting a location information)
 
-左ペインの「Users」をクリック。「View all users」でユーザリストを表示し、任意のユーザを選らぶ。
-
+1. Click on the `Users` link in the left pane.
+2. Click the `View all users` button to display the user list and select any user.
   ![Keycloak_many_users.jpeg](/ros2/rdbox/sros2_oidc/docs/imgs/Keycloak_many_users.jpeg)
-
-該当ユーザの個別設定画面で「Attributes」タブをクリックする。ここの画面では様々な属性情報を付与することができる。
-
-今回のチュートリアルでは、ユーザ固有の位置情報を取得するため以下の通りとする。
-
-- key：location
-- value：1.2,5.9
-  - ユーザ固有の位置情報（X,Y、カンマ区切り）
-入力後は必ず「Save」ボタンをクリックして、確実に内容を保存すること。
-
+3. Click the `Attributes` tab on the individual settings page for the relevant user.（On this screen, various attribute information can be assigned.）
+4. In this tutorial, user-specific location information will be set as follows
+   - key：location
+   - value：3.0,2.3
+     - Comma-separated user-specific location information（X-coordinate,Y-coordinate）
+     - Each value should be specified with an any Float value.
   ![Add_attribute.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_attribute.jpg)
+5. NOTE - Be sure to click the `Save` button after changing the settings. (To ensure that your changes are applied.)
 
 ## Client Scopes
 
-Keycloakでは、OIDCのIDトークン、アクセストークン、UserInfoレスポンスにKeyCloakで管理している情報を連携することができる。この連携の仕組みは「Protocol Mapper」と呼ばれている。
+User attributes managed by KeyCloak can be linked to OIDC ID tokens, access tokens, and UserInfo responses. Keycloak calls this linkage system "Protocol Mapper".
 
-ここでは、Protocol Mapperを一つのグループとしてまとめて管理するために便利なClient Scopeを新規に生成する。左ペインの「Client Scopes」をクリック。「Create」ボタンを押して、新規にClient Scopesを作る。
+In this section, a new "Client Scope" is created. This is used to manage "Protocol Mapper" as a group.
+
+1. Click on the `Client Scopes` link in the left pane. A Page moves to the list of Client Scopes.
+2. Click on the `Create` button to create new "Client Scopes".
 
   ![client_scopes_create_button.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/client_scopes_create_button.jpg)
 
-### 名前や同意画面で表示する確認メッセージなどを設定
+### Create new "Client Scopes"
 
-以下の3項目を入力し、「Save」ボタンをクリックする。
-
-- Name：location
-- Description：location(x,y)
-- Consent Screen Text ：location(x,y)
-
+1. Enter the following three items and click the "Save" button.
+   - Name：location
+   - Description：location(x,y)
+   - Consent Screen Text ：location(x,y)
   ![Add_client_scope.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_client_scope.jpg)
 
-### Client Scopesのリストの中から今作ったものを選択
+### Set up a location mapper
 
-Client Scopesの一覧画面に戻るので、今作ったもの（location）を選択する。
-
-Setteings画面が表示される。そこで「Mappers」タブをクリック。Mapperを新規に作成するため、「Create」ボタンをクリックする。
-
+1. Return to the Client Scopes list page. Click on the item (location) you have just created.
+2. A page moves to the advanced settings. Click on the `Mappers` tab.
+3. Click the `Create` button to create a new Mapper.
   ![location_mappers_create_button.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/location_mappers_create_button.jpg)
-
-### locationのMapperを設定する
-
-「Create Protocol Mapper」画面で、以下の5項目を設定し、「Save」ボタンをクリックする。
-
-- Name ：　location
-- Mapper Type ： ドロップボックスより「User Attribute」選択
-
-以下は、Mapper Typeを選択した後に表示される
-
-- User Attribute：location
-- Token Claim Name ：location
-- Claim JSON Type ：String
-
+4. On the "Create Protocol Mapper" page, set the following five items.
+   - Name ：　location
+   - Mapper Type ： Select "User Attribute" from the drop box
+   - User Attribute：location (Displayed after selecting Mapper Type)
+   - Token Claim Name ：location (Displayed after selecting Mapper Type)
+   - Claim JSON Type ：String (Displayed after selecting Mapper Type)
   ![create_protocol_mapper.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/create_protocol_mapper.jpg)
+5. NOTE - Be sure to click the `Save` button after changing the settings. (To ensure that your changes are applied.)
 
 ## Client
 
-左ペインの「Clients」をクリック。「Clients」画面に遷移するので、右上の「Create」ボタンを押して、新規にClientを作る。
+1. Click on the `Clients` link in the left pane. A Page moves to the list of Clients.
+2. Click on the `Create` button in the upper right corner to create a new Client.
 
   ![client_list.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/client_list.jpg)
 
-### Add Client画面でClientを追加
+### Add Client
 
-ここでは「Client ID」テキストボックスに「amcl」と入力し、「Save」ボタンをクリックする。
+1. Type "amcl" in the `Client ID` text box and click the `Save` button.
 
   ![Add_client.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/Add_client.jpg)
 
-### Settingsタブで各種設定
+### Settings tab
 
-ros2_oidcに合わせ、該当Clientの詳細設定を実施する。
+Configure detailed settings for a Client(Client for sros2_oidc service).
 
-画面遷移で「Settings」タブが選択されていることを確認する。入力が終わったら保存するために画面下方の「Save」ボタンをクリックする。
+1. Click on the `Settings` tab.
+2. Set each item as below.
+   - Consent Required ：ON
+   - Access Type：confidential
+   - Valid Redirect URIs
+     - `http://localhost:8080/gettoken`
+     - `http://${FQDNs for user environments}:8080/gettoken`
+       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
+   - Web Origins
+     - \*
+       - （asterisk）
+3. NOTE - Be sure to click the `Save` button after changing the settings. (To ensure that your changes are applied.)
 
-- Consent Required ：ON
-- Access Type：confidential
-- Valid Redirect URIs
-  - `http://localhost:8080/gettoken`
-  - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
-    - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
-- Web Origins
-  - \*
-    - （アスタリスク）
+### Client Scopes tab
 
-### Client Scopesタブで各種設定
+Set the **Client Scopes** required by the client(Client for sros2_oidc service).
 
-該当Clientが要求するClient Scopesを設定する
-
-Default Client Scopes の「Assigned Default Client Scopes」ボックスが「location」（先程追加したClient Scopes）と「web-origins」が残るように「Remove」「Add」ボタンを操作する。
+1. Click on the `Client Scopes` tab.
+2. Operate the `Remove` and `Add` buttons in the `Assigned Default Client Scopes` box in `Default Client Scopes` area so that `location` (the **Client Scopes** you just added) and `web-origins` remain.
 
   ![client_client_scope.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/client_client_scope.jpg)
 
 ### Credentials tab
 
-Secretを記録しておく。これはros2_oidcのプログラムの設定に必要となる情報となる。
+1. Click on the `Credentials` tab.
+2. Note the Secret. This is the information needed to set up the sros2_oidc program.
 
-ros2_oidcのプログラムの設定に必要となる情報を列挙する、Clients画面で再度確認ておくのが望ましい。
+List the information needed to set up the ros2_oidc program; it is advisable to check it again on the Clients page.
 
 - server_url
 - realm_name
