@@ -1,5 +1,7 @@
 # [RDBOX(Robotics Developers BOX)](https://github.com/rdbox-intec/rdbox): embodies the ideal of a cloud robotics
 
+[Japanese README](/README.ja.md)
+
 This repository is developing the next generation of **the RDBOX** (Please call me "ði άːrdíː bäks")
 
 This RDBOX built with a single node. Using [KinD (Kubernetes in Docker)](https://kind.sigs.k8s.io/)  
