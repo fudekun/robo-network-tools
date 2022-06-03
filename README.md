@@ -280,7 +280,7 @@ CONTAINER ID   IMAGE                  COMMAND                  CREATED         S
 03c5e5c00750   kindest/node:v1.23.4   "/usr/local/bin/entr…"   2 minutes ago   Up 2 minutes   127.0.0.1:44251->6443/tcp                                            rdbox-control-plane
 ```
 
-### The meta-package of essential
+### The meta-package of essentials
 
 Install/Setup the most basic group of modules required to use ROS2 on Kubernetes.
 
