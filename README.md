@@ -52,10 +52,10 @@ Various applications for cloud robotics that you can add at yourself.
 (The dashboard and prometheus in the figure. And, this is but one small example.)
 **These applications can be started as workloads that satisfy the three elements**.
 
-### 注意（テスト状況）
+### the state of test
 
-本手順は、以下の環境でのテストを実施しました（2022-05-13）。  
-いずれも**amd64** 環境です。
+This procedure was tested in the following environment (May 13, 2022)  
+Additionally, We tested in an **amd64** CPU architecture environment.
 
 - Ubuntu 20.04.4
   - 5.13.0-41-generic
@@ -67,33 +67,38 @@ Various applications for cloud robotics that you can add at yourself.
     - 5.10.16.3-microsoft-standard-WSL2
   - Docker-CE （20.10.14）
 
-### 注意(品質について)
+### What is it used for?
 
-KinD (Kubernetes in Docker) は、ローカルの開発やCIに使用することを想定したKubernetesクラスタです。  
-本番環境での使用は想定していませんのでご注意下さい。  
+KinD is a Kubernetes cluster designed to be used for local development and CI. Please note that this is not designed for use in a production environment.  
+> [kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI](https://kind.sigs.k8s.io)
 
-`built with a single node`なRDBOXは、KinDで作った環境でクラウドロボティクスの利点を確認して頂くために開発しました。  
-そのようなユーザに対して、本番環境での利用を想定した構成への移行をスムーズに行うための「仕組み」も準備中です。  
-詳細はロードマップをご覧ください。
+The `built with a single node` RDBOX was developed to let you experience the benefits of cloud robotics, and the environment created with KinD gives us a good experience with very simple steps.  
+We are also developing **a mechanism** for users who have a good experience with the `built with a single node` RDBOX to carry over your `cloud native robots` to the production environment.  
+Please refer to the roadmap for details.
 
-### 事前準備
+### Prerequisites
 
-#### Dockerのセットアップ
+#### Setting up Docker
 
-- Ubuntu/WSL2：[Install Docker Engine on Ubuntu \| Docker Documentation](https://docs.docker.com/engine/install/ubuntu/)
+Prepare a Docker environment. Follow the official documentation below.
+
+- Ubuntu/Windows11(WSL2)：[Install Docker Engine on Ubuntu \| Docker Documentation](https://docs.docker.com/engine/install/ubuntu/)
 - Mac：[Install Docker Desktop on Mac \| Docker Documentation](https://docs.docker.com/desktop/mac/install/)
 
-##### 【注意】dockerコマンドはsudoなしで実行できるようにしておいて下さい
+##### NOTE - Please make sure that docker commands can be run without sudo
 
 ```bash
-sudo gpasswd -a $USER docker
-# 一度ログアウトする
-# 再度ログイン後
+$ sudo gpasswd -a $USER docker
+
+# 1. You need to logout.
+
+# 2. Please login again.
+
 $ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAME
 ```
 
-#### その他必要なモジュールを追加
+#### Add dependent modules
 
 ```bash
 sudo apt-get update
@@ -101,16 +106,16 @@ sudo apt-get install -y \
     git
 ```
 
-### ソースコードのダウンロード
+### Download Source Code
 
-ブランチに注意して下さい。
+Note the branch name. (`insiders` branch)
 
 ```bash
 git clone -b insiders https://github.com/rdbox-intec/rdbox.git
 cd rdbox
 ```
 
-`insiders`ブランチになっていることを確認します。
+Make sure you are in the `insiders` branch.
 
 ```bash
 $ git branch
@@ -119,7 +124,9 @@ $ git branch
   master
 ```
 
-### Dockerイメージを作る
+### Building a Docker image
+
+Running the following script will build a Docker image for RDBOX-Next.
 
 ```bash
 bash docker/setup.bash
@@ -135,12 +142,18 @@ Successfully tagged rdbox/docker:20.10
 + exit 0
 ```
 
-### 初期設定コマンドの実施
+### Execute the initialization command
 
-構築には本リポジトリの`rdboxコマンドラインツール`を使用します。サブコマンド並びに引数を組み合わせて、ユーザ環境に最適なクラウドロボティクス環境を提供します。
+Use the `rdbox command line tool` of this repository to build the RDBOX. Provides the best cloud robotics environment for the user's environment.
 
-`rdboxコマンドラインツール`を使って順に環境構築をしていきます。
-`rdbox init`コマンドで構築するクラスターの名称の決定、作業ディレクトリの作成、設定ファイルの取得などを実施します。以下の通り、`--name rdbox`ではクラスター名をrdboxとして設定しています。
+We will build the environment in order using `rdbox command line tool`.  
+Use the `rdbox init` command to:
+
+- determine the name of the cluster
+- create a working directory
+- retrieve configuration files
+
+The following command uses the `--name rdbox` argument to set the cluster name as rdbox.
 
 ```bash
 ./rdbox init --name rdbox
@@ -154,10 +167,12 @@ Successfully tagged rdbox/docker:20.10
 *********************************************************
 ```
 
-### 【取り扱い注意】上級者向け
+### For advanced users
 
-`init`サブコマンドを実行すると、ホームディレクトリ上`~/crobotics`に作業ディレクトリ、設定ファイルが配置されます。必要に応じて各設定を変更することもできます。
-（各設定内容の説明は準備中）
+The `init` subcommand creates a working directory and configuration files in `~/crobotics`. Each configuration file can be changed as needed.
+
+- The explanation of each setting is under preparation.
+- `~/crobotics` is the default value.
 
 ```bash
 ~/crobotics
@@ -206,24 +221,25 @@ Successfully tagged rdbox/docker:20.10
     └── tmps
 ```
 
-### Kubernetesクラスターの構築
+### Building a Kubernetes Cluster
 
-Kubernetesクラスターとコンテナネットワークを構築します。
+First, a Kubernetes cluster is built. Next, implement a container network for this cluster.
 
-以下のKubernetesリソースをインストール・セットアップします。
+Specifically, we use the following Kubernetes resources
 
 - [KinD](https://kind.sigs.k8s.io)
-  - Kubernetes in Dockerの略。
-  - Dockerコンテナ内にKubernetesクラスターを作る。自分の環境をほぼ汚染せずにKubernetesの検証が可能
+  - `KinD` is an abbreviation for "Kubernetes in Docker".
+  - Create a Kubernetes cluster inside a Docker container. This makes it possible to examine Kubernetes without tainting one's environment.
 - [Weave-Net](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/)
-  - Kubernetes用のコンテナネットワークの選択肢の一つ。
-  - UDPマルチキャストなどもサポートし、ROS2におけるDDS通信との相性が良い。
+  - One of the container network options for Kubernetes.
+  - It supports UDP multicast, etc., making it a good match for DDS communication in ROS2.
 
-`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。`--name rdbox`は`init`で指定したクラスターの名称を指定。  `--module k8s-cluster`では今回構築するモジュールの種別を指定。
-`--domain nip.io`には名前解決可能なローカルドメインを指定する必要があります。ただし、一般的なネットワーク環境には存在しないため`nip.io`などの**ワイルドカードDNSサービス**を指定して下さい。
+Use the `rdbox create` command to deploy the above resources.
 
-注意：
-オプションで `--host ${YOUR_HOST_NAME}`が指定できます。これは名前解決可能なローカルドメインが存在する場合にだけ指定してください。何も入力しない場合はワイルドカードDNSサービスがサポートする書式`デフォルトNICのIPv4アドレスをハイフン区切りとしたもの(e.g. 192-168-22-222)`が自動的に利用されます。
+- `--name rdbox`: Specify the name of the cluster specified in the `subcommand init`.
+- `--module k8s-cluster`: Specify the name of module (k8s-cluster)
+- `--domain nip.io`: You must specify a name-resolvable local domain.
+  - If it does not exist, specify a **wildcard DNS service** such as `nip.io`.
 
 ```bash
 ./rdbox create --name rdbox --module k8s-cluster --domain nip.io
@@ -241,18 +257,20 @@ Kubernetesクラスターとコンテナネットワークを構築します。
 ***************************************************************
 ```
 
-これでkubernetesとして動作する最低限の構成が完成しています。ホスト上で`kubectl`がインストールされている場合は標準出力に記載の通り、`kubectl get node -o wide`を実行するとノードの動きを確認できます。
+NOTE - You can optionally specify `--host ${YOUR_HOST_NAME}`. This can only be specified if a name-resolvable local domain exists. If nothing is entered, the format supported by the wildcard DNS service, `the IPv4 address of the default NIC, separated by hyphens (e.g. 192-168-22-222)`, is automatically used.
+
+With the above work, the minimum configuration to operate as a Kubernetes cluster is completed. If `kubectl` is installed on the host, you can run the command `kubectl get node -o wide` on the host terminal to check the node activity.
 
 - [Install Tools \| Kubernetes](https://kubernetes.io/docs/tasks/tools/#kubectl)
 
 ```bash
-# kubectlがホストマシンにインストールされている場合のみ実行可能
+# This is only possible if kubectl is installed on the host machine.
 NAME                  STATUS   ROLES                  AGE    VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
 rdbox-control-plane   Ready    control-plane,master   111s   v1.23.4   172.18.0.3    <none>        Ubuntu 21.10   5.13.0-41-generic   containerd://1.5.10
 rdbox-worker          Ready    <none>                 75s    v1.23.4   172.18.0.2    <none>        Ubuntu 21.10   5.13.0-41-generic   containerd://1.5.10
 ```
 
-また、`docker ps` コマンドでKinDによってDockerコンテナのみでクラスターが構築されている様子が伺えます。
+Also, if you run the `docker ps` command on the host, you can see that the cluster is built only with Docker containers.
 
 ```bash
 CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS                                                                NAMES
@@ -260,22 +278,27 @@ CONTAINER ID   IMAGE                  COMMAND                  CREATED         S
 03c5e5c00750   kindest/node:v1.23.4   "/usr/local/bin/entr…"   2 minutes ago   Up 2 minutes   127.0.0.1:44251->6443/tcp                                            rdbox-control-plane
 ```
 
-### essentialsのインストール
+### The meta-package of essential
 
-KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジュールをインストール、セットアップします。
+Install/Setup the most basic group of modules required to use ROS2 on Kubernetes.
 
-以下のKubernetesリソースをインストール・セットアップします。
+Specifically, we use the following Kubernetes resources
 
 - [cert-manger](https://cert-manager.io)
-  - 各種証明書の管理
+  - Management of various certificates
 - [MetalLB](https://metallb.universe.tf)
-  - KubernetesリソースであるIngress機能を提供
+  - Provides Ingress functionality as one of the Kubernetes resources
 - [Ambassador Edge Stack](https://www.getambassador.io/products/edge-stack/api-gateway/)
-  - `kubectl`（kubernetesのコマンドラインツール）に対するSSO（シングル・サインオン）を提供。権限に応じたクラスター操作を実現。
+  - Provides SSO (single sign-on) to `kubectl` (kubernetes command line tool). Provides cluster operations based on authority.
 - [KeyCloak](https://www.keycloak.org)
-  - ユーザやグループの認証・認可基盤
+  - Infrastructure of User/group authentication and authorization
 
-先程と同様に`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。`--name rdbox`は`init`で指定したクラスターの名称を指定。  `--module k8s-essentials`では今回構築するモジュールの種別を指定。（このセットアップは、マシンスペックにもよりますが10分程度かかる場合があります。）
+Use the `rdbox create` command to deploy the above resources.
+
+- `--name rdbox`: Specify the name of the cluster specified in the `subcommand init`.
+- `--module k8s-essentials`: Specify the name of module (k8s-cluster)
+
+(This setup may take up to 10 minutes or so.)
 
 ```bash
 ./rdbox create --name rdbox --module essentials
@@ -320,21 +343,23 @@ KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジ
 # Finalizing logger ...(Please Max 10s wait)
 ```
 
-この時、出力の末尾にユーザ管理基盤（Keycloak）に対するアカウントセットアップのための情報が**USAGE**として表示されます。この手順を無くなさないようにどこかにコピペしておくことを推奨します。
+#### NOTE - Be sure to make a note
 
-## ユーザ管理基盤（Keycloak）の設定
+As shown above, the account information required for the user management infrastructure (Keycloak) is displayed as **USAGE** at the end of the stdout. It is recommended that you make a note of this information so that you do not lose it.
 
-前章の**USAGE**の出力を参考に設定します。
+## Configuration of user management infrastructure (Keycloak)
 
-### CA証明書を信頼する
+Set up using the account information for the user management infrastructure that you wrote down.
 
-ホストOSの作業ディレクトリ`~/crobotics/${CLUSTER_NAME}/outputs/ca`に保存されているCA証明書を確認します。
+### Trust a CA certificate
+
+Check the CA certificate stored in the host OS working directory `~/crobotics/${CLUSTER_NAME}/outputs/ca`.
 
 ```bash
 openssl x509 -in ~/crobotics/rdbox/outputs/ca/rdbox.172-16-0-132.nip.io.ca.crt -text
 ```
 
-このCA証明書をOSやブラウザに信頼できる証明書として登録します。以下に参考リンクを記載します。
+Register this CA certificate as a trusted certificate with your OS and browser. The following links are provided for your reference.
 
 #### OS
 
@@ -344,92 +369,100 @@ openssl x509 -in ~/crobotics/rdbox/outputs/ca/rdbox.172-16-0-132.nip.io.ca.crt -
   - `sudo cp ~/crobotics/${CLUSTER_NAME}/outputs/ca/*****.ca.crt /usr/local/share/ca-certificates/`
   - `sudo update-ca-certificates`
 
-#### ブラウザ
+#### Web browser
 
 - [Set up an HTTPS certificate authority \- Chrome Enterprise and Education Help](https://support.google.com/chrome/a/answer/6342302?hl=en)
 - [Setting Up Certificate Authorities \(CAs\) in Firefox](https://support.mozilla.org/kb/setting-certificate-authorities-firefox)
 
-### ユーザ管理基盤（Keycloak）に限定的な管理アカウントでログインしてみる
+### Log in to the user management infrastructure with a limited administrator account
 
-ここでは主にkubernetesクラスターを管理するための限定的な管理者（レルム管理者）でログインします。  
-なお、ユーザ管理基盤全体（全てのレルム）を管理するアカウント（super-admin）のログインも同様に実施可能です。
+You login to Keycloak as a "limited administrator" (realm administrator) automatically created by RDBOX for the purpose of managing the kubernetes cluster.  
+The login for the account (super-admin) that manages the entire Keycloak (all realms) can be executed in the same way.
 
-#### 初期ログイン情報を取得
+#### Obtain initial account information
 
-以下を実行する。（実際のコマンド出力を確認して下さい。）
+Obtain account information as described in the memo. (The following command is an example. Check the actual memo.)
 
 ```bash
 echo Username: cluster-admin
 echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)
 ```
 
-#### ブラウザを起動して指定のURLにアクセスしてログイン
+#### Access the specified URL and login there
 
-CAのインポートに成功して、暗号化されていることを確認できます。その後、上記の初期ログイン情報を入力して下さい。
+An indicator in the web browser confirms that the CA was successfully imported and the communication is encrypted. Then enter the initial login information obtained in the previous chapter. Finally, click the `Sign In` button.
 
 ![keycloak_signin.jpg](/docs/imgs/keycloak_signin.jpg)
 
-#### 二要素認証のセットアップ
+#### Setting up two-factor authentication
 
-管理アカウントであるため2要素認証をセットアップします。
+Set up two-factor authentication to protect the administration account.
 
 ![2FA_setup.jpg](/docs/imgs/2FA_setup.jpg)
 
-### Keycloak画面を操作する
+### Operating Keycloak
 
-Keycloakの機能は多岐に渡します。詳しくは公式のリファレンスを確認して下さい。  
-ここでは、GroupsやUsersを覗いてみましょう。
+Keycloak has a wide range of functions. Please check the [official documentation](https://www.keycloak.org/documentation.html) for more information.  
+Let's take a look at the items related to user management, such as Groups and Users.
 
 #### Groups
 
-チュートリアルのための、Groupsには2つのグループが作成されています。
+For the tutorial, two groups are created in Groups.
 
 - cluster-admin
-  - ここに所属するユーザはkuberntestのRBAC（Role-based access control）におけるcluster-adminがバインドされます
+  - Users in this group are binding `cluster-admin` in kuberntest's RBAC (Role-based access control)
+    - It gives full control over every resource in the cluster and in all namespaces.
 - guest
-  - ここに所属するユーザは特定のnamespace内（今回はguest）のみに限られた権限がRBACでバインドされています。
-  - また、このグループに所属するユーザは、管理者用のコンソールページにはログインすることができません。（別途設定で、ユーザ自身が個人ページにてパスワードの変更や、セッション状況の確認や切断は可能です。後述します。）
+  - Users in this group are binding to have limited privileges only within a specific namespace (in this case, guest) in kuberntest's RBAC (Role-based access control).
+  - Users in this group cannot login to the console page for administrators (the page you are currently working on).
+    - It is possible to change the password, check the session status, and disconnect from the user's personal page. See below.
 
 ![groups.jpg](/docs/imgs/groups.jpg)
 
 #### Users
 
-チュートリアルのために上記のGroupsに紐付いたユーザが予め登録されている。なお、guestユーザの初期設定では2FAをOFFとしている。
+For the tutorial, users linked to Groups are registered in advance.
+
 ![users.jpg](/docs/imgs/users.jpg)
 
 #### Clients Account-console
 
-前述の通り、ユーザ自身が個人ページにてパスワードの変更や、セッション状況の確認や切断を実施するために以下の記述が必要です。
+Users who do not member of the `cluster-admin` group need the following settings in order to "change passwords, check session status, and disconnect" by themselves.
 
-1. 左ペインからClientsを選択。リスト内からAccount-consoleを選択。
-2. Enabledという項目をONに設定する。
-3. Web Originsという項目に`*`を追加する。
-4. Saveを保存する。
+1. Click on `Clients` from the left pane. Select `Account-console` from the list.
+2. Set the item `Enabled` to ON.
+3. Add `*` to the field named `Web Origins`.
+4. Click the `Save` button to save the contents.
 
-#### 個人ページ
+#### Personal page
 
-パスワードの変更や、セッション状況の確認や切断が可能。
-URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
-![accountpage.jpg](:/96a6a042c1694cef85355e634104efa6)
+Users execute "change passwords, check session status, and disconnect" by themselves.
 
-## SSOでKubernetesを使ってみる
+URL：`https://${the FQDNs of the keycloak}/auth/realms/${the name of the cluster}/account/`
+![accountpage.jpg](/docs/imgs/accountpage.jpg)
 
-**USAGE**で指定されたコマンドを元にSSOログインを経由して`kubectl`を実行する。ここでは、`kubectl`がホストマシンにインストールされていない場合で確認することができる方法を示す。
+## Control Kubernetes with SSO
 
-### 初期設定
+Execute `kubectl` based on the results of authentication and authorization as a registered user in Keycloak.
 
-#### セットアップに使用したコンテナ内部にログイン
+- You will experience that each group (`cluster-admin` and `guest`) checked in the previous chapter has a different permitted operation.
+- This can be tested even if `kubectl` is not installed on the host machine.
+
+### initialization
+
+#### Login inside the container used for setup
+
+Any operations after executing this command will have been performed from inside the container.
 
 ```bash
 ./rdbox bash --name rdbox
 ```
 
-#### ログイン操作(cluster-admin)
+#### Login operation (cluster-admin)
 
-コンテナ内部に入ったら以下のコマンドを実施。
+Execute the following commands inside the container.  PATH is passed inside the container, so rdbox commands can be executed as is
 
 ```bash
-# コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
 rdbox login --name rdbox
 ```
 
@@ -439,15 +472,16 @@ error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": e
 Please visit the following URL in your browser manually: http://localhost:8000
 ```
 
-`Please visit the following URL in your browser manually: http://localhost:8000`
-
-というメッセージの通りブラウザで[http://localhost:8000](http://localhost:8000)にアクセスする。するとKeycloakのログイン画面にリダイレクトされるので先程確認したアカウント`cluster-admin`でログインする。先程設定した二要素認証も確認されます。
+As above, Follow the message:  
+`Please visit the following URL in your browser manually: http://localhost:8000`  
+and access [http://localhost:8000](http://localhost:8000) in your browser.  
+You will then be redirected to Keycloak's login page and login using the account `cluster-admin` that you have just checked. The two-factor authentication you have just set up will also be checked.
 
 ![login_cluster-admin.jpg](/docs/imgs/login_cluster-admin.jpg)
 
 ![2FA_setuped.jpg](/docs/imgs/2FA_setuped.jpg)
 
-認証に成功すると、コマンドを実行したターミナルでは、ログインが成功した旨のメッセージが表示されます。
+Upon successful authentication, the terminal where the command was executed will show a message of successful login.
 
 ```bash
 ~ omit ~
@@ -455,26 +489,29 @@ Please visit the following URL in your browser manually: http://localhost:8000
 Success SSO Login
 ```
 
-## チュートリアル
+## Testing RBAC
 
-このチュートリアルでは、以下の2つのユーザを使ってKeycloakとRBACによる認証・認可基盤の働きについて確認します。
+In this tutorial, we will examine how Keycloak and RBAC authentication and authorization infrastructure works with the following two users
 
-- **cluster-adminグループに所属する、cluster-adminユーザ**
-- **guestグループに所属する、guestユーザ**
+- **cluster-admin user** who is a member of the **cluster-admin group**
+- **guest user** who is a member of the **guest group**
 
-前述の通り、チュートリアルのための、Groupsには2つのグループは以下の特性を有します。
+For the tutorial, the two groups in Groups have the following features:
 
 - cluster-admin
-  - ここに所属するユーザはkuberntestのRBACにおけるcluster-adminがバインドされます
+  - Users in this group are binding `cluster-admin` in kuberntest's RBAC (Role-based access control)
+    - It gives full control over every resource in the cluster and in all namespaces.
 - guest
-  - ここに所属するユーザは特定のnamespace内（今回はguest）のみに限られた権限しか持たない。
+  - Users in this group are binding to have limited privileges only within a specific namespace (in this case, guest) in kuberntest's RBAC (Role-based access control).
+  - Users in this group cannot login to the console page for administrators (the page you are currently working on).
+    - It is possible to change the password, check the session status, and disconnect from the user's personal page. See below.
 
-### kubectlコマンドを試す(cluster-admin)
+### Try kubectl command (by the cluster-admin)
 
 #### get node
 
-まず`cluster-admin`の操作を試してみます。  
-`kubectl get node`といったクラスター全体に渡る権限に関わる操作が可能です。
+First try the `cluster-admin` operation.  
+Operations involving cluster-wide permissions, such as `kubectl get node`, can be executed.
 
 ```bash
 $ kubectl get node -o wide
@@ -485,7 +522,7 @@ rdbox-worker          Ready    <none>                 86m   v1.23.4   172.18.0.3
 
 #### create namespac
 
-新しくnamespaceを作ることが可能です。
+It is possible to create a new namespace.
 
 ```bash
 $ kubectl create namespace test-rdbox
@@ -494,52 +531,52 @@ namespace/test-rdbox created
 
 #### apply
 
-作成したnamespaceに対し、Nginxのサンプルプログラム用のマニフェストを適用する。getコマンドを使うことで実際にdeploymentが作成されていることが確認できます。  
-そして、`kubectl port-forward -n test-rdbox deploy/nginx-deployment 8888:80`によってポート転送を設定すると、ブラウザで実際に動作している様子を確認することもできます。
+Let's apply the manifest for the Nginx sample program to the namespace we just created. By using the get command, you can check that the deployment has actually been created.  
+And if you set up port forwarding by running the `kubectl port-forward -n test-rdbox deploy/nginx-deployment 8888:80` command, you can also see it in your web browser.
 
 ```bash
-# apply（≒インストール）
+# apply（≒install）
 $ kubectl apply -n test-rdbox -f https://k8s.io/examples/application/deployment.yaml
 deployment.apps/nginx-deployment created
 
-# get（確認）
+# get（check）
 $ kubectl -n test-rdbox get deployments      
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment   2/2     2            2           91s
 
-# 通信路の確保
-# これによって、http://localhost:8888 にアクセスするとnginxのデモページに転送がかかる
+# To secure communication paths
+# you can also see it in your web browser
 $ kubectl port-forward -n test-rdbox deploy/nginx-deployment 8888:80
 ```
 
-### kubectlコマンドを試す(guest)
+### Try kubectl command (by the guest)
 
-同じターミナルを使って今度は、guestグループのguestユーザでログインしてみます。（これは権限の違いを確認しましょう）
+Now try login as the guest user in the guest group. (Let's check the difference in privileges)
 
-#### ログアウト
+#### logout from cluster-admin
 
 ```bash
 rdbox logout --name rdbox
 ```
 
 ```bash
+~ omit ~
 Success SSO Logout
 ```
 
-また、ブラウザでもログアウトを実施して下さい。
+Also, please logout of your browser.
 
-URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
+URL：`https://${the FQDNs of the keycloak}/auth/realms/${the name of the cluster}/account/`
 
 ![accountpage_signout.jpg](/docs/imgs/accountpage_signout.jpg)
 
-#### ログイン操作（guest）
+#### Login operation (by the guest)
 
-今度は、guestユーザでログインします。
+Now login as the guest user.
 Username： `guest`
 Password： `password`
 
 ```bash
-# コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
 rdbox login --name rdbox
 ```
 
@@ -549,7 +586,12 @@ error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": e
 Please visit the following URL in your browser manually: http://localhost:8000
 ```
 
-認証に成功すると、コマンドを実行したターミナルでは、ログインが成功した旨のメッセージが表示されます。
+As above, Follow the message:  
+`Please visit the following URL in your browser manually: http://localhost:8000`  
+and access [http://localhost:8000](http://localhost:8000) in your browser.  
+You will then be redirected to Keycloak's login page and login using the account `guest` that you have just checked.
+
+Upon successful authentication, the terminal where the command was executed will show a message of successful login.
 
 ```bash
 ~ omit ~
@@ -559,9 +601,9 @@ Success SSO Login
 
 #### get node(guest)
 
-`cluste-admin`と同様のことを `guest`の操作で試してみます。
+Try something similar to `cluste-admin` by the `guest` operation.
 
-`kubectl get node`といったクラスター全体に渡る操作はできません。`nodes is forbidden`として権限が無い旨のメッセージが表示されます。
+Cluster-wide operations such as `kubectl get node` are not allowed. You will get a message `nodes is forbidden` showing that you do not have permission.
 
 ```bash
 $ kubectl get node -o wide
@@ -570,7 +612,7 @@ Error from server (Forbidden): nodes is forbidden: User "guest" cannot list reso
 
 #### create namespac(guest)
 
-namespaceも新規に作ることはできません。
+You cannot create a new namespace either.
 
 ```bash
 $ kubectl create namespace test-rdbox
@@ -579,43 +621,43 @@ Error from server (Forbidden): namespaces is forbidden: User "guest" cannot crea
 
 #### apply(guest)
 
-getコマンドを使っても、先程Applyしたdeploymentの状態を確認する権限はありません。
+The get command does not give you the authority to check the status of the deployment `cluster-admin` just applied.
 
 ```bash
-# get（確認）
+# get（check）
 $ kubectl -n test-rdbox get deployments
 Error from server (Forbidden): deployments.apps is forbidden: User "guest" cannot list resource "deployments" in API group "apps" in the namespace "test-rdbox"
 ```
 
-では、guestユーザに権限が与えられている、`guest`namespaceに対してapplyしてみます。すると成功することがわかります。
+Now, let's try to apply to the `guest` namespace, where the guest user has been granted permission. You will see that the command is successfully executed.
 
-ポート転送を設定すると、ブラウザで実際に動作している様子を確認することもできます。
+And if you set up port forwarding by running the `kubectl port-forward` command, you can also see it in your web browser.
 
 ```bash
-# apply（≒インストール）
+# apply（≒install）
 $ kubectl apply -n guest -f https://k8s.io/examples/application/deployment.yaml
 deployment.apps/nginx-deployment created
 
-# 通信路の確保
-# これによって、http://localhost:8888 にアクセスするとnginxのデモページに転送がかかる
+# To secure communication paths
+# you can also see it in your web browser
 $ kubectl port-forward -n guest deploy/nginx-deployment 8888:80
 ```
 
-### チュートリアルのまとめ
+### Conclusion of the Tutorial
 
-2つのユーザを使って、操作権限の差について確認することができました。keycloak並びにRBAC（Kubernetes）を組み合わせることで、かなり自由度の高い認証や権限管理が可能になります。ぜひ、カスタマイズして使ってみて下さい。
+Using the two users, we were able to check the difference in operating privileges. The combination of keycloak and RBAC (Kubernetes) makes it possible to manage authentication and authorization with a lot of flexibility. We encourage you to customize and use it yourself.
 
-#### チュートリアル後に読みたい文献
+#### References to read after the tutorial
 
 - [Documentation \- Keycloak](https://www.keycloak.org/documentation)
 - [Using RBAC Authorization \| Kubernetes](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
 
-## 環境の削除
+## Deleting the Environment
 
-不要になった環境を削除したい場合は、ホストマシンで以下のコマンドを実行して下さい
+If you wish to remove an environment that is no longer needed after the examination, execute the following command on the host machine.
 
 ```bash
-cd ${ソースコードをクローンした場所}
+cd rdbox
 ./rdbox logout --name rdbox
 ./rdbox delete --name rdbox
 ```
@@ -638,8 +680,11 @@ ok Deleteing Cluster
 [2022-05-13T03:22:31+0000][1652412151.4958436][delete.bash]
 *****************
 # Finalizing logger ...(Please Max 10s wait)
+```
 
-# 環境が消えていることがわかります。
+The results of the docker command show that the environment has been deleted.
+
+```bash
 $ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```

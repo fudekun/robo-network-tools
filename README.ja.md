@@ -52,7 +52,7 @@ Node内の緑色のボックスは「ワークロード」の集合体として�
 **3つの要素** を満たしたワークロードとして使い始めることが可能です。
 (図のdashboardとprometheus。そして、これはほんの一例に過ぎません。)
 
-### 注意（テスト状況）
+### テスト状況
 
 本手順は、以下の環境でのテストを実施しました（2022-05-13）。  
 いずれも**amd64** 環境です。
@@ -80,15 +80,20 @@ KinD (Kubernetes in Docker) は、ローカルの開発やCIに使用するこ�
 
 #### Dockerのセットアップ
 
-- Ubuntu/WSL2：[Install Docker Engine on Ubuntu \| Docker Documentation](https://docs.docker.com/engine/install/ubuntu/)
+Docker環境を用意する。以下の公式ドキュメントに従ってください。
+
+- Ubuntu/Windows11(WSL2)：[Install Docker Engine on Ubuntu \| Docker Documentation](https://docs.docker.com/engine/install/ubuntu/)
 - Mac：[Install Docker Desktop on Mac \| Docker Documentation](https://docs.docker.com/desktop/mac/install/)
 
 ##### 【注意】dockerコマンドはsudoなしで実行できるようにしておいて下さい
 
 ```bash
-sudo gpasswd -a $USER docker
-# 一度ログアウトする
-# 再度ログイン後
+$ sudo gpasswd -a $USER docker
+
+# 1. You need to logout.
+
+# 2. Please login again.
+
 $ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAME
 ```
@@ -121,6 +126,8 @@ $ git branch
 
 ### Dockerイメージを作る
 
+次のスクリプトを実行すると、RDBOX-NextのDockerイメージが作成されます。
+
 ```bash
 bash docker/setup.bash
 ```
@@ -139,8 +146,14 @@ Successfully tagged rdbox/docker:20.10
 
 構築には本リポジトリの`rdboxコマンドラインツール`を使用します。サブコマンド並びに引数を組み合わせて、ユーザ環境に最適なクラウドロボティクス環境を提供します。
 
-`rdboxコマンドラインツール`を使って順に環境構築をしていきます。
-`rdbox init`コマンドで構築するクラスターの名称の決定、作業ディレクトリの作成、設定ファイルの取得などを実施します。以下の通り、`--name rdbox`ではクラスター名をrdboxとして設定しています。
+`rdboxコマンドラインツール`を使って順に環境構築をしていきます。  
+`rdbox init`コマンド：
+
+- クラスタの名前を決定する
+- 作業ディレクトリの作成
+- 設定ファイルの取得
+
+以下の通り、`--name rdbox`ではクラスター名をrdboxとして設定しています。
 
 ```bash
 ./rdbox init --name rdbox
@@ -157,7 +170,9 @@ Successfully tagged rdbox/docker:20.10
 ### 【取り扱い注意】上級者向け
 
 `init`サブコマンドを実行すると、ホームディレクトリ上`~/crobotics`に作業ディレクトリ、設定ファイルが配置されます。必要に応じて各設定を変更することもできます。
-（各設定内容の説明は準備中）
+
+- 各設定内容の説明は準備中
+`~/crobotics`はデフォルト値です。
 
 ```bash
 ~/crobotics
@@ -208,9 +223,9 @@ Successfully tagged rdbox/docker:20.10
 
 ### Kubernetesクラスターの構築
 
-Kubernetesクラスターとコンテナネットワークを構築します。
+まず、Kubernetesクラスターを構築。次に、このクラスタに対してコンテナネットワークをインプリメントします。
 
-以下のKubernetesリソースをインストール・セットアップします。
+具体的には、私達は以下のKubernetesリソースを使用します。
 
 - [KinD](https://kind.sigs.k8s.io)
   - Kubernetes in Dockerの略。
@@ -219,11 +234,12 @@ Kubernetesクラスターとコンテナネットワークを構築します。
   - Kubernetes用のコンテナネットワークの選択肢の一つ。
   - UDPマルチキャストなどもサポートし、ROS2におけるDDS通信との相性が良い。
 
-`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。`--name rdbox`は`init`で指定したクラスターの名称を指定。  `--module k8s-cluster`では今回構築するモジュールの種別を指定。
-`--domain nip.io`には名前解決可能なローカルドメインを指定する必要があります。ただし、一般的なネットワーク環境には存在しないため`nip.io`などの**ワイルドカードDNSサービス**を指定して下さい。
+上記のリソースを導入するために、`rdbox create`コマンドを使います。
 
-注意：
-オプションで `--host ${YOUR_HOST_NAME}`が指定できます。これは名前解決可能なローカルドメインが存在する場合にだけ指定してください。何も入力しない場合はワイルドカードDNSサービスがサポートする書式`デフォルトNICのIPv4アドレスをハイフン区切りとしたもの(e.g. 192-168-22-222)`が自動的に利用されます。
+- `--name rdbox`は`init`で指定したクラスターの名称を指定。
+- `--module k8s-cluster`では今回構築するモジュールの種別を指定。
+- `--domain nip.io`には名前解決可能なローカルドメインを指定する必要があります。
+  - 存在しない場合は`nip.io`などの**ワイルドカードDNSサービス**を指定して下さい。
 
 ```bash
 ./rdbox create --name rdbox --module k8s-cluster --domain nip.io
@@ -241,7 +257,9 @@ Kubernetesクラスターとコンテナネットワークを構築します。
 ***************************************************************
 ```
 
-これでkubernetesとして動作する最低限の構成が完成しています。ホスト上で`kubectl`がインストールされている場合は標準出力に記載の通り、`kubectl get node -o wide`を実行するとノードの動きを確認できます。
+注意：オプションで `--host ${YOUR_HOST_NAME}`が指定できます。これは名前解決可能なローカルドメインが存在する場合にだけ指定してください。何も入力しない場合はワイルドカードDNSサービスがサポートする書式`デフォルトNICのIPv4アドレスをハイフン区切りとしたもの(e.g. 192-168-22-222)`が自動的に利用されます。
+
+これでkubernetesクラスタとして動作する最小限の構成が完成しています。ホスト上に`kubectl`がインストールされている場合は`kubectl get node -o wide`コマンドをホスト上のターミナルで実行するとノードの動きを確認できます。
 
 - [Install Tools \| Kubernetes](https://kubernetes.io/docs/tasks/tools/#kubectl)
 
@@ -260,7 +278,7 @@ CONTAINER ID   IMAGE                  COMMAND                  CREATED         S
 03c5e5c00750   kindest/node:v1.23.4   "/usr/local/bin/entr…"   2 minutes ago   Up 2 minutes   127.0.0.1:44251->6443/tcp                                            rdbox-control-plane
 ```
 
-### essentialsのインストール
+### essentialのインストール
 
 KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジュールをインストール、セットアップします。
 
@@ -275,7 +293,12 @@ KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジ
 - [KeyCloak](https://www.keycloak.org)
   - ユーザやグループの認証・認可基盤
 
-先程と同様に`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。`--name rdbox`は`init`で指定したクラスターの名称を指定。  `--module k8s-essentials`では今回構築するモジュールの種別を指定。（このセットアップは、マシンスペックにもよりますが10分程度かかる場合があります。）
+先程と同様に`rdbox create`コマンドで各種リソースのインストール・セットアップを実施します。
+
+- `--name rdbox`は`init`で指定したクラスターの名称を指定。
+- `--module k8s-essentials`では今回構築するモジュールの種別を指定。
+
+（このセットアップは、マシンスペックにもよりますが10分程度かかる場合があります。）
 
 ```bash
 ./rdbox create --name rdbox --module essentials
@@ -320,11 +343,13 @@ KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジ
 # Finalizing logger ...(Please Max 10s wait)
 ```
 
-この時、出力の末尾にユーザ管理基盤（Keycloak）に対するアカウントセットアップのための情報が**USAGE**として表示されます。この手順を無くなさないようにどこかにコピペしておくことを推奨します。
+#### 注意 - 必ず標準出力を記録してください
+
+上記のように、出力の末尾にユーザ管理基盤（Keycloak）にに必要なアカウントの情報が**USAGE**として表示されます。失念しないようにどこかにコピペしておくことを推奨します。
 
 ## ユーザ管理基盤（Keycloak）の設定
 
-前章の**USAGE**の出力を参考に設定します。
+メモしたユーザ管理基盤用のアカウント情報を使って設定する。
 
 ### CA証明書を信頼する
 
@@ -351,21 +376,21 @@ openssl x509 -in ~/crobotics/rdbox/outputs/ca/rdbox.172-16-0-132.nip.io.ca.crt -
 
 ### ユーザ管理基盤（Keycloak）に限定的な管理アカウントでログインしてみる
 
-ここでは主にkubernetesクラスターを管理するための限定的な管理者（レルム管理者）でログインします。  
+ここでは、主にkubernetesクラスターを管理するためにRDBOXが自動作成した「限定的な管理者（レルム管理者）」として、Keycloakにログインします。  
 なお、ユーザ管理基盤全体（全てのレルム）を管理するアカウント（super-admin）のログインも同様に実施可能です。
 
 #### 初期ログイン情報を取得
 
-以下を実行する。（実際のコマンド出力を確認して下さい。）
+メモの記載通りにアカウント情報を取得する。（以下のコマンドは一例です。実際のメモを確認して下さい。）
 
 ```bash
 echo Username: cluster-admin
 echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)
 ```
 
-#### ブラウザを起動して指定のURLにアクセスしてログイン
+#### 指定のURLにアクセスしてログイン
 
-CAのインポートに成功して、暗号化されていることを確認できます。その後、上記の初期ログイン情報を入力して下さい。
+WebブラウザのインジケータによってCAのインポートに成功して、暗号化されていることを確認できます。その後、前章で取得した初期ログイン情報を入力して下さい。
 
 ![keycloak_signin.jpg](/docs/imgs/keycloak_signin.jpg)
 
@@ -377,48 +402,57 @@ CAのインポートに成功して、暗号化されていることを確認で
 
 ### Keycloak画面を操作する
 
-Keycloakの機能は多岐に渡します。詳しくは公式のリファレンスを確認して下さい。  
-ここでは、GroupsやUsersを覗いてみましょう。
+Keycloakの機能は多岐に渡ります。詳しくは[公式ドキュメント](https://www.keycloak.org/documentation.html)を確認して下さい。  
+ここでは、GroupsやUsersといったユーザー管理にまつわる項目を覗いてみましょう。
 
 #### Groups
 
 チュートリアルのための、Groupsには2つのグループが作成されています。
 
 - cluster-admin
-  - ここに所属するユーザはkuberntestのRBAC（Role-based access control）におけるcluster-adminがバインドされます
+  - ここに所属するユーザはkuberntestのRBAC（Role-based access control）におけるcluster-adminがバインドされます。
+    - クラスター内およびすべてのNamespace内のすべてのリソースを完全に制御できます。
 - guest
   - ここに所属するユーザは特定のnamespace内（今回はguest）のみに限られた権限がRBACでバインドされています。
-  - また、このグループに所属するユーザは、管理者用のコンソールページにはログインすることができません。（別途設定で、ユーザ自身が個人ページにてパスワードの変更や、セッション状況の確認や切断は可能です。後述します。）
+  - このグループに所属するユーザは、管理者用のコンソールページ（今操作しているページ）にはログインすることができません。
+    - ユーザ個人の為のページにて、パスワードの変更や、セッション状況の確認及び切断することは可能です。後述します。
 
 ![groups.jpg](/docs/imgs/groups.jpg)
 
 #### Users
 
-チュートリアルのために上記のGroupsに紐付いたユーザが予め登録されている。なお、guestユーザの初期設定では2FAをOFFとしている。
+チュートリアルのために、Groupsに紐付いたユーザが予め登録されている。
+
 ![users.jpg](/docs/imgs/users.jpg)
 
 #### Clients Account-console
 
-前述の通り、ユーザ自身が個人ページにてパスワードの変更や、セッション状況の確認や切断を実施するために以下の記述が必要です。
+`cluster-admin`グループに所属していないユーザが、自身で「パスワードの変更や、セッション状況の確認や切断」を実施するためには、以下の設定が必要です。
 
 1. 左ペインからClientsを選択。リスト内からAccount-consoleを選択。
 2. Enabledという項目をONに設定する。
 3. Web Originsという項目に`*`を追加する。
-4. Saveを保存する。
+4. Saveボタンをクリックして内容を保存する。
 
 #### 個人ページ
 
 パスワードの変更や、セッション状況の確認や切断が可能。
+
 URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
 ![accountpage.jpg](:/96a6a042c1694cef85355e634104efa6)
 
 ## SSOでKubernetesを使ってみる
 
-**USAGE**で指定されたコマンドを元にSSOログインを経由して`kubectl`を実行する。ここでは、`kubectl`がホストマシンにインストールされていない場合で確認することができる方法を示す。
+Keycloakに登録されているユーザーとして認証・認可された結果に基づき`kubectl`を実行する。
+
+- 前章で確認したグループ（cluster-adminとguest）で許可されている操作が異なることを確認する。
+- `kubectl`がホストマシンにインストールされていない場合でも確認することが可能です。
 
 ### 初期設定
 
 #### セットアップに使用したコンテナ内部にログイン
+
+このコマンドを実行した後の操作は、コンテナ内部から実行したこととなります。
 
 ```bash
 ./rdbox bash --name rdbox
@@ -426,10 +460,9 @@ URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
 
 #### ログイン操作(cluster-admin)
 
-コンテナ内部に入ったら以下のコマンドを実施。
+コンテナ内部に入ったら以下のコマンドを実施。コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能。
 
 ```bash
-# コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
 rdbox login --name rdbox
 ```
 
@@ -439,9 +472,10 @@ error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": e
 Please visit the following URL in your browser manually: http://localhost:8000
 ```
 
-`Please visit the following URL in your browser manually: http://localhost:8000`
-
-というメッセージの通りブラウザで[http://localhost:8000](http://localhost:8000)にアクセスする。するとKeycloakのログイン画面にリダイレクトされるので先程確認したアカウント`cluster-admin`でログインする。先程設定した二要素認証も確認されます。
+上記のように、  
+`Please visit the following URL in your browser manually: http://localhost:8000`  
+というメッセージに従ってブラウザで[http://localhost:8000](http://localhost:8000)にアクセスする。  
+するとKeycloakのログイン画面にリダイレクトされるので先程確認したアカウント`cluster-admin`でログインする。先程設定した二要素認証も確認されます。
 
 ![login_cluster-admin.jpg](/docs/imgs/login_cluster-admin.jpg)
 
@@ -455,7 +489,7 @@ Please visit the following URL in your browser manually: http://localhost:8000
 Success SSO Login
 ```
 
-## チュートリアル
+## Testing RBAC
 
 このチュートリアルでは、以下の2つのユーザを使ってKeycloakとRBACによる認証・認可基盤の働きについて確認します。
 
@@ -465,9 +499,12 @@ Success SSO Login
 前述の通り、チュートリアルのための、Groupsには2つのグループは以下の特性を有します。
 
 - cluster-admin
-  - ここに所属するユーザはkuberntestのRBACにおけるcluster-adminがバインドされます
+  - ここに所属するユーザはkuberntestのRBAC（Role-based access control）におけるcluster-adminがバインドされます。
+    - クラスター内およびすべてのNamespace内のすべてのリソースを完全に制御できます。
 - guest
-  - ここに所属するユーザは特定のnamespace内（今回はguest）のみに限られた権限しか持たない。
+  - ここに所属するユーザは特定のnamespace内（今回はguest）のみに限られた権限がRBACでバインドされています。
+  - このグループに所属するユーザは、管理者用のコンソールページ（今操作しているページ）にはログインすることができません。
+    - ユーザ個人の為のページにて、パスワードの変更や、セッション状況の確認及び切断することは可能です。後述します。
 
 ### kubectlコマンドを試す(cluster-admin)
 
@@ -516,13 +553,14 @@ $ kubectl port-forward -n test-rdbox deploy/nginx-deployment 8888:80
 
 同じターミナルを使って今度は、guestグループのguestユーザでログインしてみます。（これは権限の違いを確認しましょう）
 
-#### ログアウト
+#### logout from cluster-admin
 
 ```bash
 rdbox logout --name rdbox
 ```
 
 ```bash
+~ omit ~
 Success SSO Logout
 ```
 
@@ -539,7 +577,6 @@ Username： `guest`
 Password： `password`
 
 ```bash
-# コンテナ内部はPATHが通っているので rdbox コマンドをそのまま実行可能
 rdbox login --name rdbox
 ```
 
@@ -548,6 +585,11 @@ error: could not open the browser: exec: "xdg-open,x-www-browser,www-browser": e
 
 Please visit the following URL in your browser manually: http://localhost:8000
 ```
+
+上記のように、  
+`Please visit the following URL in your browser manually: http://localhost:8000`  
+というメッセージに従ってブラウザで[http://localhost:8000](http://localhost:8000)にアクセスする。  
+するとKeycloakのログイン画面にリダイレクトされるので先程確認したアカウント`guest`でログインする。
 
 認証に成功すると、コマンドを実行したターミナルでは、ログインが成功した旨のメッセージが表示されます。
 
@@ -638,8 +680,11 @@ ok Deleteing Cluster
 [2022-05-13T03:22:31+0000][1652412151.4958436][delete.bash]
 *****************
 # Finalizing logger ...(Please Max 10s wait)
+```
 
-# 環境が消えていることがわかります。
+dockerコマンドの結果から、環境が削除されていることがわかります。
+
+```bash
 $ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
