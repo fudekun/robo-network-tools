@@ -67,12 +67,14 @@ function __createEntry() {
   last_name=${fullname_array[0]}
   operation_endpoint_url="$BASE_URL/auth/admin/realms"
   ## For Credentials
-  created_date=$(getEpochMillisec)
+  # created_date=$(getEpochMillisec)
   cred_hash_array=()
   while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(getHashedPasswordByPbkdf2Sha256 "$password")
   salt=${cred_hash_array[0]}
   hashed_salted_value=${cred_hash_array[1]}
   hash_iterations=${cred_hash_array[2]}
+  secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
+  credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
     ## NOTE
     ## !!
     ## This Credentials is a deprecated JSON Schema
@@ -90,10 +92,8 @@ function __createEntry() {
           --arg cluster_name "$cluster_name" \
           --arg preset_group_name "$preset_group_name" \
           --arg preset_cadmi_name "$preset_cadmi_name" \
-          --arg hash_iterations "$hash_iterations" \
-          --arg salt "$salt" \
-          --arg hashed_salted_value "$hashed_salted_value" \
-          --arg created_date "$created_date" \
+          --arg secret_data "$secret_data" \
+          --arg credential_data "$credential_data" \
           --arg first_name "$first_name" \
           --arg last_name "$last_name" \
       )")

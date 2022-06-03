@@ -64,16 +64,8 @@
       "credentials": [
         {
           "type": "password",
-          "hashedSaltedValue": $hashed_salted_value,
-          "salt": $salt,
-          "hashIterations": $hash_iterations,
-          "counter": 0,
-          "algorithm": "pbkdf2-sha256",
-          "digits": 0,
-          "period": 0,
-          "createdDate": $created_date,
-          "config": {
-          }
+          "secretData": $secret_data,
+          "credentialData": $credential_data
         }
       ],
       "disableableCredentialTypes": [
@@ -97,16 +89,8 @@
       "credentials": [
         {
           "type": "password",
-          "hashedSaltedValue": "R6TI3MRwDs6jn4yO9NwmWb4tuJnootGl6ICT/dedu3mgcnXJc0HPDkAxvStGLmKDR4Eeh4GkyVAq3O6jU7sbhg==",
-          "salt": "JDUkbmswdk5mN3FPQ3NFbHdNTw==",
-          "hashIterations": 27500,
-          "counter": 0,
-          "algorithm": "pbkdf2-sha256",
-          "digits": 0,
-          "period": 0,
-          "createdDate": $created_date,
-          "config": {
-          }
+          "secretData": "{\"value\":\"R6TI3MRwDs6jn4yO9NwmWb4tuJnootGl6ICT/dedu3mgcnXJc0HPDkAxvStGLmKDR4Eeh4GkyVAq3O6jU7sbhg==\",\"salt\":\"JDUkbmswdk5mN3FPQ3NFbHdNTw==\"}",
+          "credentialData": "{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":27500}"
         }
       ],
       "disableableCredentialTypes": [
