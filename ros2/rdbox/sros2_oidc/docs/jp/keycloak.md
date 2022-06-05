@@ -136,11 +136,11 @@ KeyCloakが管理するユーザー属性は、OIDCのIDトークン、アクセ
 3. "Create"ボタンをクリックして、新しいMapperを作成します。
   ![location_mappers_create_button.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/location_mappers_create_button.jpg)
 4. 「Create Protocol Mapper」画面で、以下の5項目を設定し、「Save」ボタンをクリックする。
-   - 名前 ： 場所
+   - 名前 ： location
    - Mapper Type ： ドロップボックスから「User Attribute」を選択します。
-   - User Attribute：位置（Mapper Type選択後に表示される）
-   - Token Claim Name ：location (Mapper Type選択後に表示されます)
-   - Claim JSON Type ：String(MapperType選択後に表示)
+   - User Attribute： location（Mapper Type選択後に表示される）
+   - Token Claim Name ： location (Mapper Type選択後に表示されます)
+   - Claim JSON Type ： String(MapperType選択後に表示)
   ![create_protocol_mapper.jpg](/ros2/rdbox/sros2_oidc/docs/imgs/create_protocol_mapper.jpg)
 5. 注意 - 設定を変更した後は、必ず`Save`ボタンをクリックしてください。(変更内容を確実に反映させるため)
 
@@ -168,7 +168,7 @@ Client(sros2_oidcサービスのためのClient)の詳細設定を実施する�
    - Valid Redirect URIs
      - `http://localhost:8080/gettoken`
      - `http://${ユーザ環境に合わせたFQDN}:8080/gettoken`
-       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
+       - e.g. `http://rdbox.172-16-0-132.nip.io:8080/gettoken`
    - Web Origins
      - \*
        - （アスタリスク）

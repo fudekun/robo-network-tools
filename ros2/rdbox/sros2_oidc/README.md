@@ -96,7 +96,7 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
   - Select `localhost` or `FQDNs for user environments` as appropriate for the access source.
     - `http://localhost:8080/gettoken`
     - `http://${FQDNs for user environments}:8080/gettoken`
-      - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
+      - e.g. `http://rdbox.172-16-0-132.nip.io:8080/gettoken`
 
 ```bash
 export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/

@@ -168,7 +168,7 @@ Configure detailed settings for a Client(Client for sros2_oidc service).
    - Valid Redirect URIs
      - `http://localhost:8080/gettoken`
      - `http://${FQDNs for user environments}:8080/gettoken`
-       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
+       - e.g. `http://rdbox.172-16-0-132.nip.io:8080/gettoken`
    - Web Origins
      - \*
        - （asterisk）
