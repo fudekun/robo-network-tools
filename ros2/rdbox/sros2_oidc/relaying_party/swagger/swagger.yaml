@@ -153,5 +153,5 @@ components:
       type: openIdConnect
       description: "URI to retrieve OpenID Provider settings, defined in OpenID Connect\
         \ Discovery 1.0"
-      openIdConnectUrl: https://keycloak.rdbox.172-16-0-132.nip.io/auth/realms/rdbox/.well-known/openid-configuration
+      openIdConnectUrl: https://keycloak.rdbox.172-16-0-132.nip.io/realms/rdbox/.well-known/openid-configuration
 

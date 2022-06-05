@@ -99,7 +99,7 @@ cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
       - e.g. `http://rdbox.172.16-0-132.nip.io:8080/gettoken`
 
 ```bash
-export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/auth/
+export SROS2_OIDC_OP_SERVER_URL=https://keycloak.rdbox.172-16-0-132.nip.io/
 export SROS2_OIDC_OP_REALM_NAME=ros2_oidc
 export SROS2_OIDC_OP_CLIENT_ID=amcl
 export SROS2_OIDC_OP_CLIENT_SECRET_KEY=fkRX4Vb2DdUa1A6tWttQFQawnfv8teNF

@@ -16,7 +16,7 @@ function __getAccessToken() {
   local token_endpoint
   username=$(getPresetSuperAdminName "${rep_name}")
   password=$(__getSuperAdminSecret "${rep_name}")
-  token_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.mtls_endpoint_aliases.token_endpoint')
+  token_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/realms/master/.well-known/openid-configuration | jq -r '.mtls_endpoint_aliases.token_endpoint')
   ## Execute Admin REST API
   ##
   resp=$(curl -fs --cacert "${ROOTCA_FILE}" -X POST "$token_endpoint" \
@@ -65,7 +65,7 @@ function __createEntry() {
   IFS="-" read -r -a fullname_array <<< "$preset_cadmi_name"
   first_name=${fullname_array[1]}
   last_name=${fullname_array[0]}
-  operation_endpoint_url="$BASE_URL/auth/admin/realms"
+  operation_endpoint_url="$BASE_URL/admin/realms"
   ## For Credentials
   # created_date=$(getEpochMillisec)
   cred_hash_array=()
@@ -154,7 +154,7 @@ function __logoutSuperAdmin() {
   local BASE_URL=$1
   local REFLESH_TOKEN=$2
   local revoke_endpoint
-  revoke_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/auth/realms/master/.well-known/openid-configuration | jq -r '.end_session_endpoint')
+  revoke_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/realms/master/.well-known/openid-configuration | jq -r '.end_session_endpoint')
   ## Execute Admin REST API
   ##
   curl -fs --cacert "${ROOTCA_FILE}" -X POST "$revoke_endpoint" \
@@ -184,11 +184,11 @@ function showVerifierCommand() {
   echo "## USAGE"
   echo "### The basic keycloak entry has been inserted. Check its status by running:"
   echo "  ### For all realms"
-  echo "  ${base_url}/auth/admin"
+  echo "  ${base_url}/admin"
   echo "    echo Username: \$(helm -n ${rep_name} get values ${rep_name} -o json | jq -r '.auth.adminUser')"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.admin-password}' | base64 --decode)"
   echo "  ### For this k8s cluster only (ClusterName: $(getClusterName))"
-  echo "  ${base_url}/auth/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
+  echo "  ${base_url}/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
   echo "    echo Username: $(getPresetClusterAdminName "${rep_name}")"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
   return $?
@@ -242,7 +242,7 @@ function main() {
       --exec-command=kubectl \
       --exec-arg=oidc-login \
       --exec-arg=get-token \
-      --exec-arg=--oidc-issuer-url="${BASE_URL}"/auth/realms/"${cluster_name}" \
+      --exec-arg=--oidc-issuer-url="${BASE_URL}"/realms/"${cluster_name}" \
       --exec-arg=--oidc-client-id=ambassador \
       --exec-arg=--oidc-client-secret="${client_secret}" \
       --exec-arg=--certificate-authority-data="$(< "${ROOTCA_FILE}" base64 | tr -d '\n' | tr -d '\r')" \

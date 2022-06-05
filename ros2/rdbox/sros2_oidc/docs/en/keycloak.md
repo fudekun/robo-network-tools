@@ -83,7 +83,7 @@ NOTE - Grant authority to conduct responsible for as a Realm Administrator. (Acc
 1. Login to the management page for the Realm you created; the URL is as follows
 
   ```bash
-  https://${FQDNs for user environments}/auth/realms/${The name of realm you created}/protocol/openid-connect/auth?client_id=security-admin-console
+  https://${FQDNs for user environments}/realms/${The name of realm you created}/protocol/openid-connect/auth?client_id=security-admin-console
   ```
 
 - At first login: You may be prompted to update your password and/or set up 2FA.

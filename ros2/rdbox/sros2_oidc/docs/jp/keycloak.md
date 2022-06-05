@@ -83,7 +83,7 @@ NOTE - Realm管理者として、業務を行うための権限を付与する�
 - 作成したRealmに対応した管理画面にログインする
 
   ```bash
-  https://${ユーザ環境に合わせたFQDN}/auth/realms/${任意のRealm名}/protocol/openid-connect/auth?client_id=security-admin-console
+  https://${ユーザ環境に合わせたFQDN}/realms/${任意のRealm名}/protocol/openid-connect/auth?client_id=security-admin-console
   ```
 
 - 新規ログインの場合、パスワードの更新要求や2FAのセットアップが求められるかもしれないが従う。

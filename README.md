@@ -320,11 +320,11 @@ Use the `rdbox create` command to deploy the above resources.
 ## USAGE
 ### The basic keycloak entry has been inserted. Check its status by running:
   ### For all realms
-  https://*******/auth/admin
+  https://*******/admin
     echo Username: $(helm -n keycloak get values keycloak -o json | jq -r '.auth.adminUser')
     echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.admin-password}' | base64 --decode)
   ### For this k8s cluster only (ClusterName: rdbox)
-  https://*******/auth/realms/rdbox/protocol/openid-connect/auth?client_id=security-admin-console
+  https://*******/realms/rdbox/protocol/openid-connect/auth?client_id=security-admin-console
     echo Username: cluster-admin
     echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)
 
@@ -440,7 +440,7 @@ Users who do not member of the `cluster-admin` group need the following settings
 
 Users execute "change passwords, check session status, and disconnect" by themselves.
 
-URL：`https://${the FQDNs of the keycloak}/auth/realms/${the name of the cluster}/account/`
+URL：`https://${the FQDNs of the keycloak}/realms/${the name of the cluster}/account/`
 ![accountpage.jpg](/docs/imgs/accountpage.jpg)
 
 ## Control Kubernetes with SSO
@@ -568,7 +568,7 @@ Success SSO Logout
 
 Also, please logout of your browser.
 
-URL：`https://${the FQDNs of the keycloak}/auth/realms/${the name of the cluster}/account/`
+URL：`https://${the FQDNs of the keycloak}/realms/${the name of the cluster}/account/`
 
 ![accountpage_signout.jpg](/docs/imgs/accountpage_signout.jpg)
 

@@ -318,11 +318,11 @@ KubernetesをROS2と一緒に使う上で必要となる最も基礎的なモジ
 ## USAGE
 ### The basic keycloak entry has been inserted. Check its status by running:
   ### For all realms
-  https://*******/auth/admin
+  https://*******/admin
     echo Username: $(helm -n keycloak get values keycloak -o json | jq -r '.auth.adminUser')
     echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.admin-password}' | base64 --decode)
   ### For this k8s cluster only (ClusterName: rdbox)
-  https://*******/auth/realms/rdbox/protocol/openid-connect/auth?client_id=security-admin-console
+  https://*******/realms/rdbox/protocol/openid-connect/auth?client_id=security-admin-console
     echo Username: cluster-admin
     echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)
 
@@ -438,7 +438,7 @@ Keycloakの機能は多岐に渡ります。詳しくは[公式ドキュメン�
 
 パスワードの変更や、セッション状況の確認や切断が可能。
 
-URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
+URL：`https://${KeycloakのFQDN}/realms/${クラスター名}/account/`
 ![accountpage.jpg](:/96a6a042c1694cef85355e634104efa6)
 
 ## SSOでKubernetesを使ってみる
@@ -566,7 +566,7 @@ Success SSO Logout
 
 また、ブラウザでもログアウトを実施して下さい。
 
-URL：`https://${KeycloakのFQDN}/auth/realms/${クラスター名}/account/`
+URL：`https://${KeycloakのFQDN}/realms/${クラスター名}/account/`
 
 ![accountpage_signout.jpg](/docs/imgs/accountpage_signout.jpg)
 

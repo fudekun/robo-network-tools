@@ -70,7 +70,7 @@ function __executor() {
   __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_keycloak}" confs helm)
   helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
-    --version 7.1.18 \
+    --version 9.2.2 \
     --create-namespace \
     --wait \
     --timeout 600s \
@@ -79,7 +79,7 @@ function __executor() {
     --set ingress.annotations."cert-manager\.io/cluster-issuer"="${__cluster_issuer}" \
     --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
-    --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}/auth" \
+    --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}" \
     -f "${__conf_of_helm}"
   ## 3. Setup TLSContext
   ##
@@ -103,7 +103,7 @@ function __executor() {
   echo "### Testing to access the endpoint ..."
   __rootca_file=$(getFullpathOfRootCA)
   __http_code=$(waitForSuccessOfCommand \
-              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/auth/")
+              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/")
   echo "The HTTP Status is ${__http_code} ...ok"
     ### NOTE
     ### Use the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
