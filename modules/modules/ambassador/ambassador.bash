@@ -39,9 +39,10 @@ function __executor() {
   ##
   echo ""
   echo "### Activating a CRD of the ambassador ..."
-  __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest \
-                    | jq -r ".tag_name" \
-                    | cut -b 2-)
+  __aes_app_version=2.3.1
+  # __aes_app_version=$(curl -s https://api.github.com/repos/emissary-ingress/emissary/releases/latest \
+  #                   | jq -r ".tag_name" \
+  #                   | cut -b 2-)
   kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__aes_app_version}"/aes-crds.yaml
   kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
   ## 2. Install Ambassador Instance
