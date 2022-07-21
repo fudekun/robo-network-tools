@@ -62,7 +62,7 @@ function __executor() {
     # ambassador
   local __hostname_for_ambassador_k8ssso
     # ambassador-k8ssso
-  local __jwks_uri=http://${__hostname_for_keycloak_main}.${__namespace_for_keycloak}/realms/${__cluster_name}/protocol/openid-connect/certs
+  local __jwks_uri=https://${__hostname_for_keycloak_main}.${__base_fqdn}/realms/${__cluster_name}/protocol/openid-connect/certs
     # https://keycloak.rdbox.172-16-0-110.nip.io/realms/rdbox/protocol/openid-connect/certs
   __namespace_for_ambassador=$(getNamespaceName "ambassador")
   __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")

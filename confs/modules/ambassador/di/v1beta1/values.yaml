@@ -2,7 +2,7 @@
 ambassador:
   di:
     certificate:
-      duration: 87600h
+      duration: 8760h
       privateKey:
         algorithm: RSA
         size: 4096
