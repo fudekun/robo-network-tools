@@ -1,0 +1,30 @@
+extraArgs:
+  - --apiserver-host=https://apiserver-kubernetes-dashboard.rdbox.*.nip.io
+  - --tls-cert-file=/original-certs/tls.crt
+  - --tls-key-file=/original-certs/tls.key
+  - --kubeconfig=/original-kubeconfig/values.kubeconfig.yaml
+protocolHttp: false
+extraVolumeMounts:
+  - name: tls-dashboard
+    mountPath: "/original-certs"
+    readOnly: true
+  - name: kubeconfig
+    mountPath: "/original-kubeconfig"
+extraVolumes:
+  - name: tls-dashboard
+    secret:
+      secretName: kubernetes-dashboard.rdbox.*.nip.io
+  - name: kubeconfig
+    configMap:
+      name: kubeconfig
+rbac:
+  create: false
+serviceAccount:
+  create: false
+  name: kubernetes-dashboard
+metricsScraper:
+  enabled: true
+metrics-server:
+  enabled: true
+  args:
+    - --kubelet-insecure-tls

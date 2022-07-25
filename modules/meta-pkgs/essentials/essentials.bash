@@ -108,6 +108,7 @@ initializeEssentials() {
     helm repo add metallb https://metallb.github.io/metallb
     helm repo add jetstack https://charts.jetstack.io
     helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard
     ## 2. Update Helm
     ##
     echo ""

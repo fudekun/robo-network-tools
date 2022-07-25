@@ -1,0 +1,27 @@
+##
+{{- if .Values.kubernetesDashboard }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.kubernetesDashboard.dynamics.k8ssso }}
+{{- if and .Values.kubernetesDashboard.dynamics.k8ssso.create (hasKey .Values.kubernetesDashboard.dynamics.k8ssso "create")}}
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: {{ .Values.kubernetesDashboard.dynamics.k8ssso.fqdn }}
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: kubernetes-dashboard.kubernetes-dashboard
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  hostname: {{ .Values.kubernetesDashboard.dynamics.k8ssso.fqdn }}
+  requestPolicy:
+    insecure:
+      action: Route
+  tlsSecret:
+    name: {{ .Values.kubernetesDashboard.dynamics.main.fqdn }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

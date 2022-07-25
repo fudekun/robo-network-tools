@@ -1,0 +1,17 @@
+# https://cert-manager.io/docs/usage/certificate/
+kubernetesDashboard:
+  di:
+    certificate:
+      duration: 8760h
+      privateKey:
+        algorithm: RSA
+        size: 4096
+      # subject:
+      #   organizations: INTEC Inc.
+      #   countries: JP
+      #   organizationalUnits: ATI
+      #   localities: Koto-Ku
+      #   provinces: Tokyo
+      #   streetAddresses: Toyosu
+      #   postalCodes: 135-0061
+      #   serialNumber: A20D27E4-1863-4BD5-9EF1-B25C38D76C88

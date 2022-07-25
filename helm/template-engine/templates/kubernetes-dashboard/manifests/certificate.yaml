@@ -1,0 +1,38 @@
+##
+{{- if .Values.kubernetesDashboard }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.kubernetesDashboard.dynamics.certificate }}
+{{- if and .Values.kubernetesDashboard.dynamics.certificate.create (hasKey .Values.kubernetesDashboard.dynamics.certificate "create")}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-issuer-ca.{{ .Values.kubernetesDashboard.dynamics.main.fqdn}}
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: kubernetes-dashboard.kubernetes-dashboard
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  isCA: true
+  commonName: "{{ .Values.kubernetesDashboard.dynamics.main.fqdn}}"
+  dnsNames:
+    - {{ .Values.kubernetesDashboard.dynamics.main.fqdn}}
+    - "*.{{ .Values.kubernetesDashboard.dynamics.main.fqdn}}"
+  secretName: {{ .Values.kubernetesDashboard.dynamics.main.fqdn}}
+  duration: {{ .Values.kubernetesDashboard.di.certificate.duration }}
+  {{- if .Values.kubernetesDashboard.di.certificate.privateKey }}
+  privateKey: {{- include "common.tplvalues.render" ( dict "value" .Values.kubernetesDashboard.di.certificate.privateKey "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.kubernetesDashboard.di.certificate.subject }}
+  subject: {{- include "common.tplvalues.render" ( dict "value" .Values.kubernetesDashboard.di.certificate.subject "context" $) | nindent 4 }}
+  {{- end }}
+  issuerRef:
+    name: cluster-issuer-ca.{{ .Values.kubernetesDashboard.dynamics.common.baseFqdn }}
+    kind: ClusterIssuer
+    group: cert-manager.io
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

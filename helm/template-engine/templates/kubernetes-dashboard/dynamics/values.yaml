@@ -1,0 +1,28 @@
+##
+{{- if .Values.kubernetesDashboard }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+kubernetesDashboard:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.kubernetesDashboard.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.kubernetesDashboard.dynamics.main.hostname }}
+      fqdn: "{{ .Values.kubernetesDashboard.dynamics.main.hostname }}.{{ .Values.kubernetesDashboard.dynamics.common.baseFqdn }}"
+    {{- if .Values.kubernetesDashboard.dynamics.certificate }}
+    certificate:
+      create: {{ .Values.kubernetesDashboard.dynamics.certificate.create | default true }}
+    {{- end }}
+    {{- if .Values.kubernetesDashboard.dynamics.k8ssso }}
+    k8ssso:
+      create: {{ .Values.kubernetesDashboard.dynamics.k8ssso.create | default true }}
+      hostname: {{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}
+      fqdn: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}.{{ .Values.kubernetesDashboard.dynamics.main.hostname }}.{{ .Values.kubernetesDashboard.dynamics.common.baseFqdn }}"
+      filter:
+        name: {{ .Values.kubernetesDashboard.dynamics.k8ssso.filter.name }}
+        namespace: {{ .Values.kubernetesDashboard.dynamics.k8ssso.filter.namespace }}
+      client:
+        tlsContext: {{ .Values.kubernetesDashboard.dynamics.k8ssso.client.tlsContext }}
+        namespace: {{ .Values.kubernetesDashboard.dynamics.k8ssso.client.namespace }}
+    {{- end }}
+{{- end }}
+{{- end }}
