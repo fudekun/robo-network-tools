@@ -1,0 +1,27 @@
+##
+{{- if .Values.kubernetesDashboard }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.kubernetesDashboard.dynamics.ingress }}
+{{- if and .Values.kubernetesDashboard.dynamics.ingress.create (hasKey .Values.kubernetesDashboard.dynamics.ingress "create")}}
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: "{{ .Values.kubernetesDashboard.dynamics.main.hostname }}"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: kubernetes-dashboard.kubernetes-dashboard
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  host: {{ .Values.kubernetesDashboard.dynamics.main.fqdn }}
+  prefix: /
+  allow_upgrade:
+  - spdy/3.1
+  service: "https://{{ .Values.kubernetesDashboard.dynamics.main.hostname }}.{{ template "common.names.namespace" . }}:{{ .Values.kubernetesDashboard.dynamics.ingress.port }}"
+  timeout_ms: 0
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

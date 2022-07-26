@@ -1,8 +1,8 @@
 extraArgs:
   - --apiserver-host=https://apiserver-kubernetes-dashboard.rdbox.*.nip.io
+  - --kubeconfig=/original-kubeconfig/values.kubeconfig.yaml
   - --tls-cert-file=/original-certs/tls.crt
   - --tls-key-file=/original-certs/tls.key
-  - --kubeconfig=/original-kubeconfig/values.kubeconfig.yaml
 protocolHttp: false
 extraVolumeMounts:
   - name: tls-dashboard

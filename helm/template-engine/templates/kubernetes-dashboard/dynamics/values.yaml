@@ -8,6 +8,11 @@ kubernetesDashboard:
     main:
       hostname: {{ .Values.kubernetesDashboard.dynamics.main.hostname }}
       fqdn: "{{ .Values.kubernetesDashboard.dynamics.main.hostname }}.{{ .Values.kubernetesDashboard.dynamics.common.baseFqdn }}"
+    {{- if .Values.kubernetesDashboard.dynamics.ingress }}
+    ingress:
+      create: {{ .Values.kubernetesDashboard.dynamics.ingress.create | default true }}
+      port: {{ .Values.kubernetesDashboard.dynamics.ingress.port | default 443 }}
+    {{- end }}
     {{- if .Values.kubernetesDashboard.dynamics.certificate }}
     certificate:
       create: {{ .Values.kubernetesDashboard.dynamics.certificate.create | default true }}

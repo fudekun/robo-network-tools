@@ -60,6 +60,7 @@ function __executor() {
   local __fqdn_for_k8s_dashboard_main
   local __clientTlsContext
   local __clientNamespace
+  local __ca_full_path
   __base_fqdn=$(getBaseFQDN)
   __hostname_for_k8s_dashboard=$(getHostName "kubernetes-dashboard" "main")
   echo ""
@@ -99,18 +100,39 @@ function __executor() {
                     kubernetesDashboard.dynamics.k8ssso.filter.namespace="${__filterNamespace}" \
                     kubernetesDashboard.dynamics.k8ssso.client.tlsContext="${__clientTlsContext}" \
                     kubernetesDashboard.dynamics.k8ssso.client.namespace="${__clientNamespace}"
-  ## 5. Setup preset-entries
+  echo ""
+  echo "### Testing k8s SSO Endpoint ..."
+  __ca_full_path="${TEMP_DIR}"/tls.crt
+  kubectl -n "${__namespace_for_k8s_dashboard}" get secrets "${__fqdn_for_k8s_dashboard_main}" \
+    -o jsonpath="{.data.tls\.crt}" | base64 -d > "${__ca_full_path}"
+  waitForSuccessOfCommand \
+    "curl -fs --cacert ${__ca_full_path} \
+      https://${__hostname_for_k8ssso}.${__fqdn_for_k8s_dashboard_main}/version \
+      | jq > /dev/null 2>&1"
+    ### NOTE
+    ### Connection test
+  if curl -fs --cacert "${__ca_full_path}" https://"${__hostname_for_k8ssso}"."${__fqdn_for_k8s_dashboard_main}"/version; then
+    echo ""
+    echo "curl https://${__hostname_for_k8ssso}.${__fqdn_for_k8s_dashboard_main}/version ...ok"
+  fi
+  ## 5. Setup .kube/config
   ##
+  local __name_cm_kubeconfig="kubeconfig"
+  local __kubeconfig_file_name="values.kubeconfig.yaml"
   echo ""
   echo "### Activating kubeconfig ..."
-  local __kubeconfig_full_path=${TEMP_DIR}/values.kubeconfig.yaml
+  if ! kubectl -n "${__namespace_for_k8s_dashboard}" delete cm "${__name_cm_kubeconfig}" 2>/dev/null; then
+    echo "The ${__name_cm_kubeconfig}.${__namespace_for_k8s_dashboard} is Not Found ...ok"
+  fi
   bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/kubernetes-dashboard/subs/values.kubeconfig.bash" \
     "${__namespace_for_k8s_dashboard}" \
     "${__hostname_for_k8s_dashboard}" \
     "${__hostname_for_k8ssso}" \
-    "${__base_fqdn}" > "${__kubeconfig_full_path}"
-  kubectl -n "${__namespace_for_k8s_dashboard}" create cm kubeconfig --from-file "${__kubeconfig_full_path}"
+    "${__base_fqdn}" > "${TEMP_DIR}/${__kubeconfig_file_name}"
+  kubectl -n "${__namespace_for_k8s_dashboard}" create cm "${__name_cm_kubeconfig}" \
+    --from-file "${TEMP_DIR}/${__kubeconfig_file_name}"
   ## 6. Install kubernetes-dashboard
+  ##
   echo ""
   echo "### Installing with helm ..."
   local __conf_of_helm
@@ -122,8 +144,25 @@ function __executor() {
     --wait \
     --timeout 600s \
     --set extraArgs\[0\]="--apiserver-host=https://${__fqdn_for_k8s_dashboard_k8ssso}" \
+    --set extraArgs\[1\]="--kubeconfig=/original-kubeconfig/${__kubeconfig_file_name}" \
     --set extraVolumes\[0\].secret.secretName="${__hostname_for_k8s_dashboard}.${__base_fqdn}" \
+    --set extraVolumes\[1\].configMap.name="${__name_cm_kubeconfig}" \
     -f "${__conf_of_helm}"
+  ## 7. Create a Ingress
+  ##
+  echo ""
+  echo "### Activating Ingress ..."
+  local __service_port
+  __service_port=$(kubectl -n "${__namespace_for_k8s_dashboard}" get service "${__hostname_for_k8s_dashboard}" \
+                  -o jsonpath="{.spec.ports[].port}")
+  applyManifestByDI "${__namespace_for_k8s_dashboard}" \
+                    "${__hostname_for_k8s_dashboard}" \
+                    "${__RELEASE_ID}" \
+                    90s \
+                    kubernetesDashboard.dynamics.common.baseFqdn="${__base_fqdn}" \
+                    kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
+                    kubernetesDashboard.dynamics.ingress.create=true \
+                    kubernetesDashboard.dynamics.ingress.port="${__service_port}"
   return $?
 }
 
