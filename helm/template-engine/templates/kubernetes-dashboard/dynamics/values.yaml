@@ -29,5 +29,11 @@ kubernetesDashboard:
         tlsContext: {{ .Values.kubernetesDashboard.dynamics.k8ssso.client.tlsContext }}
         namespace: {{ .Values.kubernetesDashboard.dynamics.k8ssso.client.namespace }}
     {{- end }}
+    {{- if .Values.kubernetesDashboard.dynamics.filter }}
+    filter:
+      create: {{ .Values.kubernetesDashboard.dynamics.filter.create | default true }}
+      authorizationURL: "{{ .Values.kubernetesDashboard.dynamics.filter.authorizationURL }}"
+      secret: "{{ .Values.kubernetesDashboard.dynamics.filter.secret }}"
+    {{- end }}
 {{- end }}
 {{- end }}

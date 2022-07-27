@@ -1,0 +1,27 @@
+##
+{{- if .Values.kubernetesDashboard }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.kubernetesDashboard.dynamics.filter }}
+{{- if and .Values.kubernetesDashboard.dynamics.filter.create (hasKey .Values.kubernetesDashboard.dynamics.filter "create")}}
+apiVersion: getambassador.io/v3alpha1
+kind: Filter
+metadata:
+  name: "{{ .Values.kubernetesDashboard.dynamics.main.hostname }}"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: kubernetes-dashboard.kubernetes-dashboard
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  OAuth2:
+    authorizationURL: "{{ .Values.kubernetesDashboard.dynamics.filter.authorizationURL }}"
+    clientID: "{{ .Values.kubernetesDashboard.dynamics.main.hostname }}" ## OAuth2 client from your IdP
+    secret: "{{ .Values.kubernetesDashboard.dynamics.filter.secret }}" ## Secret used to access OAuth2 client
+    protectedOrigins:
+    - origin: https://{{ .Values.kubernetesDashboard.dynamics.main.fqdn }}/.ambassador/oauth2/redirection-endpoint
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

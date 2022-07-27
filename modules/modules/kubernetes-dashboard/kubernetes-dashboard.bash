@@ -13,6 +13,7 @@ function checkArgs() {
 }
 
 function main() {
+  local __SPECIFIC_SECRETS="specific-secrets"
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -31,7 +32,6 @@ function showVerifierCommand() {
 }
 
 function __executor() {
-  local __SPECIFIC_SECRETS="specific-secrets"
   ## 1. Define the version of kubernetes-dashboard
   ##
   local __helm_version="5.7.0"
@@ -46,6 +46,9 @@ function __executor() {
   __namespace_for_k8s_dashboard="$(getNamespaceName "kubernetes-dashboard")"
   if ! kubectl create namespace "${__namespace_for_k8s_dashboard}" 2>/dev/null; then
     echo "already exist the namespace (${__namespace_for_k8s_dashboard}) ...ok"
+  else
+    kubectl -n "${__namespace_for_k8s_dashboard}" create secret generic "${__SPECIFIC_SECRETS}" \
+      --from-literal=client-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
   fi
   ## 3. Create a service account with RBAC
   echo ""
@@ -163,6 +166,45 @@ function __executor() {
                     kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
                     kubernetesDashboard.dynamics.ingress.create=true \
                     kubernetesDashboard.dynamics.ingress.port="${__service_port}"
+  ## 8. Create Entry
+  ##
+  local src_filepath
+  local redirectUris
+  local secret
+  src_filepath="$(getDirNameFor confs)/modules/${__namespace_for_k8s_dashboard}/entry/$(getConfVersion "${__namespace_for_k8s_dashboard}" entry)/client.jq.json"
+  redirectUris="https://${__hostname_for_k8s_dashboard}.${__base_fqdn}/.ambassador/oauth2/redirection-endpoint"
+  secret=$(kubectl -n "${__namespace_for_k8s_dashboard}" get secrets "${__SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.client-secret}' | base64 -d)
+  local user
+  local pass
+  user=$(helm -n "$(getNamespaceName keycloak)" get values "$(getNamespaceName keycloak)" -o json | jq -r '.auth.adminUser')
+  pass=$(kubectl -n "$(getNamespaceName keycloak)" get secrets "$(helm -n "$(getNamespaceName keycloak)" get values "$(getNamespaceName keycloak)" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.admin-password}' | base64 --decode)
+  local realm
+  local token
+  local entry_target
+  local entry_json
+  token=$(get_access_token "master" "${user}" "${pass}")
+  realm=$(getClusterName)
+  entry_target="clients"
+  entry_json=$(parse_jq_temlate "${src_filepath}" \
+                clientId="${__namespace_for_k8s_dashboard}" \
+                redirectUris="${redirectUris}" \
+                secret="${secret}")
+  create_entry "${realm}" "${token}" "${entry_target}" "${entry_json}"
+  revoke_access_token "master" "${token}"
+  ## 9. Create Filter
+  ##
+  local authorization_url
+  authorization_url=$(get_authorization_url "${realm}")
+  applyManifestByDI "${__namespace_for_k8s_dashboard}" \
+                    "${__hostname_for_k8s_dashboard}" \
+                    "${__RELEASE_ID}" \
+                    90s \
+                    kubernetesDashboard.dynamics.common.baseFqdn="${__base_fqdn}" \
+                    kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
+                    kubernetesDashboard.dynamics.filter.create=true \
+                    kubernetesDashboard.dynamics.filter.authorizationURL="${authorization_url}" \
+                    kubernetesDashboard.dynamics.filter.secret="\"${secret}\""
   return $?
 }
 
@@ -170,5 +212,6 @@ TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/keycloak.bash"
 main "$@"
 exit $?

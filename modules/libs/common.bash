@@ -993,3 +993,29 @@ function getPortnumberOfkubeapi() {
   fi
   return $?
 }
+
+#######################################
+# Perse a json file with jq args
+# Globals:
+#   None
+# Arguments:
+#   src_filepath String (the file is formated by jq arg)
+#   <variable length arguments> joined by "=" (e.g. "clientId=user0001 password=BHIee2")
+# Outputs:
+#   parsed json string
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://public-constructor.com/shel-jq-variable/
+#######################################
+function parse_jq_temlate() {
+  local src_filepath=$1
+  local args=()
+  for arg in "${@:2}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    args+=("--arg" "${kv[0]}" "${kv[1]}")
+  done
+  jq -n -c -r -f "$src_filepath" "${args[@]}"
+  exit $?
+}

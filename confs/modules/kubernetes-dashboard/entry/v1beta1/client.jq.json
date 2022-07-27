@@ -1,0 +1,27 @@
+{
+  "clientId": $clientId,
+  "enabled": true,
+  "redirectUris": [
+    $redirectUris
+  ],
+  "bearerOnly": false,
+  "publicClient": false,
+  "secret": $secret,
+  "webOrigins": [
+    "*"
+  ],
+  "defaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "groups"
+  ],
+  "optionalClientScopes": [
+    "offline_access",
+    "address",
+    "phone",
+    "microprofile-jwt"
+  ]
+}
