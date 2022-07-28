@@ -85,11 +85,16 @@ executor() {
   cmdWithLoding \
     "installKeycloak $*" \
     "Activating the keycloak"
-  ## 6. Install Filter
+  ## 6. Install Filter(k8ssso by Ambassador)
   ##
   cmdWithLoding \
     "installFilter $*" \
     "Activating the filter"
+  ## 7. Install K8sDashboard
+  ##
+  cmdWithLoding \
+    "installK8sDashboard $*" \
+    "Activating the k8s-dashboard"
   return $?
 }
 
@@ -108,7 +113,7 @@ initializeEssentials() {
     helm repo add metallb https://metallb.github.io/metallb
     helm repo add jetstack https://charts.jetstack.io
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard
+    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
     ## 2. Update Helm
     ##
     echo ""
@@ -164,10 +169,17 @@ installKeycloak() {
   return $?
 }
 
-## 6. Install Filter
+## 6. Install Filter(k8ssso by Ambassador)
 ##
 installFilter() {
   bash "$(getWorkdirOfScripts)/modules/modules/ambassador/subs/filter.bash" "$@"
+  return $?
+}
+
+## 7. Install K8s-Dashboard
+##
+installK8sDashboard() {
+  bash "$(getWorkdirOfScripts)/modules/modules/kubernetes-dashboard/kubernetes-dashboard.bash" "$@"
   return $?
 }
 
