@@ -689,7 +689,7 @@ function getConfVersion() {
   __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
 }
 
-function getFullpathOfValuesYamlBy() {
+function getFullpathOfOnesBy() {
   local __namespace
   local __purpose
   local __type
@@ -700,7 +700,13 @@ function getFullpathOfValuesYamlBy() {
   __type=$3
   __version=${4:-$(getConfVersion "${__namespace}" "${__type}")}
   __workdir_of_purpose=$(getDirNameFor "${__purpose}")
-  echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}/values.yaml"
+  echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}"
+}
+
+function getFullpathOfValuesYamlBy() {
+  local dirpath
+  dirpath=$(getFullpathOfOnesBy "${@}")
+  echo -n "${dirpath}/values.yaml"
 }
 
 function getFullpathOfRootCA() {

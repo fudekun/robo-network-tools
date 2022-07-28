@@ -189,6 +189,7 @@ function revoke_access_token() {
 #   0 if thing was gived assurance output, non-zero on error.
 # References:
 #   https://www.keycloak.org/docs-api/18.0/rest-api/#_clients_resource
+#   https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
 #######################################
 function create_entry() {
   function __create_entry() {
@@ -200,31 +201,105 @@ function create_entry() {
     local entry_json=$5
     local keycloak_fqdn
     local operation_endpoint_url
-    local http_code
     local access_token
     access_token=$(perse_token "${token}" "access_token")
     keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
     operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}"
-    http_code=$(curl -fs -w '%{http_code}' -o /dev/null --cacert "${ca_filepath}" -X POST "${operation_endpoint_url}/${entry_target}" \
+    local response
+    local http_code
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X POST "${operation_endpoint_url}/${entry_target}" \
         -H "Authorization: bearer ${access_token}" \
         -H "Content-Type: application/json" \
-        -d "${entry_json}")
+        -d "${entry_json}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
-      echo "Success create the new entry"
+      echo "Success create the new entry(${http_code})"
     elif [ "${http_code}" -eq 409 ]; then
-      echo "Already exist the same entry"
+      echo "Already exist the same entry, the HTTP Code is ${http_code}"
+      echo "${response}"
       return 0
     else
-      echo "**ERROR** the HTTP Code is ${http_code}"
+      echo "the HTTP Code is ${http_code}"
+      echo "${response}"
       return 1
     fi
-    return 0
+    return $?
   }
   local cert_dir
   cert_dir=$(get_cert)
   # shellcheck disable=SC2064
   trap "exit_handler '${cert_dir}'" EXIT
   __create_entry "$cert_dir" "$@"
+  return $?
+}
+
+#######################################
+# Delete any entry
+# Globals:
+#   NONE
+# Arguments:
+#   realm          (e.g. rdbox)
+#   token          a json string was obtained from the get_access_token() function
+#   entry_target   (e.g. clients)
+#   entry_id       (e.g. kubernetes-dashboard)
+# Outputs:
+#   NONE
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://www.keycloak.org/docs-api/18.0/rest-api/#_clients_resource
+#######################################
+function delete_entry() {
+  function __delete_entry() {
+    local tmp_dir=$1
+    local ca_filepath=${tmp_dir}/tls.crt
+    local realm=$2
+    local token=$3
+    local entry_target=$4
+    local entry_id=$5
+    local keycloak_fqdn
+    local operation_endpoint_url
+    local http_code
+    local access_token
+    access_token=$(perse_token "${token}" "access_token")
+    keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
+    operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}"
+    local response
+    local http_code
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -fs -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -G -X GET "${operation_endpoint_url}/${entry_target}" \
+        -H "Authorization: bearer ${access_token}" \
+        -H "Content-Type: application/json" \
+        -d "clientId=${entry_id}")" 1>&2) 2>&1)
+    local id
+    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      id=$(echo "$response" | jq -r ".[0].id")
+    else
+      return 1
+    fi
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X DELETE "${operation_endpoint_url}/${entry_target}/${id}" \
+        -H "Authorization: bearer ${access_token}")" 1>&2) 2>&1)
+    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "Success delete the old entry(${http_code})"
+    else
+      echo "the HTTP Code is ${http_code}"
+      echo "${response}"
+      return 1
+    fi
+    return $?
+  }
+  local cert_dir
+  cert_dir=$(get_cert)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${cert_dir}'" EXIT
+  __delete_entry "$cert_dir" "$@"
   return $?
 }
 
