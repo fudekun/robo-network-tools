@@ -164,17 +164,17 @@ function __logoutSuperAdmin() {
 
 function __getSuperAdminSecret() {
   local rep_name=$1
-  kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.admin-password}' | base64 --decode
+  kubectl -n "${rep_name}" get secrets specific-secrets -o jsonpath='{.data.adminPassword}' | base64 --decode
 }
 
 function __getClusterAdminSecret() {
   local rep_name=$1
-  kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode
+  kubectl -n "${rep_name}" get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode
 }
 
 function __getClusterK8sSSOSecret() {
   local rep_name=$1
-  kubectl -n "${rep_name}" get secrets "$(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 --decode
+  kubectl -n "${rep_name}" get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 --decode
 }
 
 function showVerifierCommand() {
@@ -186,11 +186,11 @@ function showVerifierCommand() {
   echo "  ### For all realms"
   echo "  ${base_url}/admin"
   echo "    echo Username: \$(helm -n ${rep_name} get values ${rep_name} -o json | jq -r '.auth.adminUser')"
-  echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.admin-password}' | base64 --decode)"
+  echo "    echo Password: \$(kubectl -n ${rep_name} get secrets specific-secrets -o jsonpath='{.data.adminPassword}' | base64 --decode)"
   echo "  ### For this k8s cluster only (ClusterName: $(getClusterName))"
   echo "  ${base_url}/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
   echo "    echo Username: $(getPresetClusterAdminName "${rep_name}")"
-  echo "    echo Password: \$(kubectl -n ${rep_name} get secrets $(helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.existingSecret.name') -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
+  echo "    echo Password: \$(kubectl -n ${rep_name} get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
   return $?
 }
 
