@@ -46,13 +46,14 @@ function __executor() {
   if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}" 2>/dev/null; then
     echo "already exist the secrets (${__SPECIFIC_SECRETS}.${__namespace_for_keycloak}) ...ok"
   else
+    local batabase_password
+    batabase_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
     kubectl -n "${__namespace_for_keycloak}" create secret generic "${__SPECIFIC_SECRETS}" \
-      --from-literal=admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=management-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=postgresql-postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=postgresql-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=tls-keystore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=tls-truestore-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=adminPassword="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=managementPassword="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=password="${batabase_password}" \
+      --from-literal=databasePassword="${batabase_password}" \
       --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
         ### NOTE
@@ -70,14 +71,14 @@ function __executor() {
   __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_keycloak}" confs helm)
   helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
-    --version 9.2.2 \
+    --version 9.6.0 \
     --create-namespace \
     --wait \
     --timeout 600s \
     --set ingress.hostname="${__fqdn_for_keycloak_main}" \
     --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
     --set ingress.annotations."cert-manager\.io/cluster-issuer"="${__cluster_issuer}" \
-    --set ingress.extraTls\[0\].secretName="${__hostname_for_keycloak_main}" \
+    --set ingress.extraTls\[0\].secretName="${__fqdn_for_keycloak_main}" \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
     --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}" \
     -f "${__conf_of_helm}"
@@ -96,7 +97,7 @@ function __executor() {
       ### Tentative solution to the problem
       ### that TLSContext is not generated automatically from Ingress (v2.2.2)
   waitForSuccessOfCommand \
-    "kubectl -n ${__namespace_for_keycloak} get secrets ${__hostname_for_keycloak_main}"
+    "kubectl -n ${__namespace_for_keycloak} get secrets ${__fqdn_for_keycloak_main}"
       ### NOTE
       ### Wait until SubCA is issued
   echo ""

@@ -20,15 +20,14 @@ auth:
   ## @param auth.adminUser Keycloak administrator user
   ##
   adminUser: super-admin
-  ## @param auth.existingSecret An already existing secret containing auth info
-  existingSecret:
-    name: specific-secrets
-    keyMapping:
-      admin-password: admin-password
-      management-password: management-password
-      database-password: postgresql-password
-      tls-keystore-password: tls-keystore-password
-      tls-truestore-password: tls-truestore-password
+  ## @param auth.existingSecretPerPassword Override `existingSecret` and other secret values
+  existingSecretPerPassword:
+    adminPassword:
+      name: specific-secrets
+    managementPassword:
+      name: specific-secrets
+    databasePassword:
+      name: specific-secrets
 
 ## @param proxyAddressForwarding Enable Proxy Address Forwarding
 ## ref: https://www.keycloak.org/docs/latest/server_installation/#_setting-up-a-load-balancer-or-proxy
@@ -86,6 +85,7 @@ ingress:
 ## ref: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml
 ##
 postgresql:
-  ## @param postgresql.existingSecret Use an existing secret file with the PostgreSQL password
+  ## @param postgresql.auth.existingSecret Name of existing secret to use for PostgreSQL credentials
   ##
-  existingSecret: keycloak-specific-secrets
+  auth:
+    existingSecret: specific-secrets

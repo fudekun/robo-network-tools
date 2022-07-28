@@ -322,7 +322,7 @@ Use the `rdbox create` command to deploy the above resources.
   ### For all realms
   https://*******/admin
     echo Username: $(helm -n keycloak get values keycloak -o json | jq -r '.auth.adminUser')
-    echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.admin-password}' | base64 --decode)
+    echo Password: $(kubectl -n keycloak get secrets specific-secrets -o jsonpath='{.data.adminPassword}' | base64 --decode)
   ### For this k8s cluster only (ClusterName: rdbox)
   https://*******/realms/rdbox/protocol/openid-connect/auth?client_id=security-admin-console
     echo Username: cluster-admin

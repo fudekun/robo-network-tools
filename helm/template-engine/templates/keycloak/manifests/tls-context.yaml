@@ -17,7 +17,7 @@ metadata:
 spec:
   hosts:
   - {{ .Values.keycloak.dynamics.main.fqdn}}
-  secret: {{ .Values.keycloak.dynamics.main.hostname }}
+  secret: {{ .Values.keycloak.dynamics.main.fqdn }}
 {{- end }}
 {{- end }}
 {{- end }}

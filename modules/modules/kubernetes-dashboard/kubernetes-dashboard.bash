@@ -178,7 +178,7 @@ function __executor() {
   local user
   local pass
   user=$(helm -n "$(getNamespaceName keycloak)" get values "$(getNamespaceName keycloak)" -o json | jq -r '.auth.adminUser')
-  pass=$(kubectl -n "$(getNamespaceName keycloak)" get secrets "$(helm -n "$(getNamespaceName keycloak)" get values "$(getNamespaceName keycloak)" -o json | jq -r '.auth.existingSecret.name')" -o jsonpath='{.data.admin-password}' | base64 --decode)
+  pass=$(kubectl -n "$(getNamespaceName keycloak)" get secrets specific-secrets -o jsonpath='{.data.adminPassword}' | base64 --decode)
   local realm
   local token
   local entry_target
