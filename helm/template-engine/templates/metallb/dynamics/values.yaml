@@ -1,0 +1,15 @@
+##
+{{- if .Values.metallb }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+metallb:
+  dynamics:
+    common: {}
+    main:
+      hostname: {{ .Values.metallb.dynamics.main.hostname }}
+    {{- if .Values.metallb.dynamics.IPAddressPool }}
+    IPAddressPool:
+      create: {{ .Values.metallb.dynamics.IPAddressPool.create | default true }}
+      addresses: {{ .Values.metallb.dynamics.IPAddressPool.addresses }}
+    {{- end }}
+{{- end }}
+{{- end }}

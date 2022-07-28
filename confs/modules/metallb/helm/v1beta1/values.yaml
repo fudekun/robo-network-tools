@@ -4,8 +4,5 @@
 
 # Refer to https://metallb.universe.tf/configuration/ for
 # available options.
-configInline:
-  address-pools:
-  - name: default
-    protocol: layer2
-    addresses: []
+crds:
+  enabled: true

@@ -46,12 +46,18 @@ function __executor() {
     ### Get ConfigValue MetalLB with L2 Mode
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_metallb}" confs helm)
   helm -n "${__namespace_for_metallb}" upgrade --install "${__hostname_for_metallb_main}" metallb/metallb \
-      --version 0.12.1 \
+      --version 0.13.4 \
       --create-namespace \
       --wait \
       --timeout 600s \
-      --set configInline.address-pools\[0\].addresses\[0\]="${__docker_network_range}" \
       -f "${__conf_of_helm}"
+  applyManifestByDI "${__namespace_for_metallb}" \
+                    "${__hostname_for_metallb_main}" \
+                    "${__RELEASE_ID}" \
+                    180s \
+                    metallb.dynamics.main.hostname="${__hostname_for_metallb_main}" \
+                    metallb.dynamics.IPAddressPool.create=true \
+                    metallb.dynamics.IPAddressPool.addresses="${__docker_network_range}"
   return $?
 }
 

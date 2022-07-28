@@ -69,7 +69,7 @@ function __executor() {
   __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_certmanager}" confs helm)
   readonly __conf_of_helm
   helm -n "${__namespace_for_certmanager}" upgrade --install "${__hostname_for_certmanager_main}" jetstack/cert-manager \
-      --version 1.8.0 \
+      --version 1.9.1 \
       --create-namespace \
       --wait \
       --timeout 600s \
