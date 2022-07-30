@@ -55,24 +55,13 @@ function showVerifierCommand() {
 function __executor() {
   ## 1. Create a namespace
   ##
-  local response
   echo ""
   echo "### Create a namespace of kubernetes-dashboard ..."
-  if response=$(kubectl create namespace "${NAMESPACE}" 2>&1); then
-    kubectl -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
-      --from-literal=client-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
-  else
-    if [[ "${response}" =~ "already exists" ]]; then
-      echo "already exist the namespace (${NAMESPACE}) ...ok"
-    else
-      echo "${response}"
-      return 1
-    fi
-  fi
+  kubectl_r create namespace "${NAMESPACE}"
   ## 2. Create a dummy endpoint of kube-apiserver for the kubernetes-dashboard
   ##
   echo ""
-  echo "### Create a specific kubeapi of kubernetes-dashboard ..."
+  echo "### Create a specific kubeapi for kubernetes-dashboard ..."
   create_specific_kubeapi
   ## 3. Install kubernetes-dashboard
   ##
@@ -168,8 +157,9 @@ function create_main() {
   ###
   echo ""
   echo "### Create a service account with RBAC(kubernetes.dashboard) ..."
-  kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/05_dashboard-rbac.yaml
-  kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/01_dashboard-serviceaccount.yaml
+  kubectl_r apply \
+    -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/05_dashboard-rbac.yaml \
+    -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/01_dashboard-serviceaccount.yaml
   ### .2 Setup .kube/config
   ###
   local __name_cm_kubeconfig="kubeconfig"
@@ -190,7 +180,7 @@ function create_main() {
     "${BASE_FQDN}" > "${TEMP_DIR}/${__kubeconfig_file_name}"
   ### .3 Create a ConfigMap from the file of .kube/config
   ###
-  kubectl -n "${NAMESPACE}" create cm "${__name_cm_kubeconfig}" \
+  kubectl_r -n "${NAMESPACE}" create cm "${__name_cm_kubeconfig}" \
     --from-file "${TEMP_DIR}/${__kubeconfig_file_name}"
   ## 3. Install kubernetes-dashboard
   ##
@@ -221,12 +211,18 @@ function create_main() {
                     kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
                     kubernetesDashboard.dynamics.ingress.create="true" \
                     kubernetesDashboard.dynamics.ingress.port="${__service_port}"
-  ## 5. Create a Entry
+  ## 5. Create a Secret
+  ##
+  echo ""
+  echo "### Activating Secret ..."
+  kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
+    --from-literal=client-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+  ## 6. Create a Entry
   ##
   echo ""
   echo "### Activating Entry ..."
   __create_entry
-  ## 6. Create a Filter
+  ## 7. Create a Filter
   ##
   echo ""
   echo "### Activating Filter ..."

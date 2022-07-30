@@ -1030,3 +1030,47 @@ function parse_jq_temlate() {
   jq -n -c -r -f "$src_filepath" "${args[@]}"
   return $?
 }
+
+#######################################
+# kubectl compatible commands
+#   - First, the command specified by the argument is manifested.
+#      - The manifest is stored in outputs/modules/${MODULE}/manifests/.
+#      - The symbolic link "values.latest.yaml" is also updated.
+#   - Then, the manifest created above is applied to the cluster with the Apply subcommand.
+# Globals:
+#   NAMESPACE              namespace for kubernetes-dashboard
+#   ESSENTIALS_RELEASE_ID
+# Arguments:
+#   command                Typical kubectl command ((kubectl_r) create namespace jpg)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function kubectl_r() {
+  local cmd
+  cmd=$(printf %q "$*" | sed "s/\\\ / /g")
+  local version_of_engine
+  local dirpath_of_output
+  version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
+  dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${NAMESPACE}" outputs "manifests" "${version_of_engine}")")
+  fullpath_of_output_values_yaml=${dirpath_of_output}/values.${ESSENTIALS_RELEASE_ID}.$(getEpochMillisec).yaml
+  fullpath_of_output_values_latest_yaml="${dirpath_of_output}"/values.latest.yaml
+  mkdir -p "$(dirname "${fullpath_of_output_values_yaml}")"
+  if [[ "${cmd}" =~ (^| )create($| ) ]]; then
+    # shellcheck disable=SC2086
+    kubectl ${cmd} --save-config --dry-run=client -o yaml > "${fullpath_of_output_values_yaml}"
+  else
+    # shellcheck disable=SC2086
+    kubectl ${cmd} --dry-run=client -o yaml > "${fullpath_of_output_values_yaml}"
+  fi
+  if output=$(kubectl apply --timeout 180s --wait -f "${fullpath_of_output_values_yaml}" 2>&1); then
+    if [[ -L "${fullpath_of_output_values_latest_yaml}" ]]; then
+      unlink "${fullpath_of_output_values_latest_yaml}" > /dev/null 2>&1
+    fi
+    ln -s "${fullpath_of_output_values_yaml}" "${fullpath_of_output_values_latest_yaml}" > /dev/null 2>&1
+    echo "${output}"
+    return 0
+  else
+    echo "${output}"
+    return 1
+  fi
+}
