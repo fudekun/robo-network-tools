@@ -1038,7 +1038,7 @@ function parse_jq_temlate() {
 #      - The symbolic link "values.latest.yaml" is also updated.
 #   - Then, the manifest created above is applied to the cluster with the Apply subcommand.
 # Globals:
-#   NAMESPACE              namespace for kubernetes-dashboard
+#   NAMESPACE
 #   ESSENTIALS_RELEASE_ID
 # Arguments:
 #   command                Typical kubectl command ((kubectl_r) create namespace jpg)
