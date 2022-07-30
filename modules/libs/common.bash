@@ -17,7 +17,6 @@ __RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
 __RDBOX_NUM_INDENT=4
 __RDBOX_HELPFUL_APPS_OF_GOST_VERSION="2.11.2"
 __RDBOX_HELPFUL_APPS_OF_GOST_PORT=59999
-__RDBOX_ESSENTIALS_KUBECTL_CONTEXT_NAME_PREFIX="sso"
 ## VALUE for internal using
 ##
 __RDBOX_RAW_INDENT=$(for _ in $(eval "echo {1..$__RDBOX_NUM_INDENT}"); do echo -ne " "; done)
@@ -640,60 +639,73 @@ function getNetworkInfo() {
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
 function getKubectlContextName4SSO() {
-  local prefix=${1:-${__RDBOX_ESSENTIALS_KUBECTL_CONTEXT_NAME_PREFIX}}
+  local prefix=${1:-"sso"}
   local context_name
   context_name=${prefix}-$(getClusterName)
   echo -n "$context_name"
 }
 
-function __getClusterinfoFromConfigmap() {
+#######################################
+# Get the values from cluster-info.cluster-common
+# - Frequently used items are functioned
+# Arguments:
+#   a search condition by a jq format (e.g. ".data[\"nic0.ipv4\"]")
+# Outputs:
+#   The value of cluster (e.g. sso-k8s-cluster)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getClusterinfoFromConfigmap() {
   local __item=$1
   kubectl -n ${__RDBOX_CLUSTER_INFO_NAMESPACE} get configmaps ${__RDBOX_CLUSTER_INFO_NAMENAME} -o json| jq -r "${__item}"
 }
-
 function getWorkdirOfScripts() {
-  __getClusterinfoFromConfigmap ".data[\"workdir.scripts\"]"
+  getClusterinfoFromConfigmap ".data[\"workdir.scripts\"]"
 }
-
 function getClusterName() {
-  __getClusterinfoFromConfigmap ".data.name"
+  getClusterinfoFromConfigmap ".data.name"
 }
-
 function getBaseFQDN() {
-  __getClusterinfoFromConfigmap ".data[\"nic0.base_fqdn\"]"
+  getClusterinfoFromConfigmap ".data[\"nic0.base_fqdn\"]"
 }
-
 function getIPv4 () {
-  __getClusterinfoFromConfigmap ".data[\"nic0.ipv4\"]"
+  getClusterinfoFromConfigmap ".data[\"nic0.ipv4\"]"
 }
-
 function getNamespaceName() {
   local __namespace=$1
-  __getClusterinfoFromConfigmap ".data[\"namespace.${__namespace}\"]"
+  getClusterinfoFromConfigmap ".data[\"namespace.${__namespace}\"]"
 }
-
 function getReleaseName() {
   local __namespace=$1
-  __getClusterinfoFromConfigmap ".data[\"${__namespace}.release\"]"
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.release\"]"
 }
-
 function getHostName() {
   local __namespace=$1
   local __host=$2
-  __getClusterinfoFromConfigmap ".data[\"${__namespace}.hostname.${__host}\"]"
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.hostname.${__host}\"]"
 }
-
 function getDirNameFor() {
   local __purpose=$1
-  __getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
+  getClusterinfoFromConfigmap ".data[\"workdir.${__purpose}\"]"
 }
-
 function getConfVersion() {
   local __namespace=$1
   local __type=$2
-  __getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.conf.${__type}.version\"]"
 }
 
+#######################################
+# Get the full path of the directory for the specified terms in WORK_DIR.
+# Arguments:
+#   namespace
+#   purpose            (e.g. confs, logs outputs, tmps ....)
+#   type               (e.g. di,helms,  dynamics,manifests....)
+#   (optional)version  (e.g. v1beta1)
+# Outputs:
+#   the full path of the directory (e.g. /crobotics/rdbox/outputs/modules/metallb/manifests/v1beta1/subs)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getFullpathOfOnesBy() {
   local __namespace
   local __purpose
@@ -706,14 +718,36 @@ function getFullpathOfOnesBy() {
   __version=${4:-$(getConfVersion "${__namespace}" "${__type}")}
   __workdir_of_purpose=$(getDirNameFor "${__purpose}")
   echo -n "${__workdir_of_purpose}/modules/${__namespace}/${__type}/${__version}"
+  return $?
 }
 
+#######################################
+# Get the full path of the directory for the specified terms in WORK_DIR.
+#    - WITH the filename of **values.yaml***
+# Arguments:
+#   namespace
+#   purpose            (e.g. confs, logs outputs, tmps ....)
+#   type               (e.g. di,helms,  dynamics,manifests....)
+#   (optional)version  (e.g. v1beta1)
+# Outputs:
+#   the full path of the file (e.g. /crobotics/rdbox/outputs/modules/metallb/manifests/v1beta1/values.yaml)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getFullpathOfValuesYamlBy() {
   local dirpath
   dirpath=$(getFullpathOfOnesBy "${@}")
   echo -n "${dirpath}/values.yaml"
+  return $?
 }
 
+#######################################
+# Get the full path of the RootCA
+# Outputs:
+#   the full path of the file (e.g. /crobotics/rdbox/outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getFullpathOfRootCA() {
   local __dir
   local __base_fqdn
@@ -722,8 +756,17 @@ function getFullpathOfRootCA() {
   mkdir -p "$__dir"
   chmod 0700 "$__dir"
   echo -ne "${__dir}"/"${__base_fqdn}".ca.crt
+  return $?
 }
 
+#######################################
+# Get the full path of a history file for the cert-manager
+#    - **Only cert-manager**
+# Outputs:
+#   the full path of the file (e.g. /crobotics/rdbox/outputs/.history.rdbox.172-16-0-110.nip.io/selfsigned-ca.rdbox.172-16-0-110.nip.io.ca.yaml)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getFullpathOfHistory() {
   local __dir
   local __base_fqdn
@@ -732,8 +775,17 @@ function getFullpathOfHistory() {
   mkdir -p "$__dir"
   chmod 0700 "$__dir"
   echo -ne "${__dir}"/selfsigned-ca."${__base_fqdn}".ca.yaml
+  return $?
 }
 
+#######################################
+# Get the full path of a VerifyMsgs text file
+#    - This file contains the information to be communicated to the user.
+# Outputs:
+#   the full path of the file (e.g. /crobotics/rdbox/outputs/verify_msgs/keycloak.verifier_command.txt)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
 function getFullpathOfVerifyMsgs() {
   local __namespace
   local __dir
@@ -741,22 +793,53 @@ function getFullpathOfVerifyMsgs() {
   __dir=$(getDirNameFor outputs)/verify_msgs
   mkdir -p "${__dir}"
   echo -n "${__dir}"/"${__namespace}".verifier_command.txt
+  return $?
 }
 
-function getPresetSuperAdminName() {
+#######################################
+# Get the keycloak super admin user name
+#    - This user manages all realms of the keycloak.
+#    - Only Keycloak (not manage k8s cluster)
+# Outputs:
+#   super-admin
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getPresetKeycloakSuperAdminName() {
   local rep_name
   rep_name=$1
   helm -n "${rep_name}" get values "${rep_name}" -o json | jq -r '.auth.adminUser'
+  return $?
 }
 
-function getPresetClusterAdminName() {
-  getPresetGroupName
-}
-
-function getPresetGroupName() {
+#######################################
+# Get the cluster-admin user name
+#    - This user manages a specific K8s cluster.
+# Outputs:
+#   cluster-admin
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getPresetClusterAdminUserName() {
   # !! Must be a hyphen-delimited string !!
   # e.g. *cluster-admim*
   echo -n "cluster-admin"
+  return $?
+}
+
+#######################################
+# Get the cluster-admin group name
+#    - This user manages a specific K8s cluster.
+# Outputs:
+#   cluster-admin
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getPresetClusterAdminGroupName() {
+  # !! Must be a hyphen-delimited string !!
+  # e.g. *cluster-admim*
+  echo -n "cluster-admin"
+  return $?
 }
 
 #######################################

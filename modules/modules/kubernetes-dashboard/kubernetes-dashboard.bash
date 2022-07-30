@@ -13,7 +13,7 @@ set -euo pipefail
 function showHeaderCommand() {
   echo ""
   echo "---"
-  echo "## Installing kubernetes-dashboard ..."
+  echo "## Installing ${MODULE_NAME} ..."
   return $?
 }
 
@@ -23,24 +23,31 @@ function checkArgs() {
 
 function main() {
   #######################################################
-  local HELM_NAME
-  HELM_NAME="k8s-dashboard/kubernetes-dashboard"
-  local HELM_VERSION
-  HELM_VERSION="5.7.0"
-  local SPECIFIC_SECRETS
-  SPECIFIC_SECRETS="specific-secrets"
+  local MODULE_NAME
+  MODULE_NAME="kubernetes-dashboard"
   local NAMESPACE
-  NAMESPACE="$(getNamespaceName "kubernetes-dashboard")"
+  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
   local RELEASE
-  RELEASE="$(getReleaseName "kubernetes-dashboard")"
+  RELEASE="$(getReleaseName "${MODULE_NAME}")"
   local BASE_FQDN
   BASE_FQDN=$(getBaseFQDN)
+  local HELM_NAME
+  HELM_NAME="k8s-dashboard/kubernetes-dashboard"
+  local HELM_VERSION_SPECIFIED
+  HELM_VERSION_SPECIFIED="5.7.0"
+  local HELM_VERSION
+  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/${HELM_NAME} | jq -r ".version")}
+    ### NOTE
+    ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
+  #---------------------------
+  local SPECIFIC_SECRETS
+  SPECIFIC_SECRETS="specific-secrets"
   #######################################################
   showHeaderCommand "$@"
   checkArgs "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "kubernetes-dashboard")"
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
   return $?
 }
 
@@ -88,7 +95,7 @@ function create_specific_kubeapi() {
   local __clientTlsContext
   local __clientNamespace
   local __ca_full_path
-  __hostname_for_k8s_dashboard=$(getHostName "kubernetes-dashboard" "main")
+  __hostname_for_k8s_dashboard=$(getHostName "${MODULE_NAME}" "main")
   echo ""
   echo "### Issueing cert for kubernetes-dashboard ..."
   applyManifestByDI "${NAMESPACE}" \
@@ -105,7 +112,7 @@ function create_specific_kubeapi() {
     ### Wait until cert is issued
   echo ""
   echo "### Activating k8s SSO Endpoint ..."
-  __hostname_for_k8ssso=$(getHostName "kubernetes-dashboard" "k8ssso")
+  __hostname_for_k8ssso=$(getHostName "${MODULE_NAME}" "k8ssso")
   __filterName=$(getHostName "ambassador" "k8ssso")
   __filterNamespace="$(getNamespaceName "ambassador")"
   __clientTlsContext=$(getHostName "ambassador" "k8ssso")
@@ -171,9 +178,9 @@ function create_main() {
   fi
   local __hostname_for_k8ssso
   local __hostname_for_k8s_dashboard
-  __hostname_for_k8s_dashboard=$(getHostName "kubernetes-dashboard" "main")
-  __hostname_for_k8ssso=$(getHostName "kubernetes-dashboard" "k8ssso")
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/kubernetes-dashboard/subs/values.kubeconfig.bash" \
+  __hostname_for_k8s_dashboard=$(getHostName "${MODULE_NAME}" "main")
+  __hostname_for_k8ssso=$(getHostName "${MODULE_NAME}" "k8ssso")
+  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${MODULE_NAME}/subs/values.kubeconfig.bash" \
     "${NAMESPACE}" \
     "${__hostname_for_k8s_dashboard}" \
     "${__hostname_for_k8ssso}" \
@@ -247,7 +254,7 @@ function __create_entry() {
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.client-secret}' | base64 -d)
   local redirectUris
-  redirectUris="https://$(getHostName "kubernetes-dashboard" "main").${BASE_FQDN}/.ambassador/oauth2/redirection-endpoint"
+  redirectUris="https://$(getHostName "${MODULE_NAME}" "main").${BASE_FQDN}/.ambassador/oauth2/redirection-endpoint"
   local src_filepath
   src_filepath=$(getFullpathOfOnesBy "${NAMESPACE}" confs entry)/client.jq.json
   local entry_json
@@ -256,13 +263,13 @@ function __create_entry() {
                 redirectUris="${redirectUris}" \
                 secret="${secret}")
   local namespace_for_keycloak
-  local hostname_for_keycloak
   namespace_for_keycloak="$(getNamespaceName "keycloak")"
-  hostname_for_keycloak=$(getHostName "keycloak" "main")
   local user
   local pass
-  user=$(helm -n "${namespace_for_keycloak}" get values "${hostname_for_keycloak}" -o json | jq -r '.auth.adminUser')
-  pass=$(kubectl -n "${namespace_for_keycloak}" get secrets "${SPECIFIC_SECRETS}" -o jsonpath='{.data.adminPassword}' | base64 --decode)
+  user=$(getPresetKeycloakSuperAdminName "${namespace_for_keycloak}")
+  pass=$(kubectl -n "${namespace_for_keycloak}" get secrets "${SPECIFIC_SECRETS}" \
+        -o jsonpath='{.data.adminPassword}' \
+        | base64 --decode)
   ## 2. Start a session
   ##
   local token
@@ -307,7 +314,7 @@ function __create_filter() {
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
                   -o jsonpath='{.data.client-secret}' | base64 -d)
   local hostname_for_k8s_dashboard
-  hostname_for_k8s_dashboard="$(getHostName "kubernetes-dashboard" "main")"
+  hostname_for_k8s_dashboard="$(getHostName "${MODULE_NAME}" "main")"
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
                     "${ESSENTIALS_RELEASE_ID}" \

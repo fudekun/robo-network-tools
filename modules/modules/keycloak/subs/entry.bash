@@ -14,7 +14,7 @@ function __getAccessToken() {
   local username
   local password
   local token_endpoint
-  username=$(getPresetSuperAdminName "${rep_name}")
+  username=$(getPresetKeycloakSuperAdminName "${rep_name}")
   password=$(__getSuperAdminSecret "${rep_name}")
   token_endpoint=$(curl -fs --cacert "${ROOTCA_FILE}" "$BASE_URL"/realms/master/.well-known/openid-configuration | jq -r '.mtls_endpoint_aliases.token_endpoint')
   ## Execute Admin REST API
@@ -59,8 +59,8 @@ function __createEntry() {
   local http_code
   password=$(__getClusterAdminSecret "${rep_name}")
   client_secret=$(__getClusterK8sSSOSecret "${rep_name}")
-  preset_group_name=$(getPresetGroupName)
-  preset_cadmi_name=$(getPresetClusterAdminName)
+  preset_group_name=$(getPresetClusterAdminGroupName)
+  preset_cadmi_name=$(getPresetClusterAdminUserName)
   ## For Userinfo
   IFS="-" read -r -a fullname_array <<< "$preset_cadmi_name"
   first_name=${fullname_array[1]}
@@ -189,7 +189,7 @@ function showVerifierCommand() {
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets specific-secrets -o jsonpath='{.data.adminPassword}' | base64 --decode)"
   echo "  ### For this k8s cluster only (ClusterName: $(getClusterName))"
   echo "  ${base_url}/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
-  echo "    echo Username: $(getPresetClusterAdminName "${rep_name}")"
+  echo "    echo Username: $(getPresetClusterAdminUserName "${rep_name}")"
   echo "    echo Password: \$(kubectl -n ${rep_name} get secrets specific-secrets -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
   return $?
 }
