@@ -34,8 +34,8 @@ checkArgs() {
   fi
   local __epoch_ms
   __epoch_ms=$(getEpochMillisec)
-  readonly __RELEASE_ID=${__epoch_ms}
-  export __RELEASE_ID
+  readonly ESSENTIALS_RELEASE_ID=${__epoch_ms}
+  export ESSENTIALS_RELEASE_ID
   return $?
 }
 
@@ -113,7 +113,7 @@ initializeEssentials() {
     helm repo add metallb https://metallb.github.io/metallb
     helm repo add jetstack https://charts.jetstack.io
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+    helm repo add k8s-dashboard https://kubernetes.github.io/dashboard/
     ## 2. Update Helm
     ##
     echo ""

@@ -88,7 +88,7 @@ function __executor() {
   echo "### Activating the TLSContext ..."
   applyManifestByDI "${__namespace_for_keycloak}" \
                     "${__hostname_for_keycloak_main}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
                     keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
@@ -121,7 +121,7 @@ function __executor() {
   echo "### Setup the sample RBAC ..."
   applyManifestByDI "${__namespace_for_keycloak}" \
                     "${__hostname_for_keycloak_main}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
                     keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \

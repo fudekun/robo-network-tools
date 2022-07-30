@@ -122,7 +122,7 @@ function __issueNewSecrets() {
   readonly __base_fqdn="${4}"
   applyManifestByDI "${__namespace_for_certmanager}" \
                     "${__hostname_for_certmanager_main}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     90s \
                     certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                     certManager.dynamics.common.isSelfsigned=true \
@@ -159,7 +159,7 @@ function __issueSecretsUsingExistingHistory() {
   kubectl -n "${__namespace_for_certmanager}" apply --timeout 90s --wait -f "${__history_file}"
   applyManifestByDI "${__namespace_for_certmanager}" \
                     "${__hostname_for_certmanager_main}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     90s \
                     certManager.dynamics.common.baseFqdn="${__base_fqdn}" \
                     certManager.dynamics.common.isCa=true

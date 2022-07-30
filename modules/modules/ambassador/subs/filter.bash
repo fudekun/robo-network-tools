@@ -72,7 +72,7 @@ function __executor() {
   echo "### Applying the filter for Impersonate-Group/User ..."
   applyManifestByDI "${__namespace_for_ambassador}" \
                     "${__hostname_for_ambassador_k8ssso}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
                     ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \

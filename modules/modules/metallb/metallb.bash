@@ -53,7 +53,7 @@ function __executor() {
       -f "${__conf_of_helm}"
   applyManifestByDI "${__namespace_for_metallb}" \
                     "${__hostname_for_metallb_main}" \
-                    "${__RELEASE_ID}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     metallb.dynamics.main.hostname="${__hostname_for_metallb_main}" \
                     metallb.dynamics.IPAddressPool.create=true \

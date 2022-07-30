@@ -294,7 +294,7 @@ function applyManifestByDI() {
   __fullpath_of_generated_dynamics=$(__generateDynamicsConfigForDI "${__namespace}" "${__hostname}" "${__release_id}" "${__args_of_raw_set}")
   __fullpath_of_generated_manifests=$(__generateManifestForDI "${__namespace}" "${__hostname}" "${__release_id}" "${__fullpath_of_generated_dynamics}")
   if kubectl apply --dry-run=client -f "${__fullpath_of_generated_manifests}" ; then
-    echo ""
+    echo "---"
     echo "- Successful --dry-run. Apply this manifest."
     echo "   - ${__fullpath_of_generated_manifests}"
     kubectl apply --timeout "${__timeout}" --wait -f "${__fullpath_of_generated_manifests}"
@@ -672,6 +672,11 @@ function getNamespaceName() {
   __getClusterinfoFromConfigmap ".data[\"namespace.${__namespace}\"]"
 }
 
+function getReleaseName() {
+  local __namespace=$1
+  __getClusterinfoFromConfigmap ".data[\"${__namespace}.release\"]"
+}
+
 function getHostName() {
   local __namespace=$1
   local __host=$2
@@ -1023,5 +1028,5 @@ function parse_jq_temlate() {
     args+=("--arg" "${kv[0]}" "${kv[1]}")
   done
   jq -n -c -r -f "$src_filepath" "${args[@]}"
-  exit $?
+  return $?
 }
