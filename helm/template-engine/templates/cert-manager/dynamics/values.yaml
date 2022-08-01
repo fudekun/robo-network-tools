@@ -5,7 +5,13 @@ certManager:
   dynamics:
     common:
       baseFqdn: {{ .Values.certManager.dynamics.common.baseFqdn }}
-      isSelfsigned: {{ .Values.certManager.dynamics.common.isSelfsigned | default false }}
-      isCa: {{ .Values.certManager.dynamics.common.isCa | default false }}
+    {{- if .Values.certManager.dynamics.isSelfsigned }}
+    isSelfsigned:
+      create: {{ .Values.certManager.dynamics.isSelfsigned.create | default false }}
+    {{- end }}
+    {{- if .Values.certManager.dynamics.isCa }}
+    isCa:
+      create: {{ .Values.certManager.dynamics.isCa.create | default false }}
+    {{- end }}
 {{- end }}
 {{- end }}

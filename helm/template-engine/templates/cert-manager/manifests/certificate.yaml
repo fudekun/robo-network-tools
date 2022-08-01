@@ -1,7 +1,8 @@
 ##
 {{- if .Values.certManager }}
 {{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
-{{- if and .Values.certManager.dynamics.common.isSelfsigned (hasKey .Values.certManager.dynamics.common "isSelfsigned")}}
+{{- if .Values.certManager.dynamics.isSelfsigned }}
+{{- if and .Values.certManager.dynamics.isSelfsigned.create (hasKey .Values.certManager.dynamics.isSelfsigned "create")}}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -31,6 +32,7 @@ spec:
     name: cluster-issuer-selfsigned-{{ .Release.Name }}
     kind: ClusterIssuer
     group: cert-manager.io
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

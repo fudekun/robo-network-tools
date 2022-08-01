@@ -1,7 +1,8 @@
 ##
 {{- if .Values.certManager }}
 {{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
-{{- if and .Values.certManager.dynamics.common.isCa (hasKey .Values.certManager.dynamics.common "isCa")}}
+{{- if .Values.certManager.dynamics.isCa }}
+{{- if and .Values.certManager.dynamics.isCa.create (hasKey .Values.certManager.dynamics.isCa "create")}}
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -15,6 +16,7 @@ metadata:
 spec:
   ca:
     secretName: {{ .Values.certManager.dynamics.common.baseFqdn }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
