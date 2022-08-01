@@ -8,6 +8,9 @@
 ## FIXED VALUE
 ##
 RDBOX_APP_VERSION="v0.0.1"
+## MODULE NAME
+# shellcheck disable=SC2034
+RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
 ##
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"

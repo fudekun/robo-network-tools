@@ -4,6 +4,7 @@ set -euo pipefail
 ###############################################################################
 # Activating a kubernetes-dashboard
 # Globals:
+#   RDBOX_MODULE_NAME_K8S_DASHBOARD
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
 #   ESSENTIALS_RELEASE_ID
 #
@@ -24,7 +25,7 @@ function checkArgs() {
 function main() {
   #######################################################
   local MODULE_NAME
-  MODULE_NAME="kubernetes-dashboard"
+  MODULE_NAME="${RDBOX_MODULE_NAME_K8S_DASHBOARD}"
   local NAMESPACE
   NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
   local RELEASE
@@ -39,7 +40,7 @@ function main() {
   HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/${HELM_NAME} | jq -r ".version")}
     ### NOTE
     ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
-  #---------------------------
+  #######################################################
   local SPECIFIC_SECRETS
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
