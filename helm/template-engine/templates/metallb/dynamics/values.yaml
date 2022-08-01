@@ -3,7 +3,8 @@
 {{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
 metallb:
   dynamics:
-    common: {}
+    common:
+      baseFqdn: {{ .Values.metallb.dynamics.common.baseFqdn }}
     main:
       hostname: {{ .Values.metallb.dynamics.main.hostname }}
     {{- if .Values.metallb.dynamics.IPAddressPool }}

@@ -36,6 +36,7 @@ checkArgs() {
   __epoch_ms=$(getEpochMillisec)
   readonly ESSENTIALS_RELEASE_ID=${__epoch_ms}
   export ESSENTIALS_RELEASE_ID
+  echo "ESSENTIALS_RELEASE_ID=${ESSENTIALS_RELEASE_ID}"
   return $?
 }
 
