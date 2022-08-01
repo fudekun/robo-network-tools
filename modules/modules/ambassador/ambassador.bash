@@ -57,33 +57,52 @@ function showVerifierCommand() {
 }
 
 function __executor() {
+  ## 1. Install ambassador
+  ##
+  echo ""
+  echo "### Create a ambassador ..."
+  create_main
+  ## 2. Create a dummy endpoint of kube-apiserver for the ambassador
+  ##
+  echo ""
+  echo "### Create a specific kubeapi for kubectl ..."
+  create_specific_kubeapi
+  ## 3. Set Context
+  ##
+  echo ""
+  echo "### Setting Cluster Context ..."
+  create_context
+  return $?
+}
+
+function create_main() {
   ## 1. Define the app version
   ##
   local __app_version
   __app_version=$(curl -s "https://artifacthub.io/api/v1/packages/helm/${HELM_NAME}/${HELM_VERSION}" \
                 | jq -r ".app_version")
-  ## 2. Install Ambassador Instance
+  ## 2. Preparation
   ##
   ### .1 cert
   ###
   echo ""
   echo "### ((Because of to install Self-Signed Cert)) Pre-Build the image of ambassador ..."
   sudo docker build \
-    --build-arg IMAGE_VERSION="${__app_version}" \
-    --build-arg FILENAME_ROOT_CA="${BASE_FQDN}.ca.crt" \
-    -t docker.io/datawire/aes:"${__app_version}" \
-    -f "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${MODULE_NAME}/subs/docker/Dockerfile" \
-    "$(getDirNameFor outputs)"/ca
+      --build-arg IMAGE_VERSION="${__app_version}" \
+      --build-arg FILENAME_ROOT_CA="${BASE_FQDN}.ca.crt" \
+      -t docker.io/datawire/aes:"${__app_version}" \
+      -f "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${MODULE_NAME}/subs/docker/Dockerfile" \
+      "$(getDirNameFor outputs)"/ca
   sudo kind load docker-image docker.io/datawire/aes:"${__app_version}" \
-    --name "$(getClusterName)"
+      --name "$(getClusterName)"
   ### .2 CRDs
   ###
   echo ""
   echo "### Activating a CRD of the ambassador ..."
   kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__app_version}"/aes-crds.yaml
   kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
-  ### .3 helm
-  ###
+  ## 3. Install Ambassador Instance
+  ##
   echo ""
   echo "### Installing with helm ..."
   helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
@@ -92,12 +111,28 @@ function __executor() {
       --wait \
       --timeout 600s \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
-  ## 3. Authenticate Ambassador Edge Stack with Kubernetes API
-  ##
-  ## References
-  ## https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
-  ##
-  ##
+  return $?
+}
+
+#######################################
+# Create a specific kubeapi endpoint for kubectl
+#   -  Authenticate Ambassador Edge Stack with Kubernetes API
+# Globals:
+#   NAMESPACE
+#   MODULE_NAME
+#   BASE_FQDN
+#   TEMP_DIR
+#   ESSENTIALS_RELEASE_ID
+#   BASE_FQDN
+#   RELEASE
+# Arguments:
+#   NONE
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://www.getambassador.io/docs/edge-stack/1.14/howtos/auth-kubectl-keycloak/
+#######################################
+function create_specific_kubeapi() {
   ### .1 Delete the openapi mapping from the Ambassador namespace
   ###
   if ! kubectl -n "${NAMESPACE}" delete ambassador-devportal-api 2>/dev/null; then
@@ -199,20 +234,16 @@ function __executor() {
   if kubectl -n "${NAMESPACE}" get filters "${__hostname_for_ambassador_k8ssso}" 2>/dev/null; then
     echo "already exist the filters (${__hostname_for_ambassador_k8ssso}.${NAMESPACE}) ...ok"
     echo "skip a quick check ...ok"
+    return 0
   else
     echo "The filters(${__hostname_for_ambassador_k8ssso}.${NAMESPACE}) is Not Found ...ok"
     waitForSuccessOfCommand \
       "curl -fs --cacert ${__aes_cert_file} https://${__hostname_for_ambassador_k8ssso}.${BASE_FQDN}/api | jq"
+    return $?
   fi
     ### NOTE
     ### Wait until to startup the Host
-
-  ## 4. Set Context
-  ##
-  echo ""
-  echo "### Setting Cluster Context ..."
-  create_context
-  return $?
+  return 0
 }
 
 #######################################
