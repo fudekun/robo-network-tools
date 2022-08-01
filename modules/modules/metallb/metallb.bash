@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ###############################################################################
-# Activating a kubernetes-dashboard
+# Activating a metallb
 # Globals:
 #   RDBOX_MODULE_NAME_METALLB
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
