@@ -9,11 +9,13 @@
 ##
 RDBOX_APP_VERSION="v0.0.1"
 ## MODULE NAME ###############################################
-# shellcheck disable=SC2034
+  # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_CERT_MANAGER="cert-manager"
-# shellcheck disable=SC2034
+  # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_METALLB="metallb"
-# shellcheck disable=SC2034
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_AMBASSADOR="ambassador"
+  # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
 ## OTHER #####################################################
 __RDBOX_OPTS_RDBOX_MAIN="n:"

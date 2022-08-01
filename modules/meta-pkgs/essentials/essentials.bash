@@ -51,6 +51,7 @@ main() {
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
+  echo "ESSENTIALS_RELEASE_ID=${ESSENTIALS_RELEASE_ID}"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "cert-manager")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "ambassador")")"
@@ -110,7 +111,7 @@ initializeEssentials() {
     ## - datawire => edge-stack
     ## - jetstack => cert-manager
     ##
-    helm repo add edge-stack https://s3.amazonaws.com/datawire-static-files/charts
+    helm repo add datawire https://getambassador.io/
     helm repo add metallb https://metallb.github.io/metallb
     helm repo add jetstack https://charts.jetstack.io
     helm repo add bitnami https://charts.bitnami.com/bitnami

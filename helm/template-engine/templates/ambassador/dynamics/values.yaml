@@ -1,10 +1,13 @@
 ##
-{{if .Values.ambassador }}
+{{- if .Values.ambassador }}
 {{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
 ambassador:
   dynamics:
     common:
       baseFqdn: {{ .Values.ambassador.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.ambassador.dynamics.main.hostname }}
+      fqdn: "{{ .Values.ambassador.dynamics.main.hostname }}.{{ .Values.ambassador.dynamics.common.baseFqdn }}"
     k8ssso:
       hostname: {{ .Values.ambassador.dynamics.k8ssso.hostname }}
       fqdn: "{{ .Values.ambassador.dynamics.k8ssso.hostname }}.{{ .Values.ambassador.dynamics.common.baseFqdn }}"
@@ -25,5 +28,5 @@ ambassador:
       filter:
         jwksUri: {{ .Values.ambassador.dynamics.k8ssso.filter.jwksUri }}
       {{- end }}
-{{ end }}
-{{ end }}
+{{- end }}
+{{- end }}

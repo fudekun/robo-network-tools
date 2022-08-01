@@ -60,11 +60,14 @@ function __executor() {
     # rdbox
   local __namespace_for_ambassador
     # ambassador
+  local __hostname_for_ambassador_main
+    # ambassador
   local __hostname_for_ambassador_k8ssso
     # ambassador-k8ssso
   local __jwks_uri=https://${__hostname_for_keycloak_main}.${__base_fqdn}/realms/${__cluster_name}/protocol/openid-connect/certs
     # https://keycloak.rdbox.172-16-0-110.nip.io/realms/rdbox/protocol/openid-connect/certs
   __namespace_for_ambassador=$(getNamespaceName "ambassador")
+  __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
   __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
   ## 1. Install Filter
   ##
@@ -75,6 +78,7 @@ function __executor() {
                     "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     ambassador.dynamics.common.baseFqdn="${__base_fqdn}" \
+                    ambassador.dynamics.main.hostname="${__hostname_for_ambassador_main}" \
                     ambassador.dynamics.k8ssso.hostname="${__hostname_for_ambassador_k8ssso}" \
                     ambassador.dynamics.k8ssso.filter.jwksUri="${__jwks_uri}"
   ## 2. Set Context
