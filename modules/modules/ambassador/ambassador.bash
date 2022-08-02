@@ -99,7 +99,7 @@ function create_main() {
   ###
   echo ""
   echo "### Activating a CRD of the ambassador ..."
-  kubectl apply -f https://app.getambassador.io/yaml/edge-stack/"${__app_version}"/aes-crds.yaml
+  kubectl_r apply -f https://app.getambassador.io/yaml/edge-stack/"${__app_version}"/aes-crds.yaml
   kubectl wait --timeout=180s --for=condition=available deployment emissary-apiext -n emissary-system
   ## 3. Install Ambassador Instance
   ##
@@ -213,7 +213,7 @@ function create_specific_kubeapi() {
   if ! kubectl -n "${NAMESPACE}" delete secret "${__hostname_for_ambassador_k8ssso}" 2>/dev/null; then
     echo "The secret(${__hostname_for_ambassador_k8ssso}.${NAMESPACE}) is Not Found ...ok"
   fi
-  kubectl -n "${NAMESPACE}" create secret tls "${__hostname_for_ambassador_k8ssso}" \
+  kubectl_r -n "${NAMESPACE}" create secret tls "${__hostname_for_ambassador_k8ssso}" \
       --cert "${__server_cert_file}" \
       --key "${__private_key_file}"
   ### .9 Create a Mapping and TLSContext and RBAC for the Kube API.
