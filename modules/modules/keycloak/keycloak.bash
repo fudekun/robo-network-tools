@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+###############################################################################
+# Activating a keycloak
+# Globals:
+#   RDBOX_MODULE_NAME_KEYCLOAK
+#   RDBOX_WORKDIR_OF_SCRIPTS_BASE
+#   ESSENTIALS_RELEASE_ID
+#
+# Style: https://google.github.io/styleguide/shellguide.html
+###############################################################################
+
 function showHeaderCommand() {
   echo ""
   echo "---"
-  echo "## Installing keycloak ..."
+  echo "## Installing ${MODULE_NAME} ..."
   return $?
 }
 
@@ -13,47 +23,63 @@ function checkArgs() {
 }
 
 function main() {
+  #######################################################
+  local MODULE_NAME
+  MODULE_NAME="${RDBOX_MODULE_NAME_KEYCLOAK}"
+  local NAMESPACE
+  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
+  local RELEASE
+  RELEASE="$(getReleaseName "${MODULE_NAME}")"
+  local BASE_FQDN
+  BASE_FQDN=$(getBaseFQDN)
+  local HELM_NAME
+  HELM_NAME="bitnami/keycloak"
+  local HELM_VERSION_SPECIFIED
+  HELM_VERSION_SPECIFIED="9.6.0"
+  local HELM_VERSION
+  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/${HELM_NAME} | jq -r ".version")}
+    ### NOTE
+    ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
+  #######################################################
+  local SPECIFIC_SECRETS
+  SPECIFIC_SECRETS="specific-secrets"
+  #######################################################
   showHeaderCommand "$@"
+  checkArgs "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "keycloak")"
+  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
   return $?
 }
 
 function showVerifierCommand() {
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${MODULE_NAME}")")"
   return $?
 }
 
 function __executor() {
-  local __SPECIFIC_SECRETS="specific-secrets"
-  local __namespace_for_keycloak
-  local __base_fqdn
   local __hostname_for_keycloak_main
   local __fqdn_for_keycloak_main
-  local __cluster_issuer
-  local __conf_of_helm
   local __rootca_file
   local __http_code
   ## 1. Config extra secrets
   ##
   echo ""
-  echo "### Setting Config of keycloak ..."
-  __namespace_for_keycloak=$(getNamespaceName "keycloak")
-  if ! kubectl create namespace "${__namespace_for_keycloak}" 2>/dev/null; then
-    echo "already exist the namespace (${__namespace_for_keycloak}) ...ok"
-  fi
-  if kubectl -n "${__namespace_for_keycloak}" get secret "${__SPECIFIC_SECRETS}" 2>/dev/null; then
-    echo "already exist the secrets (${__SPECIFIC_SECRETS}.${__namespace_for_keycloak}) ...ok"
+  echo "### Create a namespace of keycloak ..."
+  kubectl_r create namespace "${NAMESPACE}"
+  if kubectl -n "${NAMESPACE}" get secret "${SPECIFIC_SECRETS}" 2>/dev/null; then
+    echo "already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
   else
-    local batabase_password
-    batabase_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
-    kubectl -n "${__namespace_for_keycloak}" create secret generic "${__SPECIFIC_SECRETS}" \
+    echo ""
+    echo "### Activating Secret ..."
+    local database_password
+    database_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+    kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
       --from-literal=adminPassword="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=managementPassword="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=password="${batabase_password}" \
-      --from-literal=databasePassword="${batabase_password}" \
+      --from-literal=password="${database_password}" \
+      --from-literal=databasePassword="${database_password}" \
       --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
         ### NOTE
@@ -65,39 +91,36 @@ function __executor() {
   ##
   echo ""
   echo "### Installing with helm ..."
-  __base_fqdn=$(getBaseFQDN)
   __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
-  __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${__base_fqdn}
-  __cluster_issuer=cluster-issuer-ca."${__base_fqdn}"
-  __conf_of_helm=$(getFullpathOfValuesYamlBy "${__namespace_for_keycloak}" confs helm)
-  helm -n "${__namespace_for_keycloak}" upgrade --install "${__hostname_for_keycloak_main}" bitnami/keycloak \
-    --version 9.6.0 \
+  __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${BASE_FQDN}
+  helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
+    --version "${HELM_VERSION}" \
     --create-namespace \
     --wait \
     --timeout 600s \
     --set ingress.hostname="${__fqdn_for_keycloak_main}" \
     --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
-    --set ingress.annotations."cert-manager\.io/cluster-issuer"="${__cluster_issuer}" \
+    --set ingress.annotations."cert-manager\.io/cluster-issuer"="cluster-issuer-ca.${BASE_FQDN}" \
     --set ingress.extraTls\[0\].secretName="${__fqdn_for_keycloak_main}" \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
     --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}" \
-    -f "${__conf_of_helm}"
+    -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 3. Setup TLSContext
   ##
   echo ""
   echo "### Activating the TLSContext ..."
-  applyManifestByDI "${__namespace_for_keycloak}" \
-                    "${__hostname_for_keycloak_main}" \
+  applyManifestByDI "${NAMESPACE}" \
+                    "${RELEASE}" \
                     "${ESSENTIALS_RELEASE_ID}" \
                     180s \
-                    keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
+                    keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
-                    keycloak.dynamics.main.tlsContext.create=true
+                    keycloak.dynamics.main.tlsContext.create="true"
       ### NOTE
       ### Tentative solution to the problem
       ### that TLSContext is not generated automatically from Ingress (v2.2.2)
   waitForSuccessOfCommand \
-    "kubectl -n ${__namespace_for_keycloak} get secrets ${__fqdn_for_keycloak_main}"
+    "kubectl -n ${NAMESPACE} get secrets ${__fqdn_for_keycloak_main}"
       ### NOTE
       ### Wait until SubCA is issued
   echo ""
@@ -113,19 +136,19 @@ function __executor() {
   echo ""
   echo "### Activating essential entries of the keycloak ..."
   bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/keycloak/subs/entry.bash" \
-    "${__namespace_for_keycloak}" \
+    "${NAMESPACE}" \
     "${__rootca_file}"
   ## 5. Setup Authz
   ##
   echo ""
   echo "### Setup the sample RBAC ..."
-  applyManifestByDI "${__namespace_for_keycloak}" \
-                    "${__hostname_for_keycloak_main}" \
+  applyManifestByDI "${NAMESPACE}" \
+                    "${RELEASE}" \
                     "${ESSENTIALS_RELEASE_ID}" \
                     180s \
-                    keycloak.dynamics.common.baseFqdn="${__base_fqdn}" \
+                    keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
-                    keycloak.dynamics.main.rbac.create=true
+                    keycloak.dynamics.main.rbac.create="true"
   return $?
 }
 

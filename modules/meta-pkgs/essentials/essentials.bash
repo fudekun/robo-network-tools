@@ -51,13 +51,12 @@ main() {
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
-  echo "## USAGE"
-  echo "### Succeed, Installing Meta-Package (essentials):"
-  echo "ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_CERT_MANAGER}")")"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_KEYCLOAK}")")"
+  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")")"
   #------------
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "cert-manager")")"
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "ambassador")")"
+  echo ""
+  echo "# Succeed, Installing Meta-Package (essentials): ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
   return $?
 }
 

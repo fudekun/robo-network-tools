@@ -92,7 +92,7 @@ function create_main() {
       --build-arg FILENAME_ROOT_CA="${BASE_FQDN}.ca.crt" \
       -t docker.io/datawire/aes:"${__app_version}" \
       -f "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${MODULE_NAME}/subs/docker/Dockerfile" \
-      "$(getDirNameFor outputs)"/ca
+      "$(getDirNameFor outputs)"/ca > /dev/null 2>&1
   sudo kind load docker-image docker.io/datawire/aes:"${__app_version}" \
       --name "$(getClusterName)"
   ### .2 CRDs
