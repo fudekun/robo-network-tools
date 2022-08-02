@@ -114,10 +114,10 @@ function create_specific_kubeapi() {
   echo ""
   echo "### Activating k8s SSO Endpoint ..."
   __hostname_for_k8ssso=$(getHostName "${MODULE_NAME}" "k8ssso")
-  __filterName=$(getHostName "ambassador" "k8ssso")
-  __filterNamespace="$(getNamespaceName "ambassador")"
-  __clientTlsContext=$(getHostName "ambassador" "k8ssso")
-  __clientNamespace="$(getNamespaceName "ambassador")"
+  __filterName=$(getHostName "${RDBOX_MODULE_NAME_AMBASSADOR}" "main")-$(getHostName "${RDBOX_MODULE_NAME_AMBASSADOR}" "k8ssso")
+  __filterNamespace="$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")"
+  __clientTlsContext=$(getHostName "${RDBOX_MODULE_NAME_AMBASSADOR}" "main")-$(getHostName "${RDBOX_MODULE_NAME_AMBASSADOR}" "k8ssso")
+  __clientNamespace="$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")"
     ### NOTE
     ### Use the deployed single sign-on filter "k8ssso.ambassador"
     ### Therefore, a client certificate is specified

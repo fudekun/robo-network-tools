@@ -144,7 +144,7 @@ function create_specific_kubeapi() {
   local __private_key_file
   local __server_cert_file
   local __aes_cert_file
-  __hostname_for_ambassador_k8ssso=$(getHostName "${RELEASE}" "k8ssso")
+  __hostname_for_ambassador_k8ssso=$(getHostName "${RELEASE}" "main")-$(getHostName "${RELEASE}" "k8ssso")
   __private_key_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.key
   __server_cert_file=${TEMP_DIR}/${__hostname_for_ambassador_k8ssso}.crt
   __aes_cert_file=${TEMP_DIR}/aes_cert.crt
@@ -266,7 +266,7 @@ function create_context() {
   fi
   local hostname_for_ambassador_k8ssso
   local ctx_cert_file
-  hostname_for_ambassador_k8ssso="$(getHostName "${MODULE_NAME}" "k8ssso")"
+  hostname_for_ambassador_k8ssso="$(getHostName "${RELEASE}" "main")-$(getHostName "${RELEASE}" "k8ssso")"
   ctx_cert_file=${TEMP_DIR}/ctx_cert.crt
   kubectl -n "${NAMESPACE}" get secrets "${hostname_for_ambassador_k8ssso}.${BASE_FQDN}" -o json \
       | jq -r '.data["tls.crt"]' \

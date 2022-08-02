@@ -8,6 +8,7 @@ ambassador:
     main:
       hostname: {{ .Values.ambassador.dynamics.main.hostname }}
       fqdn: "{{ .Values.ambassador.dynamics.main.hostname }}.{{ .Values.ambassador.dynamics.common.baseFqdn }}"
+    {{- if .Values.ambassador.dynamics.k8ssso }}
     k8ssso:
       hostname: {{ .Values.ambassador.dynamics.k8ssso.hostname }}
       fqdn: "{{ .Values.ambassador.dynamics.k8ssso.hostname }}.{{ .Values.ambassador.dynamics.common.baseFqdn }}"
@@ -28,5 +29,6 @@ ambassador:
       filter:
         jwksUri: {{ .Values.ambassador.dynamics.k8ssso.filter.jwksUri }}
       {{- end }}
+    {{- end }}
 {{- end }}
 {{- end }}

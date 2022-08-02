@@ -68,7 +68,7 @@ function __executor() {
     # https://keycloak.rdbox.172-16-0-110.nip.io/realms/rdbox/protocol/openid-connect/certs
   __namespace_for_ambassador=$(getNamespaceName "ambassador")
   __hostname_for_ambassador_main=$(getHostName "ambassador" "main")
-  __hostname_for_ambassador_k8ssso=$(getHostName "ambassador" "k8ssso")
+  __hostname_for_ambassador_k8ssso="$(getHostName "ambassador" "main")-$(getHostName "ambassador" "k8ssso")"
   ## 1. Install Filter
   ##
   echo ""

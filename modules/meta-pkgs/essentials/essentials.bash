@@ -36,7 +36,7 @@ checkArgs() {
   __epoch_ms=$(getEpochMillisec)
   readonly ESSENTIALS_RELEASE_ID=${__epoch_ms}
   export ESSENTIALS_RELEASE_ID
-  echo "ESSENTIALS_RELEASE_ID=${ESSENTIALS_RELEASE_ID}"
+  echo "ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
   return $?
 }
 
@@ -51,7 +51,10 @@ main() {
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
-  echo "ESSENTIALS_RELEASE_ID=${ESSENTIALS_RELEASE_ID}"
+  echo "## USAGE"
+  echo "### Succeed, Installing Meta-Package (essentials):"
+  echo "ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
+  #------------
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "cert-manager")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "keycloak")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "ambassador")")"
