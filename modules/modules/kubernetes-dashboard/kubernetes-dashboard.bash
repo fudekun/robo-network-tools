@@ -333,6 +333,6 @@ TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/keycloak.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/account.bash"
 main "$@"
 exit $?
