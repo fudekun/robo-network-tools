@@ -10,6 +10,18 @@
 global:
   storageClass: standard
 
+## Bitnami Keycloak image version
+## ref: https://hub.docker.com/r/bitnami/keycloak/tags/
+## @param image.registry Keycloak image registry
+## @param image.repository Keycloak image repository
+## @param image.tag Keycloak image tag (immutable tags are recommended)
+## @param image.pullPolicy Keycloak image pull policy
+## @param image.pullSecrets Specify docker-registry secret names as an array
+## @param image.debug Specify if debug logs should be enabled
+##
+image:
+  debug: true
+
 ## Keycloak authentication parameters
 ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
 ##

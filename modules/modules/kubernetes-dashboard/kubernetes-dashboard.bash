@@ -260,9 +260,10 @@ function __create_entry() {
   src_filepath=$(getFullpathOfOnesBy "${NAMESPACE}" confs entry)/client.jq.json
   local entry_json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
-                clientId="${NAMESPACE}" \
-                redirectUris="${redirectUris}" \
-                secret="${secret}")
+                "clientId ${NAMESPACE}" \
+                "redirectUris ${redirectUris}" \
+                "secret ${secret}" \
+              )
   local namespace_for_keycloak
   namespace_for_keycloak="$(getNamespaceName "keycloak")"
   local user

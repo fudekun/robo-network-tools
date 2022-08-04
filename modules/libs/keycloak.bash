@@ -24,6 +24,7 @@ function exit_handler() {
 
 #######################################
 # Get a server certificate and save it in a temporary directory.
+#   - Only the internal
 # Globals:
 #   NONE
 # Arguments:
@@ -42,6 +43,13 @@ function get_cert() {
   echo "${tmp_dir}"
 }
 
+#######################################
+# Get a URL of endpoint by realm
+# Arguments:
+#   realm
+# Outputs:
+#   URL
+#######################################
 function get_authorization_url() {
   local realm=$1
   echo -n "https://$(getHostName "keycloak" "main").$(getBaseFQDN)/realms/${realm}"
@@ -204,13 +212,17 @@ function create_entry() {
     local access_token
     access_token=$(perse_token "${token}" "access_token")
     keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
-    operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}"
+    if [ "${realm}" = "__NONE__" ]; then
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms"
+    else
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}/${entry_target}"
+    fi
     local response
     local http_code
     {
         IFS=$'\n' read -r -d '' response;
         IFS=$'\n' read -r -d '' http_code;
-    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X POST "${operation_endpoint_url}/${entry_target}" \
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X POST "${operation_endpoint_url}" \
         -H "Authorization: bearer ${access_token}" \
         -H "Content-Type: application/json" \
         -d "${entry_json}")" 1>&2) 2>&1)

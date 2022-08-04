@@ -1,5 +1,5 @@
 {
-  "clientId": "ambassador",
+  "clientId": $client_id,
   "enabled": true,
   "redirectUris": [
     "http://localhost:8000",

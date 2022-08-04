@@ -877,9 +877,9 @@ function getHashedPasswordByPbkdf2Sha256() {
   # __salt=${__salt//[\r\n]\+/ }
   #__hashed_salted_value=$(python3 -c "import hashlib, crypt, base64; print(base64.b64encode(hashlib.pbkdf2_hmac(str('sha512'), byte($__password), byte($__salt), int($__hash_iterations))).decode(encoding='utf-8'))")
   __hashed_salted_value=$(echo -e "import hashlib,crypt,base64; print(base64.b64encode(hashlib.pbkdf2_hmac(\"sha256\", b\"$__password\", b\"$__salt\", int($__hash_iterations), 512//8)).decode(\"ascii\"))" | python3)
-  __hashed_salted_value=${__hashed_salted_value//[\r\n]\+/ }
+  #__hashed_salted_value=${__hashed_salted_value//[\r\n]\+/ }
   __salt=$(echo -e "import base64; print(base64.b64encode(b\"${__salt}\").decode(encoding=\"ascii\"),end=\"\")" | python3)
-  __salt=${__salt//[\r\n]\+/ }
+  #__salt=${__salt//[\r\n]\+/ }
   echo "$__salt"
   echo "$__hashed_salted_value"
   echo "$__hash_iterations"
@@ -1105,7 +1105,7 @@ function getPortnumberOfkubeapi() {
 #   None
 # Arguments:
 #   src_filepath String (the file is formated by jq arg)
-#   <variable length arguments> joined by "=" (e.g. "clientId=user0001 password=BHIee2")
+#   <variable length arguments> joined by " " (e.g. "clientId user0001" "password BHIee2")
 # Outputs:
 #   parsed json string
 # Returns:
@@ -1117,9 +1117,10 @@ function parse_jq_temlate() {
   local src_filepath=$1
   local args=()
   for arg in "${@:2}" ; do
-    local kv
-    IFS="=" read -r -a kv <<< "$arg"
-    args+=("--arg" "${kv[0]}" "${kv[1]}")
+    local key
+    local value
+    IFS=" " read -r key value <<< "$arg"
+    args+=("--arg" "${key}" "${value}")
   done
   jq -n -c -r -f "$src_filepath" "${args[@]}"
   return $?
