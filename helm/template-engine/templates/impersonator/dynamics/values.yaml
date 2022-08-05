@@ -1,0 +1,34 @@
+##
+{{- if .Values.impersonator }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+impersonator:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.impersonator.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.impersonator.dynamics.main.hostname }}
+      fqdn: "{{ .Values.impersonator.dynamics.main.hostname }}.{{ .Values.impersonator.dynamics.common.baseFqdn }}"
+    {{- if .Values.impersonator.dynamics.k8ssso }}
+    k8ssso:
+      hostname: {{ .Values.impersonator.dynamics.k8ssso.hostname }}
+      fqdn: "{{ .Values.impersonator.dynamics.k8ssso.hostname }}.{{ .Values.impersonator.dynamics.common.baseFqdn }}"
+      {{- if .Values.impersonator.dynamics.k8ssso.certificate }}
+      certificate:
+        useCa: {{ .Values.impersonator.dynamics.k8ssso.certificate.useCa | default true }}
+      {{- end }}
+      {{- if .Values.impersonator.dynamics.k8ssso.certificateSigningRequest }}
+      certificateSigningRequest:
+        request: {{ .Values.impersonator.dynamics.k8ssso.certificateSigningRequest.request }}
+      {{- end }}
+      {{- if .Values.impersonator.dynamics.k8ssso.endpoint }}
+      endpoint:
+        rbac:
+          create: {{ .Values.impersonator.dynamics.k8ssso.endpoint.rbac.create | default true }}
+      {{- end }}
+      {{- if .Values.impersonator.dynamics.k8ssso.filter }}
+      filter:
+        jwksUri: {{ .Values.impersonator.dynamics.k8ssso.filter.jwksUri }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

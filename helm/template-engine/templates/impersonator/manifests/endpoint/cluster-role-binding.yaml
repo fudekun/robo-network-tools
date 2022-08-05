@@ -1,12 +1,12 @@
 ##
-{{- if .Values.ambassador }}
+{{- if .Values.impersonator }}
 {{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
-{{- if .Values.ambassador.dynamics.k8ssso.endpoint }}
-{{- if .Values.ambassador.dynamics.k8ssso.endpoint.rbac.create }}
+{{- if .Values.impersonator.dynamics.k8ssso.endpoint }}
+{{- if .Values.impersonator.dynamics.k8ssso.endpoint.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: ClusterRoleBinding
 metadata:
-  name: {{ .Values.ambassador.dynamics.k8ssso.hostname }}
+  name: {{ .Values.impersonator.dynamics.k8ssso.hostname }}
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -14,10 +14,14 @@ metadata:
     app.kubernetes.io/managed-by: rdbox
     rdbox.local/format: v1beta1
     rdbox.local/chart: {{ .Chart.Version }}
-rules:
-- apiGroups: [""]
-  resources: ["users", "groups", "serviceaccounts"]
-  verbs: ["impersonate"]
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: {{ .Values.impersonator.dynamics.k8ssso.hostname }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.impersonator.dynamics.k8ssso.hostname }}
 {{- end }}
 {{- end }}
 {{- end }}

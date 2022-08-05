@@ -89,11 +89,11 @@ executor() {
   cmdWithLoding \
     "installKeycloak $*" \
     "Activating the keycloak"
-  ## 6. Install Filter(k8ssso by Ambassador)
+  ## 6. Install impersonator(k8ssso by Ambassador)
   ##
   cmdWithLoding \
     "installFilter $*" \
-    "Activating the filter"
+    "Activating the impersonator"
   ## 7. Install K8sDashboard
   ##
   cmdWithLoding \
@@ -175,10 +175,10 @@ installKeycloak() {
   return $?
 }
 
-## 6. Install Filter(k8ssso by Ambassador)
+## 6. Install impersonator(k8ssso by Ambassador)
 ##
 installFilter() {
-  bash "$(getWorkdirOfScripts)/modules/modules/ambassador/subs/filter.bash" "$@"
+  bash "$(getWorkdirOfScripts)/modules/modules/impersonator/impersonator.bash" "$@"
   return $?
 }
 

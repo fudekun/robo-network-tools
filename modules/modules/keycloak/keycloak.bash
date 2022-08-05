@@ -257,7 +257,7 @@ function create_entries() {
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client_scope.jq.json
   entry_json=$(cat "${src_filepath}")
   create_entry "${realm}" "${token}" "client-scopes" "${entry_json}"
-  ### .3 Create a new Client(ambassador)
+  ### .3 Create a new Client
   ###
   local secret
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
@@ -265,7 +265,7 @@ function create_entries() {
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "client_secret ${secret}" \
-                "client_id ambassador" \
+                "client_id ${RDBOX_MODULE_NAME_IMPERSONATOR}" \
               )
   create_entry "${realm}" "${token}" "clients" "${entry_json}"
   ## 3. Stop a session
@@ -293,7 +293,7 @@ function set_contex() {
       --exec-arg=oidc-login \
       --exec-arg=get-token \
       --exec-arg=--oidc-issuer-url="$(get_authorization_url "${realm}")" \
-      --exec-arg=--oidc-client-id=ambassador \
+      --exec-arg=--oidc-client-id="${RDBOX_MODULE_NAME_IMPERSONATOR}" \
       --exec-arg=--oidc-client-secret="${secret}" \
       --exec-arg=--certificate-authority-data="$(< "${rootca_file}" base64 | tr -d '\n' | tr -d '\r')" \
       --exec-arg=--listen-address=0.0.0.0:8000

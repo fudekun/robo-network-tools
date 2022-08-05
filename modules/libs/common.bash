@@ -18,6 +18,8 @@ RDBOX_MODULE_NAME_AMBASSADOR="ambassador"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_KEYCLOAK="keycloak"
   # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_IMPERSONATOR="impersonator"
+  # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
 ## OTHER #####################################################
 __RDBOX_OPTS_RDBOX_MAIN="n:"
