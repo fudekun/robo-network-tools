@@ -70,15 +70,46 @@ function showVerifierCommand() {
 }
 
 function __executor() {
-  local __hostname_for_keycloak_main
-  local __fqdn_for_keycloak_main
-  local __rootca_file
-  local __http_code
-  ## 1. Config extra secrets
+  ## 1. Create a namespace
   ##
   echo ""
   echo "### Create a namespace of keycloak ..."
   kubectl_r create namespace "${NAMESPACE}"
+  ## 2. Install Keycloak
+  ##
+  echo ""
+  echo "### Create a Keycloak ..."
+  create_main
+  ## 3. Setup preset-entries
+  ##
+  echo ""
+  echo "### Activating essential entries of the keycloak ..."
+  create_entries
+  ## 4. Setup Authz
+  ##
+  echo ""
+  echo "### Activating essential entries of the k8s RBAC ..."
+  applyManifestByDI "${NAMESPACE}" \
+                    "${RELEASE}" \
+                    "${ESSENTIALS_RELEASE_ID}" \
+                    180s \
+                    keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
+                    keycloak.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
+                    keycloak.dynamics.main.rbac.create="true"
+  ## 5. Set Context
+  ##
+  echo ""
+  echo "### Setting Cluster Context ..."
+  set_contex
+  return $?
+}
+
+function create_main() {
+  local hostname_for_keycloak_main
+  local rootca_file
+  local http_code
+  ## 1. Create a Secret
+  ##
   if kubectl -n "${NAMESPACE}" get secret "${SPECIFIC_SECRETS}" 2>/dev/null; then
     echo "already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
   else
@@ -103,19 +134,18 @@ function __executor() {
   ##
   echo ""
   echo "### Installing with helm ..."
-  __hostname_for_keycloak_main=$(getHostName "keycloak" "main")
-  __fqdn_for_keycloak_main=${__hostname_for_keycloak_main}.${BASE_FQDN}
+  hostname_for_keycloak_main=$(getHostName "${MODULE_NAME}" "main")
   helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
     --version "${HELM_VERSION}" \
     --create-namespace \
     --wait \
     --timeout 600s \
-    --set ingress.hostname="${__fqdn_for_keycloak_main}" \
-    --set ingress.extraTls\[0\].hosts\[0\]="${__fqdn_for_keycloak_main}" \
+    --set ingress.hostname="${hostname_for_keycloak_main}.${BASE_FQDN}" \
+    --set ingress.extraTls\[0\].hosts\[0\]="${hostname_for_keycloak_main}.${BASE_FQDN}" \
     --set ingress.annotations."cert-manager\.io/cluster-issuer"="cluster-issuer-ca.${BASE_FQDN}" \
-    --set ingress.extraTls\[0\].secretName="${__fqdn_for_keycloak_main}" \
+    --set ingress.extraTls\[0\].secretName="${hostname_for_keycloak_main}.${BASE_FQDN}" \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
-    --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${__fqdn_for_keycloak_main}" \
+    --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${hostname_for_keycloak_main}.${BASE_FQDN}" \
     -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 3. Setup TLSContext
   ##
@@ -126,67 +156,34 @@ function __executor() {
                     "${ESSENTIALS_RELEASE_ID}" \
                     180s \
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
-                    keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
+                    keycloak.dynamics.main.hostname="${hostname_for_keycloak_main}" \
                     keycloak.dynamics.main.tlsContext.create="true"
       ### NOTE
       ### Tentative solution to the problem
       ### that TLSContext is not generated automatically from Ingress (v2.2.2)
   waitForSuccessOfCommand \
-    "kubectl -n ${NAMESPACE} get secrets ${__fqdn_for_keycloak_main}"
+    "kubectl -n ${NAMESPACE} get secrets ${hostname_for_keycloak_main}.${BASE_FQDN}"
       ### NOTE
       ### Wait until SubCA is issued
+  ## 4. Connection test
+  ##   - be curl to the Ingress endpoin(GET)
+  ##
   echo ""
   echo "### Testing to access the endpoint ..."
-  __rootca_file=$(getFullpathOfRootCA)
-  __http_code=$(waitForSuccessOfCommand \
-              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${__rootca_file} https://${__fqdn_for_keycloak_main}/")
-  echo "The HTTP Status is ${__http_code} ...ok"
-    ### NOTE
-    ### Use the RootCA (e.g. outputs/ca/rdbox.172-16-0-110.nip.io.ca.crt)
-  ## 4. Setup preset-entries
-  ##
-  echo ""
-  echo "### Activating essential entries of the keycloak ..."
-  __create_entry
-  ## 5. Set Context
-  ##
-  local context
-  local realm
-  local secret
-  context=$(getKubectlContextName4SSO)
-  realm=$(getClusterName)
-  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
-  echo ""
-  echo "### Setting Cluster Context ..."
-  if ! kubectl config delete-user "${context}" 2>/dev/null; then
-    echo "The ClusterContext(${context}) is Not Found ...ok"
+  rootca_file=$(getFullpathOfRootCA)
+  http_code=$(waitForSuccessOfCommand \
+              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${rootca_file} https://${hostname_for_keycloak_main}.${BASE_FQDN}/")
+  if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+    echo "The HTTP Status is ${http_code} ...ok"
+    return 0
+  else
+    echo "The HTTP Status is ${http_code} ...ng"
+    return 1
   fi
-  kubectl config set-credentials "${context}" \
-      --exec-api-version=client.authentication.k8s.io/v1beta1 \
-      --exec-command=kubectl \
-      --exec-arg=oidc-login \
-      --exec-arg=get-token \
-      --exec-arg=--oidc-issuer-url="$(get_authorization_url "${realm}")" \
-      --exec-arg=--oidc-client-id=ambassador \
-      --exec-arg=--oidc-client-secret="${secret}" \
-      --exec-arg=--certificate-authority-data="$(< "${__rootca_file}" base64 | tr -d '\n' | tr -d '\r')" \
-      --exec-arg=--listen-address=0.0.0.0:8000
-  ## 6. Setup Authz
-  ##
-  echo ""
-  echo "### Setup the sample RBAC ..."
-  applyManifestByDI "${NAMESPACE}" \
-                    "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
-                    180s \
-                    keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
-                    keycloak.dynamics.main.hostname="${__hostname_for_keycloak_main}" \
-                    keycloak.dynamics.main.rbac.create="true"
   return $?
 }
 
-function __create_entry() {
+function create_entries() {
   ## 1. Prepare various parameters
   ##
   local admin_password
@@ -194,16 +191,12 @@ function __create_entry() {
   local first_name
   local last_name
   local fullname_array
-  #---
-  local src_filepath
-  local entry_json
   realm=$(getClusterName)
   IFS="-" read -r -a fullname_array <<< "$(getPresetClusterAdminUserName)"
   first_name=${fullname_array[1]}
   last_name=${fullname_array[0]}
   admin_password=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 -d)
-  # secret_data=$(generate_secret "${admin_password}")
   local cred_hash_array
   cred_hash_array=()
   while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(getHashedPasswordByPbkdf2Sha256 "$admin_password")
@@ -217,7 +210,8 @@ function __create_entry() {
   local credential_data
   secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
   credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
-  #
+  local src_filepath
+  local entry_json
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/realm.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "cluster_name ${realm}" \
@@ -226,7 +220,7 @@ function __create_entry() {
                 "first_name ${first_name}" \
                 "last_name ${last_name}" \
                 "secret_data ${secret_data}" \
-                "credential_data ${credential_data}"
+                "credential_data ${credential_data}" \
               )
   local user
   local pass
@@ -251,7 +245,6 @@ function __create_entry() {
   local secret
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
-  echo "${secret}"
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "client_secret ${secret}" \
@@ -261,6 +254,32 @@ function __create_entry() {
   ## 3. Stop a session
   ##
   revoke_access_token "master" "${token}"
+  return $?
+}
+
+function set_contex() {
+  local context
+  local realm
+  local secret
+  context=$(getKubectlContextName4SSO)
+  realm=$(getClusterName)
+  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
+  if ! kubectl config delete-user "${context}" 2>/dev/null; then
+    echo "The ClusterContext(${context}) is Not Found ...ok"
+  fi
+  local rootca_file
+  rootca_file=$(getFullpathOfRootCA)
+  kubectl config set-credentials "${context}" \
+      --exec-api-version=client.authentication.k8s.io/v1beta1 \
+      --exec-command=kubectl \
+      --exec-arg=oidc-login \
+      --exec-arg=get-token \
+      --exec-arg=--oidc-issuer-url="$(get_authorization_url "${realm}")" \
+      --exec-arg=--oidc-client-id=ambassador \
+      --exec-arg=--oidc-client-secret="${secret}" \
+      --exec-arg=--certificate-authority-data="$(< "${rootca_file}" base64 | tr -d '\n' | tr -d '\r')" \
+      --exec-arg=--listen-address=0.0.0.0:8000
   return $?
 }
 

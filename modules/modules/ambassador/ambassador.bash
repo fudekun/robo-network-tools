@@ -94,7 +94,7 @@ function create_main() {
       -f "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${MODULE_NAME}/subs/docker/Dockerfile" \
       "$(getDirNameFor outputs)"/ca > /dev/null 2>&1
   sudo kind load docker-image docker.io/datawire/aes:"${__app_version}" \
-      --name "$(getClusterName)"
+      --name "$(getClusterName)" > /dev/null 2>&1
   ### .2 CRDs
   ###
   echo ""

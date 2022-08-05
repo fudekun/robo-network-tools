@@ -113,6 +113,8 @@ initializeEssentials() {
     ## - datawire => edge-stack
     ## - jetstack => cert-manager
     ##
+    echo ""
+    echo "### Adding Helm repo ..."
     helm repo add datawire https://getambassador.io/
     helm repo add metallb https://metallb.github.io/metallb
     helm repo add jetstack https://charts.jetstack.io
@@ -121,7 +123,7 @@ initializeEssentials() {
     ## 2. Update Helm
     ##
     echo ""
-    echo "### Updateing Helm ..."
+    echo "### Updateing Helm repo ..."
     helm repo update
     ## 3. Set up a ConfigMap for the meta-pkg of essentials
     ##
