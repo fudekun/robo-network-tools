@@ -110,8 +110,11 @@ function create_main() {
   local http_code
   ## 1. Create a Secret
   ##
+  echo ""
+  echo "### Activating Secret ..."
   if kubectl -n "${NAMESPACE}" get secret "${SPECIFIC_SECRETS}" 2>/dev/null; then
-    echo "already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
+    echo "Already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
+    echo "Update passwords for Realm"
     kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
       --from-literal=adminPassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.adminPassword}' | base64 -d)" \
@@ -126,8 +129,6 @@ function create_main() {
       --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
   else
-    echo ""
-    echo "### Activating Secret ..."
     local database_password
     database_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
     kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
