@@ -286,8 +286,8 @@ function __create_entry() {
   ### 2. Create a new client
   ###
   create_entry "${realm}" "${token}" "clients" "${entry_json}"
-  ### 3. Stop a session
-  ###
+  ## 3. Stop a session
+  ##
   revoke_access_token "master" "${token}"
   return $?
 }

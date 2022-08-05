@@ -23,6 +23,9 @@ function main() {
   local BASE_FQDN
   BASE_FQDN=$(getBaseFQDN)
   #######################################################
+  local SPECIFIC_SECRETS
+  SPECIFIC_SECRETS="specific-secrets"
+  #######################################################
   showHeaderCommand "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
@@ -69,12 +72,30 @@ function __executor() {
   echo ""
   echo "### Create a specific kubeapi for kubectl ..."
   create_specific_kubeapi
-  ## 3. Set Context
+  ## 3. Set Cluster Context
   ##
   echo ""
   echo "### Setting Cluster Context ..."
   create_cluster_context
-  ## 4. Install Filter
+  ## 4. Create a Secret
+  ##
+  echo ""
+  echo "### Activating Secret ..."
+  kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
+    --from-literal=k8s-default-cluster-sso-aes-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+    ### NOTE
+    ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
+  ## 5. Setup preset-entries
+  ##
+  echo ""
+  echo "### Activating impersonator entries of the keycloak ..."
+  create_entries
+  ## 6. Setup User Context
+  ##
+  echo ""
+  echo "### Setting User Context ..."
+  create_user_context
+  ## 7. Install Filter
   ##
   echo ""
   echo "### Applying the filter for Impersonate-Group/User ..."
@@ -92,14 +113,14 @@ function __executor() {
                     impersonator.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
                     impersonator.dynamics.k8ssso.hostname="${hostname_for_impersonator_k8ssso}" \
                     impersonator.dynamics.k8ssso.filter.jwksUri="${jwks_uri}"
-  ## 5. Set Context
+  ## 8. Set Context
   ##
   echo ""
-  echo "### Setting Cluster Context ..."
+  echo "### Setting Context ..."
   local ctx_name
   ctx_name=$(getKubectlContextName4SSO)
   if ! kubectl config delete-context "${ctx_name}" > /dev/null 2>&1; then
-    echo "The ClusterContext(context) is Not Found ...ok"
+    echo "The Context(context) is Not Found ...ok"
   fi
   kubectl config set-context "${ctx_name}" \
       --cluster="${ctx_name}" \
@@ -272,9 +293,75 @@ function create_cluster_context() {
   return $?
 }
 
+function create_user_context() {
+  local context
+  local realm
+  local secret
+  context=$(getKubectlContextName4SSO)
+  realm=$(getClusterName)
+  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
+  if ! kubectl config delete-user "${context}" 2>/dev/null; then
+    echo "The ClusterContext(${context}) is Not Found ...ok"
+  fi
+  local rootca_file
+  rootca_file=$(getFullpathOfRootCA)
+  kubectl config set-credentials "${context}" \
+      --exec-api-version=client.authentication.k8s.io/v1beta1 \
+      --exec-command=kubectl \
+      --exec-arg=oidc-login \
+      --exec-arg=get-token \
+      --exec-arg=--oidc-issuer-url="$(get_authorization_url "${realm}")" \
+      --exec-arg=--oidc-client-id="${NAMESPACE}" \
+      --exec-arg=--oidc-client-secret="${secret}" \
+      --exec-arg=--certificate-authority-data="$(< "${rootca_file}" base64 | tr -d '\n' | tr -d '\r')" \
+      --exec-arg=--listen-address=0.0.0.0:8000
+  return $?
+}
+
+function create_entries() {
+  local namespace_for_keycloak
+  namespace_for_keycloak="$(getNamespaceName "${RDBOX_MODULE_NAME_KEYCLOAK}")"
+  local user
+  local pass
+  user=$(getPresetKeycloakSuperAdminName "${namespace_for_keycloak}")
+  pass=$(kubectl -n "${namespace_for_keycloak}" get secrets "${SPECIFIC_SECRETS}" \
+        -o jsonpath='{.data.adminPassword}' \
+        | base64 --decode)
+  ## 2. Start a session
+  ##
+  local token
+  local realm
+  token=$(get_access_token "master" "${user}" "${pass}")
+  realm=$(getClusterName)
+  ### 1. Delete a old client if they exist
+  ###
+  if ! delete_entry "${realm}" "${token}" "clients" "${NAMESPACE}"; then
+    echo "The Client(${NAMESPACE}) is Not Found ...ok"
+  fi
+  ### 2. Create a new client
+  ###
+  local secret
+  local src_filepath
+  local entry_json
+  src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client.jq.json
+  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
+  entry_json=$(parse_jq_temlate "${src_filepath}" \
+                "client_secret ${secret}" \
+                "client_id ${NAMESPACE}" \
+              )
+  create_entry "${realm}" "${token}" "clients" "${entry_json}"
+  ## 3. Stop a session
+  ##
+  revoke_access_token "master" "${token}"
+  return $?
+}
+
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf $TEMP_DIR' EXIT
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
+source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/account.bash"
 main "$@"
 exit $?

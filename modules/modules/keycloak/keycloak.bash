@@ -83,12 +83,12 @@ function __executor() {
   ## 3. Setup preset-entries
   ##
   echo ""
-  echo "### Activating essential entries of the keycloak ..."
+  echo "### Activating realm entries of the keycloak ..."
   create_entries
   ## 4. Setup Authz
   ##
   echo ""
-  echo "### Activating essential entries of the k8s RBAC ..."
+  echo "### Activating realm entries of the k8s RBAC ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
                     "${ESSENTIALS_RELEASE_ID}" \
@@ -96,11 +96,6 @@ function __executor() {
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
                     keycloak.dynamics.main.rbac.create="true"
-  ## 5. Set Context
-  ##
-  echo ""
-  echo "### Setting Cluster Context ..."
-  set_contex
   return $?
 }
 
@@ -126,8 +121,7 @@ function create_main() {
             -o jsonpath='{.data.password}' | base64 -d)" \
       --from-literal=databasePassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.databasePassword}' | base64 -d)" \
-      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
   else
     local database_password
     database_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
@@ -137,12 +131,10 @@ function create_main() {
       --from-literal=postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=password="${database_password}" \
       --from-literal=databasePassword="${database_password}" \
-      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
-      --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
         ### NOTE
         ### The postgresql-postgres-password is password for root user
         ### The postgresql-password is password for the unprivileged user
-        ### The k8s-default-cluster-sso-aes-secret is used for K8s SSO via ambassador
   fi
   ## 2. Install Keycloak
   ##
@@ -257,46 +249,9 @@ function create_entries() {
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client_scope.jq.json
   entry_json=$(cat "${src_filepath}")
   create_entry "${realm}" "${token}" "client-scopes" "${entry_json}"
-  ### .3 Create a new Client
-  ###
-  local secret
-  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
-  src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client.jq.json
-  entry_json=$(parse_jq_temlate "${src_filepath}" \
-                "client_secret ${secret}" \
-                "client_id ${RDBOX_MODULE_NAME_IMPERSONATOR}" \
-              )
-  create_entry "${realm}" "${token}" "clients" "${entry_json}"
   ## 3. Stop a session
   ##
   revoke_access_token "master" "${token}"
-  return $?
-}
-
-function set_contex() {
-  local context
-  local realm
-  local secret
-  context=$(getKubectlContextName4SSO)
-  realm=$(getClusterName)
-  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.k8s-default-cluster-sso-aes-secret}' | base64 -d)
-  if ! kubectl config delete-user "${context}" 2>/dev/null; then
-    echo "The ClusterContext(${context}) is Not Found ...ok"
-  fi
-  local rootca_file
-  rootca_file=$(getFullpathOfRootCA)
-  kubectl config set-credentials "${context}" \
-      --exec-api-version=client.authentication.k8s.io/v1beta1 \
-      --exec-command=kubectl \
-      --exec-arg=oidc-login \
-      --exec-arg=get-token \
-      --exec-arg=--oidc-issuer-url="$(get_authorization_url "${realm}")" \
-      --exec-arg=--oidc-client-id="${RDBOX_MODULE_NAME_IMPERSONATOR}" \
-      --exec-arg=--oidc-client-secret="${secret}" \
-      --exec-arg=--certificate-authority-data="$(< "${rootca_file}" base64 | tr -d '\n' | tr -d '\r')" \
-      --exec-arg=--listen-address=0.0.0.0:8000
   return $?
 }
 
