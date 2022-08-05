@@ -112,6 +112,19 @@ function create_main() {
   ##
   if kubectl -n "${NAMESPACE}" get secret "${SPECIFIC_SECRETS}" 2>/dev/null; then
     echo "already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
+    kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
+      --from-literal=adminPassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.adminPassword}' | base64 -d)" \
+      --from-literal=managementPassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.managementPassword}' | base64 -d)" \
+      --from-literal=postgres-password="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.postgres-password}' | base64 -d)" \
+      --from-literal=password="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.password}' | base64 -d)" \
+      --from-literal=databasePassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.databasePassword}' | base64 -d)" \
+      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=k8s-default-cluster-sso-aes-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
   else
     echo ""
     echo "### Activating Secret ..."
@@ -234,6 +247,9 @@ function create_entries() {
   token=$(get_access_token "master" "${user}" "${pass}")
   ### .1 Create a new realm
   ###
+  if ! delete_entry "__NONE__" "${token}" "__NONE__" "${realm}"; then
+    echo "The Client(${NAMESPACE}) is Not Found ...ok"
+  fi
   create_entry "__NONE__" "${token}" "__NONE__" "${entry_json}"
   ### .2 Create a new ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")
   ###

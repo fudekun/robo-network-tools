@@ -277,26 +277,31 @@ function delete_entry() {
     local access_token
     access_token=$(perse_token "${token}" "access_token")
     keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
-    operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}"
+    local id
     local response
     local http_code
-    {
-        IFS=$'\n' read -r -d '' response;
-        IFS=$'\n' read -r -d '' http_code;
-    } < <((printf '\0%s\0' "$(curl -fs -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -G -X GET "${operation_endpoint_url}/${entry_target}" \
-        -H "Authorization: bearer ${access_token}" \
-        -H "Content-Type: application/json" \
-        -d "clientId=${entry_id}")" 1>&2) 2>&1)
-    local id
-    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
-      id=$(echo "$response" | jq -r ".[0].id")
+    if [ "${realm}" = "__NONE__" ]; then
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms"
+      id="${entry_id}"
     else
-      return 1
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}/${entry_target}"
+      {
+          IFS=$'\n' read -r -d '' response;
+          IFS=$'\n' read -r -d '' http_code;
+      } < <((printf '\0%s\0' "$(curl -fs -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -G -X GET "${operation_endpoint_url}" \
+          -H "Authorization: bearer ${access_token}" \
+          -H "Content-Type: application/json" \
+          -d "clientId=${entry_id}")" 1>&2) 2>&1)
+      if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+        id=$(echo "$response" | jq -r ".[0].id")
+      else
+        return 1
+      fi
     fi
     {
         IFS=$'\n' read -r -d '' response;
         IFS=$'\n' read -r -d '' http_code;
-    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X DELETE "${operation_endpoint_url}/${entry_target}/${id}" \
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X DELETE "${operation_endpoint_url}/${id}" \
         -H "Authorization: bearer ${access_token}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
       echo "Success delete the old entry(${http_code})"
