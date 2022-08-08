@@ -692,6 +692,18 @@ function getReleaseName() {
   local __namespace=$1
   getClusterinfoFromConfigmap ".data[\"${__namespace}.release\"]"
 }
+function getHelmRepoName() {
+  local __namespace=$1
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.helm.repo.name\"]"
+}
+function getHelmPkgName() {
+  local __namespace=$1
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.helm.pkg.name\"]"
+}
+function getHelmPkgVersion() {
+  local __namespace=$1
+  getClusterinfoFromConfigmap ".data[\"${__namespace}.helm.pkg.version\"]"
+}
 function getHostName() {
   local __namespace=$1
   local __host=$2
@@ -1234,7 +1246,7 @@ function update_cluster_info() {
     NAMESPACE="${__RDBOX_CLUSTER_INFO_NAMESPACE}"
     kubectl_r -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" patch configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
       --type merge \
-      --patch-file "${cm_filepath}"
+      --patch-file "${cm_filepath}"  > /dev/null 2>&1
     return $?
   }
   local tmp_dir

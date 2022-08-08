@@ -67,19 +67,13 @@ function executor() {
   host_name=${host_name:-""}
   ## Install KinD
   ##
-  cmdWithLoding \
-    "installKinD ${cluster_name} ${domain_name} ${host_name}" \
-    "Activating the K8s Cluster by KinD"
+  installKinD ${cluster_name} ${domain_name} ${host_name}
   ## SetUp ConfigMap
   ##
-  cmdWithLoding \
-    "setupConfigMap ${cluster_name} ${domain_name} ${host_name}" \
-    "Activating the cluster-info"
+  setupConfigMap ${cluster_name} ${domain_name} ${host_name}
   ## Install Weave-Net
   ##
-  cmdWithLoding \
-    "installWeaveNet" \
-    "Activating the weave-net"
+  installWeaveNet
   return $?
 }
 

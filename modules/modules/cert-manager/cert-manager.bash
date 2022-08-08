@@ -43,18 +43,6 @@ function main() {
   #######################################################
   local MODULE_NAME
   MODULE_NAME="${RDBOX_MODULE_NAME_CERT_MANAGER}"
-  local HELM_VERSION_SPECIFIED
-  HELM_VERSION_SPECIFIED="1.9.1"
-  local HELM_REPO_NAME
-  HELM_REPO_NAME="cert-manager"
-  local HELM_PKG_NAME
-  HELM_PKG_NAME="cert-manager"
-  local HELM_NAME
-  HELM_NAME="${HELM_REPO_NAME}/${HELM_PKG_NAME}"
-  local HELM_VERSION
-  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".version")}
-    ### NOTE
-    ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
   #######################################################
   showHeaderCommand "$@"
   #######
@@ -68,7 +56,6 @@ function main() {
   BASE_FQDN=$(getBaseFQDN)
   #######
   checkArgs "$@"
-  prepare_helm_repo
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
@@ -88,12 +75,27 @@ function showVerifierCommand() {
 }
 
 function __executor() {
+  ## 0. Prepare Helm chart
+  ##
+  local HELM_VERSION_SPECIFIED
+  HELM_VERSION_SPECIFIED=$(getHelmPkgVersion "${MODULE_NAME}")
+  local HELM_REPO_NAME
+  HELM_REPO_NAME=$(getHelmRepoName "${MODULE_NAME}")
+  local HELM_PKG_NAME
+  HELM_PKG_NAME=$(getHelmPkgName "${MODULE_NAME}")
+  local HELM_NAME
+  HELM_NAME="${HELM_REPO_NAME}/${HELM_PKG_NAME}"
+  local HELM_VERSION
+  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".version")}
+    ### NOTE
+    ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
+  prepare_helm_repo
   ## 1. Install Cert-Manager
   ##
   echo ""
   echo "### Installing with helm ..."
   helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
-      --version ${HELM_VERSION} \
+      --version "${HELM_VERSION}" \
       --create-namespace \
       --wait \
       --timeout 600s \
