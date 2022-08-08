@@ -13,11 +13,13 @@ function main() {
   module_name=$(check_args "${@}")
   executor "${module_name}" "${@}"
   ret=$?
-  showVerifierCommand $ret
+  showVerifierCommand "${ret}" "${module_name}"
   return $ret
 }
 
 function showVerifierCommand() {
+  echo ""
+  echo "# Succeed, Creating(${2}): CREATES_RELEASE_ID=\"${CREATES_RELEASE_ID}\""
   showFooter "${1}"
   return $?
 }

@@ -22,24 +22,10 @@ function checkArgs() {
   return $?
 }
 
-function prepare_helm_repo() {
-  local HELM_REPO_URL
-  HELM_REPO_URL=$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".repository.url")
-  helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}"
-  helm repo update "${HELM_REPO_NAME}"
-  return $?
-}
-
 function main() {
   #######################################################
   local MODULE_NAME
   MODULE_NAME="${RDBOX_MODULE_NAME_KEYCLOAK}"
-  local NAMESPACE
-  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
-  local RELEASE
-  RELEASE="$(getReleaseName "${MODULE_NAME}")"
-  local BASE_FQDN
-  BASE_FQDN=$(getBaseFQDN)
   #######
   local HELM_VERSION_SPECIFIED
   HELM_VERSION_SPECIFIED="9.6.7"
@@ -58,6 +44,16 @@ function main() {
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
   showHeaderCommand "$@"
+  #######
+  update_cluster_info
+  #######
+  local NAMESPACE
+  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
+  local RELEASE
+  RELEASE="$(getReleaseName "${MODULE_NAME}")"
+  local BASE_FQDN
+  BASE_FQDN=$(getBaseFQDN)
+  #######
   checkArgs "$@"
   prepare_helm_repo
   cmdWithIndent "__executor $*"

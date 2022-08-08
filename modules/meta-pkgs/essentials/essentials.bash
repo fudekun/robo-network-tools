@@ -12,7 +12,7 @@ showHeaderCommand() {
   return $?
 }
 
-## 0. Input Argument Checking
+## 1. Input Argument Checking
 ##
 checkArgs() {
   echo ""
@@ -49,21 +49,18 @@ showVerifierCommand() {
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_CERT_MANAGER}")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_KEYCLOAK}")")"
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")")"
-  #------------
-  echo ""
-  echo "# Succeed, Installing Meta-Package (essentials): CREATES_RELEASE_ID=\"${CREATES_RELEASE_ID}\""
   return $?
 }
 
 executor() {
-  ## 0. Input Argument Checking
+  ## 1. Input Argument Checking
   ##
   checkArgs "$@"
   ## 1. Initializing
   ##
-  cmdWithLoding \
-    "initializeEssentials $*" \
-    "Initializing the meta-pkgs of essentials"
+  # cmdWithLoding \
+  #   "initializeEssentials $*" \
+  #   "Initializing the meta-pkgs of essentials"
   ## 2. Install Cert-Manager
   ##
   cmdWithLoding \
@@ -97,32 +94,6 @@ executor() {
   return $?
 }
 
-## 1. Initialize
-##
-initializeEssentials() {
-  __executor() {
-    local __workdir_of_confs
-    ## 1. Set up a ConfigMap for the meta-pkg of essentials
-    ##
-    echo ""
-    echo "### Setting a ConfigMap for the meta-pkg of essentials ..."
-    __workdir_of_confs=$(getDirNameFor confs)
-    readonly __workdir_of_confs
-    kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" patch configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
-      --type merge \
-      --patch "$(kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
-                  --dry-run=client \
-                  --output=json \
-                  --from-env-file="${__workdir_of_confs}"/meta-pkgs/essentials.env.properties \
-                )"
-    return $?
-  }
-  echo ""
-  echo "---"
-  echo "## Initializing essentials ..."
-  cmdWithIndent "__executor"
-  return $?
-}
 
 ## 2. Install Cert-Manager
 ##

@@ -24,8 +24,8 @@ RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
 ## OTHER #####################################################
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
-__RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
+__RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
 __RDBOX_NUM_INDENT=4
 __RDBOX_HELPFUL_APPS_OF_GOST_VERSION="2.11.2"
@@ -1140,7 +1140,7 @@ function parse_jq_temlate() {
 # Arguments:
 #   command                Typical kubectl command ((kubectl_r) create namespace jpg)
 # Returns:
-#   0 if thing was gived assurance output, non-zero on error.
+#   0 if thing was success, non-zero on error.
 #######################################
 function kubectl_r() {
   local cmd
@@ -1170,4 +1170,77 @@ function kubectl_r() {
     echo "${output}"
     return 1
   fi
+}
+
+#######################################
+# Prepare a Helm repo's info
+# Globals:
+#   HELM_NAME              (e.g. datawire/edge-stack)
+#   HELM_REPO_NAME         (e.g. datawire)
+#   -   HELM_PKG_NAME      (e.g. edge-stack)
+# Arguments:
+#   NONE
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
+function prepare_helm_repo() {
+  local HELM_REPO_URL
+  HELM_REPO_URL=$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".repository.url")
+  helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}"
+  helm repo update "${HELM_REPO_NAME}"
+  return $?
+}
+
+#######################################
+# Handler for deleting temporary directories in function scope
+# Globals:
+#   NONE
+# Arguments:
+#   DIR_PATH
+# Outputs:
+#   NONE
+# References:
+#   https://unix.stackexchange.com/questions/582922/how-to-pass-local-variable-to-trap-handler-in-bash
+#######################################
+function exit_handler() {
+  local tmp_dir="${1}"
+  rm -rf "$tmp_dir"
+}
+
+#######################################
+# Update the cluseter-info by the **env.properties** of $MODULE_NAME
+# - a configmap of cluster-common(Namespace)
+# Globals:
+#   MODULE_NAME                            (e.g. keycloak)
+#   __RDBOX_CLUSTER_INFO_NAMESPACE         (e.g. cluster-common)
+#   __RDBOX_CLUSTER_INFO_NAMENAME          (e.g. cluseter-info)
+# Arguments:
+#   NONE
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
+function update_cluster_info() {
+  function __update_cluster_info() {
+    local tmp_dir=$1
+    local env_prop
+    env_prop=$(getDirNameFor confs)/modules/${MODULE_NAME}/env.properties
+    local cm_filepath="${tmp_dir}"/cm.json
+    kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
+      --dry-run=client \
+      --output=json \
+      --from-env-file="${env_prop}" \
+    | jq -r -c > "${cm_filepath}"
+    local NAMESPACE
+    NAMESPACE="${__RDBOX_CLUSTER_INFO_NAMESPACE}"
+    kubectl_r -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" patch configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
+      --type merge \
+      --patch-file "${cm_filepath}"
+    return $?
+  }
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${tmp_dir}'" EXIT
+  __update_cluster_info "$tmp_dir" "$@"
+  return $?
 }
