@@ -22,6 +22,14 @@ function checkArgs() {
   return $?
 }
 
+function prepare_helm_repo() {
+  local HELM_REPO_URL
+  HELM_REPO_URL=$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".repository.url")
+  helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}"
+  helm repo update "${HELM_REPO_NAME}"
+  return $?
+}
+
 function main() {
   #######################################################
   local MODULE_NAME
@@ -32,12 +40,17 @@ function main() {
   RELEASE="$(getReleaseName "${MODULE_NAME}")"
   local BASE_FQDN
   BASE_FQDN=$(getBaseFQDN)
-  local HELM_NAME
-  HELM_NAME="k8s-dashboard/kubernetes-dashboard"
+  #######
   local HELM_VERSION_SPECIFIED
   HELM_VERSION_SPECIFIED="5.7.0"
+  local HELM_REPO_NAME
+  HELM_REPO_NAME="k8s-dashboard"
+  local HELM_PKG_NAME
+  HELM_PKG_NAME="kubernetes-dashboard"
+  local HELM_NAME
+  HELM_NAME="${HELM_REPO_NAME}/${HELM_PKG_NAME}"
   local HELM_VERSION
-  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/${HELM_NAME} | jq -r ".version")}
+  HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".version")}
     ### NOTE
     ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
   #######################################################
@@ -46,6 +59,7 @@ function main() {
   #######################################################
   showHeaderCommand "$@"
   checkArgs "$@"
+  prepare_helm_repo
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
