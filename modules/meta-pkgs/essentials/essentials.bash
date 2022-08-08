@@ -56,41 +56,24 @@ executor() {
   ## 1. Input Argument Checking
   ##
   checkArgs "$@"
-  ## 1. Initializing
-  ##
-  # cmdWithLoding \
-  #   "initializeEssentials $*" \
-  #   "Initializing the meta-pkgs of essentials"
   ## 2. Install Cert-Manager
   ##
-  cmdWithLoding \
-    "installCertManager $*" \
-    "Activating the cert-manager"
+  installCertManager "$@"
   ## 3. Install MetalLB
   ##
-  cmdWithLoding \
-    "installMetalLB $*" \
-    "Activating the metallb"
+  installMetalLB "$@"
   ## 4. Install Ambassador
   ##
-  cmdWithLoding \
-    "installAmbassador $*" \
-    "Activating the ambassador"
+  installAmbassador "$@"
   ## 5. Install Keycloak
   ##
-  cmdWithLoding \
-    "installKeycloak $*" \
-    "Activating the keycloak"
+  installKeycloak "$@"
   ## 6. Install impersonator(k8ssso by Ambassador)
   ##
-  cmdWithLoding \
-    "installFilter $*" \
-    "Activating the impersonator"
+  installFilter "$@"
   ## 7. Install K8sDashboard
   ##
-  cmdWithLoding \
-    "installK8sDashboard $*" \
-    "Activating the k8s-dashboard"
+  installK8sDashboard "$@"
   return $?
 }
 
