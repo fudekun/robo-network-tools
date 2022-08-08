@@ -6,7 +6,7 @@ set -euo pipefail
 # Globals:
 #   RDBOX_MODULE_NAME_METALLB
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
@@ -91,7 +91,7 @@ function __executor() {
     ### Get ConfigValue MetalLB with L2 Mode
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     metallb.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     metallb.dynamics.main.hostname="${__hostname_for_metallb_main}" \

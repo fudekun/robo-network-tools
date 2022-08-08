@@ -6,7 +6,7 @@ set -euo pipefail
 # Globals:
 #   RDBOX_MODULE_NAME_KEYCLOAK
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
@@ -105,7 +105,7 @@ function __executor() {
   echo "### Activating realm entries of the k8s RBAC ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
@@ -173,7 +173,7 @@ function create_main() {
   echo "### Activating the TLSContext ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="${hostname_for_keycloak_main}" \

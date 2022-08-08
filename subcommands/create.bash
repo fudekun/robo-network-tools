@@ -48,7 +48,18 @@ function check_args() {
 function executor() {
   local module_name
   module_name=${1}
+  ## 1. Define ReleaseID
+  ##
+  local __epoch_ms
+  __epoch_ms=$(getEpochMillisec)
+  readonly CREATES_RELEASE_ID=${__epoch_ms}
+  export CREATES_RELEASE_ID
+  echo "CREATES_RELEASE_ID=\"${CREATES_RELEASE_ID}\""
+  ## 2. Get Fullpath of a module
+  ##
   fullpath_of_script=$(get_fullpath_of_script "${module_name}")
+  ## 3. Execute
+  ##
   if [[ ${fullpath_of_script} != "" ]]; then
     bash "${fullpath_of_script}" "${@:2}"
   else

@@ -1136,7 +1136,7 @@ function parse_jq_temlate() {
 #   - Then, the manifest created above is applied to the cluster with the Apply subcommand.
 # Globals:
 #   NAMESPACE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 # Arguments:
 #   command                Typical kubectl command ((kubectl_r) create namespace jpg)
 # Returns:
@@ -1149,7 +1149,7 @@ function kubectl_r() {
   local dirpath_of_output
   version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
   dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${NAMESPACE}" outputs "manifests" "${version_of_engine}")")
-  fullpath_of_output_values_yaml=${dirpath_of_output}/values.${ESSENTIALS_RELEASE_ID}.$(getEpochMillisec).yaml
+  fullpath_of_output_values_yaml=${dirpath_of_output}/values.${CREATES_RELEASE_ID}.$(getEpochMillisec).yaml
   fullpath_of_output_values_latest_yaml="${dirpath_of_output}"/values.latest.yaml
   mkdir -p "$(dirname "${fullpath_of_output_values_yaml}")"
   if [[ "${cmd}" =~ (^| )create($| ) ]]; then

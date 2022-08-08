@@ -6,7 +6,7 @@ set -euo pipefail
 # Globals:
 #   RDBOX_MODULE_NAME_K8S_DASHBOARD
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
@@ -115,7 +115,7 @@ function create_specific_kubeapi() {
   echo "### Issueing cert for kubernetes-dashboard ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     kubernetesDashboard.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
@@ -138,7 +138,7 @@ function create_specific_kubeapi() {
     ### This client certificate indicates the user to whom the Impersonate cluster role is bound
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     kubernetesDashboard.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
@@ -227,7 +227,7 @@ function create_main() {
                   -o jsonpath="{.spec.ports[].port}")
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     kubernetesDashboard.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     kubernetesDashboard.dynamics.main.hostname="${__hostname_for_k8s_dashboard}" \
@@ -333,7 +333,7 @@ function __create_filter() {
   hostname_for_k8s_dashboard="$(getHostName "${MODULE_NAME}" "main")"
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     kubernetesDashboard.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     kubernetesDashboard.dynamics.main.hostname="${hostname_for_k8s_dashboard}" \

@@ -6,7 +6,7 @@ set -euo pipefail
 # Globals:
 #   RDBOX_MODULE_NAME_AMBASSADOR
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################

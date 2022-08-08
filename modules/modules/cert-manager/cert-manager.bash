@@ -6,7 +6,7 @@ set -euo pipefail
 # Globals:
 #   RDBOX_MODULE_NAME_CERT_MANAGER
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #   (optional)RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT
 #
 # Style: https://google.github.io/styleguide/shellguide.html
@@ -126,7 +126,7 @@ function __issueNewSecrets() {
   local __history_file
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     certManager.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     certManager.dynamics.isSelfsigned.create="true" \
@@ -162,7 +162,7 @@ function __issueSecretsUsingExistingHistory() {
   kubectl -n "${NAMESPACE}" apply --timeout 90s --wait -f "${__history_file}"
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     certManager.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     certManager.dynamics.isCa.create="true"

@@ -81,7 +81,7 @@ function __executor() {
   hostname_for_ambassador_k8ssso="$(getHostName "${MODULE_NAME}" "main")-$(getHostName "${MODULE_NAME}" "k8ssso")"
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     ambassador.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     ambassador.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
@@ -110,7 +110,7 @@ function __executor() {
 #   MODULE_NAME
 #   BASE_FQDN
 #   TEMP_DIR
-#   ESSENTIALS_RELEASE_ID
+#   CREATES_RELEASE_ID
 #   BASE_FQDN
 #   RELEASE
 # Arguments:
@@ -140,7 +140,7 @@ function create_specific_kubeapi() {
   echo "### Issueing Private Key for ambassador ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     90s \
                     ambassador.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     ambassador.dynamics.main.hostname="$(getHostName "${RELEASE}" "main")" \
@@ -178,7 +178,7 @@ function create_specific_kubeapi() {
   ###
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     ambassador.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     ambassador.dynamics.main.hostname="$(getHostName "${RELEASE}" "main")" \
@@ -211,7 +211,7 @@ function create_specific_kubeapi() {
   echo "### Activating k8s SSO Endpoint ..."
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
-                    "${ESSENTIALS_RELEASE_ID}" \
+                    "${CREATES_RELEASE_ID}" \
                     180s \
                     ambassador.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     ambassador.dynamics.main.hostname="$(getHostName "${RELEASE}" "main")" \

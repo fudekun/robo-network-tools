@@ -32,11 +32,6 @@ checkArgs() {
       return 1
     fi
   fi
-  local __epoch_ms
-  __epoch_ms=$(getEpochMillisec)
-  readonly ESSENTIALS_RELEASE_ID=${__epoch_ms}
-  export ESSENTIALS_RELEASE_ID
-  echo "ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
   return $?
 }
 
@@ -56,7 +51,7 @@ showVerifierCommand() {
   cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")")"
   #------------
   echo ""
-  echo "# Succeed, Installing Meta-Package (essentials): ESSENTIALS_RELEASE_ID=\"${ESSENTIALS_RELEASE_ID}\""
+  echo "# Succeed, Installing Meta-Package (essentials): CREATES_RELEASE_ID=\"${CREATES_RELEASE_ID}\""
   return $?
 }
 
