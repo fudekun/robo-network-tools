@@ -35,7 +35,7 @@ function main() {
   local HELM_NAME
   HELM_NAME="bitnami/keycloak"
   local HELM_VERSION_SPECIFIED
-  HELM_VERSION_SPECIFIED="9.6.0"
+  HELM_VERSION_SPECIFIED="9.6.7"
   local HELM_VERSION
   HELM_VERSION=${HELM_VERSION_SPECIFIED:-$(curl -s https://artifacthub.io/api/v1/packages/helm/${HELM_NAME} | jq -r ".version")}
     ### NOTE
