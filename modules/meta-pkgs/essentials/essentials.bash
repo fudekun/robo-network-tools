@@ -37,7 +37,8 @@ checkArgs() {
 
 main() {
   showHeaderCommand
-  #executor "$@"
+  checkArgs "$@"
+  executor "$@"
   showVerifierCommand
   return $?
 }
