@@ -37,8 +37,7 @@ checkArgs() {
 
 main() {
   showHeaderCommand
-  executor "$@"
-  # cmdWithIndent "executor $*"
+  #executor "$@"
   showVerifierCommand
   return $?
 }
@@ -46,78 +45,52 @@ main() {
 ## 99. Notify Verifier-Command
 ##
 showVerifierCommand() {
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_CERT_MANAGER}")")"
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_KEYCLOAK}")")"
-  cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${RDBOX_MODULE_NAME_AMBASSADOR}")")"
-  return $?
+  local ret
+  local modules
+  local arg
+  local verifier=()
+  ret=0
+  readarray -t modules < "$(getDirNameFor confs)/meta-pkgs/essentials/create.properties"
+  for arg in "${modules[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    if [ "${kv[1]}" -gt 0 ]; then
+      verifier+=("${kv[1]}=${kv[0]}")
+    fi
+  done
+  echo ""
+  echo "---"
+  echo "# Succeed, Installing Meta-Package (essentials)"
+  local sorted
+  readarray -t sorted < <(for a in "${verifier[@]}"; do echo "$a"; done | sort)
+  for arg in "${sorted[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${kv[1]}")")"
+    ret=$?
+    if [[ "${ret}" -ne 0 ]]; then
+      break
+    fi
+  done
+  return "${ret}"
 }
 
 executor() {
-  ## 1. Input Argument Checking
-  ##
-  checkArgs "$@"
-  ## 2. Install Cert-Manager
-  ##
-  installCertManager "$@"
-  ## 3. Install MetalLB
-  ##
-  installMetalLB "$@"
-  ## 4. Install Ambassador
-  ##
-  installAmbassador "$@"
-  ## 5. Install Keycloak
-  ##
-  installKeycloak "$@"
-  ## 6. Install impersonator(k8ssso by Ambassador)
-  ##
-  installFilter "$@"
-  ## 7. Install K8sDashboard
-  ##
-  installK8sDashboard "$@"
-  return $?
-}
-
-
-## 2. Install Cert-Manager
-##
-installCertManager() {
-  bash "$(getWorkdirOfScripts)/modules/modules/cert-manager/cert-manager.bash" "$@"
-  return $?
-}
-
-## 3. Install MetalLB
-##
-installMetalLB() {
-  bash "$(getWorkdirOfScripts)/modules/modules/metallb/metallb.bash" "$@"
-  return $?
-}
-
-## 4. Install Ambassador
-##
-installAmbassador() {
-  bash "$(getWorkdirOfScripts)/modules/modules/ambassador/ambassador.bash" "$@"
-  return $?
-}
-
-## 5. Install Keycloak
-##
-installKeycloak() {
-  bash "$(getWorkdirOfScripts)/modules/modules/keycloak/keycloak.bash" "$@"
-  return $?
-}
-
-## 6. Install impersonator(k8ssso by Ambassador)
-##
-installFilter() {
-  bash "$(getWorkdirOfScripts)/modules/modules/impersonator/impersonator.bash" "$@"
-  return $?
-}
-
-## 7. Install K8s-Dashboard
-##
-installK8sDashboard() {
-  bash "$(getWorkdirOfScripts)/modules/modules/kubernetes-dashboard/kubernetes-dashboard.bash" "$@"
-  return $?
+  local ret
+  local modules
+  local arg
+  ret=0
+  readarray -t modules < "$(getDirNameFor confs)/meta-pkgs/essentials/create.properties"
+  for arg in "${modules[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    bash "$(getWorkdirOfScripts)/modules/modules/${kv[0]}/${kv[0]}.bash" "$@"
+    ret=$?
+    if [[ "${ret}" -ne 0 ]]; then
+      break
+    fi
+  done
+  return "${ret}"
 }
 
 ## Set the base directory for RDBOX scripts!!
