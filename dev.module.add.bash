@@ -36,6 +36,7 @@ function main() {
   mkdir -p "${template_dir}/dynamics" "${template_dir}/manifests"
   dynamics_values_yaml "${module_name}" > "${template_dir}/dynamics/values.yaml"
   printf "##\n" > "${template_dir}/manifests/values.yaml"
+  local under_module_name=${module_name/-/_}
   echo "OK!!"
   echo "
   1. Check and Modify created files
@@ -50,6 +51,8 @@ function main() {
       - the number that is order of showing Verifier Text
       - If you specific 0, the Verifier Text is hidden.
       - The smaller the number specified, the higher the number displayed first.
+  3. Define a RDBOX_MODULE_NAME_ in the modules/libs/common.bash
+    - RDBOX_MODULE_NAME_${under_module_name^^}=${module_name}
   "
   return $?
 }
