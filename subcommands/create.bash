@@ -64,7 +64,7 @@ function executor() {
   ##
   if [[ ${fullpath_of_script} != "" ]]; then
     cmdWithLoding \
-      "bash ${fullpath_of_script} ${*:2}" \
+      "bash ${fullpath_of_script} create ${*:2}" \
       "Activating the ${module_name}"
   else
     echo "Invalid module name (${module_name} dose not exist)"

@@ -1217,6 +1217,7 @@ function prepare_helm_repo() {
 function exit_handler() {
   local tmp_dir="${1}"
   rm -rf "$tmp_dir"
+  return $?
 }
 
 #######################################

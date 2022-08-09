@@ -25,8 +25,9 @@ function main() {
   local conf_dir="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/confs/modules/${module_name}"
   local template_dir="${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/helm/template-engine/templates/${module_name}"
   # main-script
-  mkdir -p "${module_dir}"
-  main_script "${module_name}" > "${module_dir}/${module_name}.bash"
+  mkdir -p "${module_dir}" "${module_dir}/crud"
+  create_main "${module_name}" > "${module_dir}/${module_name}.bash"
+  create_script "${module_name}" > "${module_dir}/crud/create.bash"
   # conf
   mkdir -p "${conf_dir}/di/${version}" "${conf_dir}/helm/${version}" "${conf_dir}/entry/${version}"
   touch "${conf_dir}/di/${version}/values.yaml"
@@ -57,7 +58,51 @@ function main() {
   return $?
 }
 
-function main_script() {
+function create_main() {
+  local module_name=$1
+  local under_module_name=${module_name/-/_}
+echo "#!/usr/bin/env bash
+set -euo pipefail
+###############################################################################
+# Operating a ${module_name}
+# Globals:
+#   RDBOX_MODULE_NAME_${under_module_name^^}
+#   RDBOX_WORKDIR_OF_SCRIPTS_BASE
+#   CREATES_RELEASE_ID
+#
+# Style: https://google.github.io/styleguide/shellguide.html
+###############################################################################
+
+function main() {
+  #######################################################
+  local MODULE_NAME
+  MODULE_NAME=\"RDBOX_MODULE_NAME_${under_module_name^^}\"
+  echo \"\${MODULE_NAME}\" > /dev/null 2>&1
+  #######################################################
+  local operation=\${1}
+  if [ \"\${operation}\" = \"create\" ]; then
+    source \"\$(dirname \"\${0}\")/crud/create.bash\"
+    create \"\${*:2}\"
+  elif [ \"\${operation}\" = \"delete\" ]; then
+    source \"\$(dirname \"\${0}\")/crud/delete.bash\"
+    delete \"\${*:2}\"
+  elif [ \"\${operation}\" = \"update\" ]; then
+    source \"\$(dirname \"\${0}\")/crud/update.bash\"
+    update \"\${*:2}\"
+  else
+    echo \"Operation Not found\"
+    return 1
+  fi
+  return \$?
+}
+
+source \"\${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash\"
+main \"\$@\"
+exit \$?
+"
+}
+
+function create_script() {
   local module_name=$1
   local under_module_name=${module_name/-/_}
 echo "#!/usr/bin/env bash
@@ -95,10 +140,7 @@ function showVerifierCommand() {
   return \$?
 }
 
-
 source \"\${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash\"
-main \"\$@\"
-exit \$?
 "
 }
 

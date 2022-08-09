@@ -15,23 +15,6 @@ showHeaderCommand() {
 ## 1. Input Argument Checking
 ##
 checkArgs() {
-  echo ""
-  printf "# ARGS:\n%q (%s arg(s))\n" "$*" "$#"
-  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
-  echo ""
-  if [[ $# -eq 1 ]]; then
-    if [[ "$1" == "help" ]]; then
-      echo "# Args"
-      echo "None"
-      echo ""
-      echo "# EnvironmentVariable"
-      echo "  (recommend: Use automatic settings)"
-      echo "| Name                               | e.g.                            |"
-      echo "| ---------------------------------- | ------------------------------- |"
-      echo "| RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT     | (default)new or recycle         |"
-      return 1
-    fi
-  fi
   return $?
 }
 

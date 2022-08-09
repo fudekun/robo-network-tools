@@ -63,7 +63,7 @@ function executor() {
   ## Input Argument Checking
   ##
   local cluster_name domain_name host_name
-  checkArgs "$@"
+  checkArgs "${@:2}"
   host_name=${host_name:-""}
   ## Install KinD
   ##
