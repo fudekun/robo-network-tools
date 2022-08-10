@@ -20,7 +20,6 @@ function checkArgs() {
 }
 
 function create() {
-  update_cluster_info
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"

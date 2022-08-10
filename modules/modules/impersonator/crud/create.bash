@@ -26,7 +26,6 @@ function create() {
   local SPECIFIC_SECRETS
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
-  update_cluster_info
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"

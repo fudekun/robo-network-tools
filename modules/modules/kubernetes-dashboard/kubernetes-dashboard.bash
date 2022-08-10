@@ -39,9 +39,13 @@ function showParams() {
 }
 
 function main() {
+  local operation=${1}
   #######################################################
   local MODULE_NAME
   MODULE_NAME="${RDBOX_MODULE_NAME_K8S_DASHBOARD}"
+  if [ "${operation}" = "create" ]; then
+    update_cluster_info
+  fi  ############################
   local NAMESPACE
   NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
   local RELEASE
@@ -62,7 +66,6 @@ function main() {
     ### NOTE
     ### If "HELM_VERSION_SPECIFIED" is not specified, the latest version retrieved from the Web is applied.
   #######################################################
-  local operation=${1}
   showHeaderCommand "${@}"
   if [ "${operation}" = "create" ]; then
     source "$(dirname "${0}")/crud/create.bash"

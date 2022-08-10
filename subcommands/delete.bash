@@ -14,7 +14,7 @@ function main() {
   if [ "${module_name}" = "" ] && [ "${cluster_name}" != "" ]; then
     cmdWithLoding \
       "delete_all $cluster_name" \
-      "Deleteing $cluster_name"
+      "- Deleteing $cluster_name ..."
     ret=$?
   elif [ "${module_name}" != "" ] && [ "${cluster_name}" != "" ]; then
     executor "${module_name}" "${@}"

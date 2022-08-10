@@ -26,7 +26,6 @@ function create() {
   local SPECIFIC_SECRETS
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
-  update_cluster_info
   checkArgs "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)

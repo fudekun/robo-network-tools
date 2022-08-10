@@ -38,7 +38,6 @@ function checkArgs() {
 }
 
 function create() {
-  update_cluster_info
   checkArgs "$@"
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)

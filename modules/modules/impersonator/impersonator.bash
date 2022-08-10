@@ -33,9 +33,14 @@ function showParams() {
 }
 
 function main() {
+  local operation=${1}
   #######################################################
   local MODULE_NAME
   MODULE_NAME="${RDBOX_MODULE_NAME_IMPERSONATOR}"
+  if [ "${operation}" = "create" ]; then
+    update_cluster_info
+  fi
+  ############################
   local NAMESPACE
   NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
   local RELEASE
@@ -43,7 +48,6 @@ function main() {
   local BASE_FQDN
   BASE_FQDN=$(getBaseFQDN)
   #######################################################
-  local operation=${1}
   showHeaderCommand "${@}"
   if [ "${operation}" = "create" ]; then
     source "$(dirname "${0}")/crud/create.bash"
