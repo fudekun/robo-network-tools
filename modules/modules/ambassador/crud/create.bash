@@ -107,6 +107,7 @@ function create_main() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
       --set emissary-ingress.service.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set emissary-ingress.adminService.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set emissary-ingress.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \

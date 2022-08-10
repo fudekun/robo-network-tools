@@ -95,6 +95,7 @@ function __executor() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
       --set serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set deploymentAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \

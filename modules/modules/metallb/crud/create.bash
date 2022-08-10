@@ -73,6 +73,7 @@ function __executor() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
       --set controller.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set controller.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       --set speaker.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \

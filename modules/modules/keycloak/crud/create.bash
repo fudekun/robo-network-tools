@@ -154,6 +154,7 @@ function create_main() {
     --create-namespace \
     --wait \
     --timeout 600s \
+    --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
     --set commonAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
     --set ingress.hostname="${hostname_for_keycloak_main}.${BASE_FQDN}" \
     --set ingress.extraTls\[0\].hosts\[0\]="${hostname_for_keycloak_main}.${BASE_FQDN}" \
