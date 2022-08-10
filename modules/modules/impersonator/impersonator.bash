@@ -11,13 +11,40 @@ set -euo pipefail
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
+function showHeaderCommand() {
+  local operating=${1^}
+  echo ""
+  echo "---"
+  echo "## ${operating} ${MODULE_NAME} ..."
+  cmdWithIndent "showParams $*"
+  return $?
+}
+
+function showParams() {
+  echo "---"
+  printf "ARGS:\n%q (%s arg(s))\n" "$*" "$#"
+  printf "ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
+  echo ""
+  echo NAMESPACE="${NAMESPACE}"
+  echo RELEASE="${RELEASE}"
+  echo BASE_FQDN="${BASE_FQDN}"
+  echo "---"
+  return $?
+}
+
 function main() {
   #######################################################
   local MODULE_NAME
   MODULE_NAME="${RDBOX_MODULE_NAME_IMPERSONATOR}"
-  echo "${MODULE_NAME}" > /dev/null 2>&1
+  local NAMESPACE
+  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
+  local RELEASE
+  RELEASE="$(getReleaseName "${MODULE_NAME}")"
+  local BASE_FQDN
+  BASE_FQDN=$(getBaseFQDN)
   #######################################################
   local operation=${1}
+  showHeaderCommand "${@}"
   if [ "${operation}" = "create" ]; then
     source "$(dirname "${0}")/crud/create.bash"
     create "${*:2}"

@@ -1198,8 +1198,8 @@ function kubectl_r() {
 function prepare_helm_repo() {
   local HELM_REPO_URL
   HELM_REPO_URL=$(curl -s https://artifacthub.io/api/v1/packages/helm/"${HELM_NAME}" | jq -r ".repository.url")
-  helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}"
-  helm repo update "${HELM_REPO_NAME}"
+  helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}" > /dev/null 2>&1
+  helm repo update "${HELM_REPO_NAME}" > /dev/null 2>&1
   return $?
 }
 

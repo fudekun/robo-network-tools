@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-function showHeaderCommand() {
-  echo ""
-  echo "---"
-  echo "## Installing ${MODULE_NAME} ..."
-  return $?
-}
+###############################################################################
+# Activating a impersonator
+# Globals:
+#   MODULE_NAME
+#   NAMESPACE
+#   RELEASE
+#   HELM_NAME
+#   HELM_REPO_NAME
+#   HELM_PKG_NAME
+#   HELM_VERSION
+#   RDBOX_WORKDIR_OF_SCRIPTS_BASE
+#   CREATES_RELEASE_ID
+#
+# Style: https://google.github.io/styleguide/shellguide.html
+###############################################################################
 
 function checkArgs() {
   return $?
@@ -14,23 +23,10 @@ function checkArgs() {
 
 function create() {
   #######################################################
-  local MODULE_NAME
-  MODULE_NAME="${RDBOX_MODULE_NAME_IMPERSONATOR}"
-  #######################################################
   local SPECIFIC_SECRETS
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
-  showHeaderCommand "$@"
-  #######
   update_cluster_info
-  #######
-  local NAMESPACE
-  NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
-  local RELEASE
-  RELEASE="$(getReleaseName "${MODULE_NAME}")"
-  local BASE_FQDN
-  BASE_FQDN=$(getBaseFQDN)
-  #######
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
