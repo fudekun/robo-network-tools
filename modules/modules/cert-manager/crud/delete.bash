@@ -95,4 +95,3 @@ function delete_main() {
 }
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
-source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/account.bash"

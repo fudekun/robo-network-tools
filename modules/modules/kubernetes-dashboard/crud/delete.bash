@@ -6,7 +6,6 @@ set -euo pipefail
 # Globals:
 #   MODULE_NAME
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
-#   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
@@ -80,8 +79,8 @@ function delete_main() {
   echo ""
   echo "### Deleting Helm ..."
   helm -n "${NAMESPACE}" uninstall "${RELEASE}"
-  # 3. Delete manifest
-  #
+  ## 3. Delete manifest
+  ##
   echo ""
   echo "### Deleting Manifest ..."
   local args
