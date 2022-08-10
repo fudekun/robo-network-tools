@@ -1257,3 +1257,138 @@ function update_cluster_info() {
   __update_cluster_info "$tmp_dir" "$@"
   return $?
 }
+
+#######################################
+# Purge $MODULE_NAME items from the cluseter-info
+# - a configmap of cluster-common(Namespace)
+# Globals:
+#   MODULE_NAME                            (e.g. keycloak)
+#   __RDBOX_CLUSTER_INFO_NAMESPACE         (e.g. cluster-common)
+#   __RDBOX_CLUSTER_INFO_NAMENAME          (e.g. cluseter-info)
+# Arguments:
+#   NONE
+# Returns:
+#   0 if thing was success, non-zero on error.
+#######################################
+function purge_cluster_info() {
+  function __purge_cluster_info() {
+    local tmp_dir=$1
+    local cm_filepath="${tmp_dir}"/cm.yaml
+    kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" get configmaps "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
+      --output yaml \
+    | yq "del(.data.${MODULE_NAME}*, \
+              .data.\"namespace.${MODULE_NAME}\", \
+              .metadata.uid, \
+              .metadata.creationTimestamp, \
+              .metadata.resourceVersion, \
+              .metadata.managedFields)" > "${cm_filepath}"
+    local NAMESPACE
+    local CREATES_RELEASE_ID
+    NAMESPACE="${__RDBOX_CLUSTER_INFO_NAMESPACE}"
+    CREATES_RELEASE_ID=$(getEpochMillisec)
+    kubectl_r replace -f "${cm_filepath}"
+    return $?
+  }
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${tmp_dir}'" EXIT
+  __purge_cluster_info "$tmp_dir" "$@"
+  return $?
+}
+
+#######################################
+# Get a id of latest release
+# Globals:
+#   MODULE_NAME                          (e.g. keycloak)
+# Outputs:
+#   ID                                   (e.g. 1659418304268)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function get_latest_release() {
+  local __version_of_engine __dirpath_of_output __fullpath_latest_values_yaml
+  local __latest_values_yaml __latest_values_array
+  __version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
+  __dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${MODULE_NAME}" outputs "manifests" "${__version_of_engine}")")
+  __fullpath_latest_values_yaml=${__dirpath_of_output}/values.latest.yaml
+  __latest_values_yaml=$(basename "$(readlink "${__fullpath_latest_values_yaml}")")
+  IFS="." read -r -a __latest_values_array <<< "$__latest_values_yaml"
+  echo -n "${__latest_values_array[1]}"
+  return $?
+}
+
+#######################################
+# Get a manifests of latest release
+# Globals:
+#   MODULE_NAME                          (e.g. keycloak)
+# Outputs:
+#   ID                                   (e.g. 1659418304268)
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function get_latest_manifests() {
+  local __version_of_engine __dirpath_of_output __fullpath_latest_values_yaml
+  local __latest_values_yaml __latest_values_array
+  __version_of_engine=$(getApiversionBasedOnSemver "$(getVersionOfTemplateEngine)")
+  __dirpath_of_output=$(dirname "$(getFullpathOfValuesYamlBy "${MODULE_NAME}" outputs "manifests" "${__version_of_engine}")")
+  __fullpath_latest_values_yaml=${__dirpath_of_output}/values.latest.yaml
+  __latest_values_yaml=$(basename "$(readlink "${__fullpath_latest_values_yaml}")")
+  IFS="." read -r -a __latest_values_array <<< "$__latest_values_yaml"
+  echo -n "${__dirpath_of_output}/${__latest_values_array[0]}.${__latest_values_array[1]}.*.yaml"
+  return $?
+}
+
+#######################################
+# Get a result of to execute ls command
+# - that is formated SSV(Space Separated Value) with be escaped
+# Arguments:
+#   path                          (e.g. /path/to/hoge.*.yaml)
+# Outputs:
+#   paths                         (e.g. "/path/to/hoge.1.yaml /path/to/hoge.2.yaml /path/to/hoge.3.yaml")
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function get_escaped_ssv_by_ls() {
+  local path=$1
+  fullpath_file_list=$(bash -c "ls ${path}")
+  echo "${fullpath_file_list}" | sed "s/\\$//g" | sed "s/'//g" | tr '\n' ' '
+  return $?
+}
+
+#######################################
+# Get args of files for kubectl_delete
+# - that is formated SSV(Space Separated Value) with be escaped
+# - Sample USAGE
+#  ```bash
+#  local args
+#  IFS=' ' read -r -a args <<< "$(get_args_of_files_for_kubectl_delete)"
+#  kubectl delete "${args[@]}"
+#  ```
+# Globals:
+#   MODULE_NAME       (e.g. keycloak)
+# Arguments:
+#   None
+# Outputs:
+#   args              (e.g. "-f /path/to/hoge.1.yaml -f /path/to/hoge.2.yaml")
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function get_args_of_files_for_kubectl_delete() {
+  local fullpath_latest_manifests_as_regex
+  fullpath_latest_manifests_as_regex=$(get_latest_manifests)
+    ### NOTE
+    ### e.g.)
+    ### /tmp/crobotics/rdbox/outputs/modules/kubernetes-dashboard/manifests/v1beta1/values.1660031982882.*.yaml
+  local latest_values_array
+  IFS=" " read -r -a latest_values_array <<< "$(get_escaped_ssv_by_ls "${fullpath_latest_manifests_as_regex}")"
+  local args=()
+  for arg in "${latest_values_array[@]}" ; do
+    args+=("-f" "${arg}")
+  done
+  echo -n "${args[@]}"
+    ### NOTE
+    ### e.g.)
+    ### "-f /path/to/hoge.1.yaml -f /path/to/hoge.2.yaml"
+  return $?
+}

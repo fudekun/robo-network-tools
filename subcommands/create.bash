@@ -45,6 +45,7 @@ function check_args() {
   done
   shift $((OPTIND - 1))
   echo -n "${module_name}"
+  return $?
 }
 
 function executor() {
