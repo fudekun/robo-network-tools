@@ -95,6 +95,20 @@ function __executor() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --set serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set deploymentAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set serviceAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set webhook.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set webhook.deploymentAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set webhook.serviceAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set webhook.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set cainjector.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set cainjector.deploymentAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set cainjector.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set startupapicheck.jobAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set startupapicheck.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set startupapicheck.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 2. Setup RootCA (You can recycle a previous RootCA certificates (For Developpers))
   ##

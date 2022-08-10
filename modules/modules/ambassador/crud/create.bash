@@ -107,6 +107,14 @@ function create_main() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --set emissary-ingress.service.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set emissary-ingress.adminService.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set emissary-ingress.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set emissary-ingress.deploymentAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set emissary-ingress.service.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set emissary-ingress.adminService.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set redis.annotations.deployment."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set redis.annotations.service."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   return $?
 }

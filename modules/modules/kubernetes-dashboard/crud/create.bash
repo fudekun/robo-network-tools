@@ -207,6 +207,7 @@ function create_main() {
     --create-namespace \
     --wait \
     --timeout 600s \
+    --set commonAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
     --set extraArgs\[0\]="--apiserver-host=https://${__hostname_for_k8ssso}.${__hostname_for_k8s_dashboard}.${BASE_FQDN}" \
     --set extraArgs\[1\]="--kubeconfig=/original-kubeconfig/${__kubeconfig_file_name}" \
     --set extraVolumes\[0\].secret.secretName="${__hostname_for_k8s_dashboard}.${BASE_FQDN}" \

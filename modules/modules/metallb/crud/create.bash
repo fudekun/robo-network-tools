@@ -73,6 +73,10 @@ function __executor() {
       --create-namespace \
       --wait \
       --timeout 600s \
+      --set controller.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set controller.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set speaker.podAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set speaker.serviceAccount.annotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 2. Create a CRDs
   ##
