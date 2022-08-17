@@ -47,18 +47,18 @@ function __executor() {
   echo ""
   echo "### Create a namespace of ambassador-admin ..."
   kubectl_r create namespace "${NAMESPACE}"
-  ## 5. Create a Secret
+  ## 2. Create a Secret
   ##
   echo ""
   echo "### Activating Secret ..."
   kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
     --from-literal=client-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
-  ## 6. Create a Entry
+  ## 3. Create a Entry
   ##
   echo ""
   echo "### Activating Entry ..."
   __create_entry
-  ## 7. Create a Filter
+  ## 4. Create a Filter
   ##
   echo ""
   echo "### Activating Filter ..."
