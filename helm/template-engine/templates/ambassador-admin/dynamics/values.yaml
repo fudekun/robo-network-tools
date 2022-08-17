@@ -1,0 +1,28 @@
+##
+{{- if .Values.ambassadorAdmin }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+ambassadorAdmin:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.ambassadorAdmin.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.ambassadorAdmin.dynamics.main.hostname }}
+      fqdn: "{{ .Values.ambassadorAdmin.dynamics.main.hostname }}.{{ .Values.ambassadorAdmin.dynamics.common.baseFqdn }}"
+    {{- if .Values.ambassadorAdmin.dynamics.certificate }}
+    certificate:
+      create: {{ .Values.ambassadorAdmin.dynamics.certificate.create | default true }}
+    {{- end }}
+    {{- if .Values.ambassadorAdmin.dynamics.ingress }}
+    ingress:
+      create: {{ .Values.ambassadorAdmin.dynamics.ingress.create | default true }}
+      service: {{ .Values.ambassadorAdmin.dynamics.ingress.service }}
+    {{- end }}
+    {{- if .Values.ambassadorAdmin.dynamics.filter }}
+    filter:
+      create: {{ .Values.ambassadorAdmin.dynamics.filter.create | default true }}
+      authorizationURL: "{{ .Values.ambassadorAdmin.dynamics.filter.authorizationURL }}"
+      secret: "{{ .Values.ambassadorAdmin.dynamics.filter.secret }}"
+      jwksUri: "{{ .Values.ambassadorAdmin.dynamics.filter.jwksUri }}"
+    {{- end }}
+{{- end }}
+{{- end }}

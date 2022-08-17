@@ -20,6 +20,10 @@ emissary-ingress:
     type: Recreate
   nodeSelector:
     ingress-ready: "true"
+  module:
+    diagnostics:
+      enabled: false
+      allow_non_local: true
   service:
     type: NodePort
     ports:

@@ -53,7 +53,7 @@ function main() {
       - If you specific 0, the Verifier Text is hidden.
       - The smaller the number specified, the higher the number displayed first.
   3. Define a RDBOX_MODULE_NAME_ in the modules/libs/common.bash
-    - RDBOX_MODULE_NAME_${under_module_name^^}=${module_name}
+    - RDBOX_MODULE_NAME_${under_module_name^^}=\"${module_name}\"
   "
   return $?
 }
@@ -63,6 +63,7 @@ function create_main() {
   local under_module_name=${module_name/-/_}
 echo "#!/usr/bin/env bash
 set -euo pipefail
+
 ###############################################################################
 # Operating a ${module_name}
 # Globals:
@@ -73,13 +74,36 @@ set -euo pipefail
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
+function showHeaderCommand() {
+  local operating=\${1^}
+  echo \"\"
+  echo \"---\"
+  echo \"## \${operating} \${MODULE_NAME} ...\"
+  cmdWithIndent \"showParams \$*\"
+  return \$?
+}
+
+function showParams() {
+  return \$?
+}
+
 function main() {
+  local operation=\${1}
   #######################################################
   local MODULE_NAME
-  MODULE_NAME=\"RDBOX_MODULE_NAME_${under_module_name^^}\"
-  echo \"\${MODULE_NAME}\" > /dev/null 2>&1
+  MODULE_NAME=\"\${RDBOX_MODULE_NAME_${under_module_name^^}}\"
+  if [ \"\${operation}\" = \"create\" ]; then
+    update_cluster_info
+  fi
+  ############################
+  local NAMESPACE
+  NAMESPACE=\"\$(getNamespaceName \"\${MODULE_NAME}\")\"
+  local RELEASE
+  RELEASE=\"\$(getReleaseName \"\${MODULE_NAME}\")\"
+  local BASE_FQDN
+  BASE_FQDN=\$(getBaseFQDN)
   #######################################################
-  local operation=\${1}
+  showHeaderCommand \"\${@}\"
   if [ \"\${operation}\" = \"create\" ]; then
     source \"\$(dirname \"\${0}\")/crud/create.bash\"
     create \"\${*:2}\"
@@ -107,28 +131,32 @@ function create_script() {
   local under_module_name=${module_name/-/_}
 echo "#!/usr/bin/env bash
 set -euo pipefail
+
 ###############################################################################
 # Activating a ${module_name}
 # Globals:
 #   RDBOX_MODULE_NAME_${under_module_name^^}
+#   MODULE_NAME
+#   NAMESPACE
+#   RELEASE
+#   HELM_NAME
+#   HELM_REPO_NAME
+#   HELM_PKG_NAME
+#   HELM_VERSION
 #   RDBOX_WORKDIR_OF_SCRIPTS_BASE
 #   CREATES_RELEASE_ID
 #
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
-function showHeaderCommand() {
-  echo \"\"
-  echo \"---\"
-  echo \"## Installing \${MODULE_NAME} ...\"
-  return \$?
-}
-
 function checkArgs() {
   return \$?
 }
 
-function main() {
+function create() {
+  cmdWithIndent \"__executor \$*\"
+  verify_string=$(showVerifierCommand)
+  echo \"\${verify_string}\" > \"\$(getFullpathOfVerifyMsgs \"\${MODULE_NAME}\")\"
   return \$?
 }
 
@@ -137,6 +165,10 @@ function showVerifierCommand() {
   echo \"## USAGE\"
   echo \"### \${MODULE_NAME} has been installed. Check its status by running:\"
   echo \"    kubectl -n \${NAMESPACE} get deployments -o wide\"
+  return \$?
+}
+
+function __executor() {
   return \$?
 }
 

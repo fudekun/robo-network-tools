@@ -1,0 +1,38 @@
+##
+{{- if .Values.ambassadorAdmin }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.ambassadorAdmin.dynamics.certificate }}
+{{- if and .Values.ambassadorAdmin.dynamics.certificate.create (hasKey .Values.ambassadorAdmin.dynamics.certificate "create")}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-issuer-ca.{{ .Values.ambassadorAdmin.dynamics.main.fqdn}}
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  isCA: true
+  commonName: "{{ .Values.ambassadorAdmin.dynamics.main.fqdn}}"
+  dnsNames:
+    - {{ .Values.ambassadorAdmin.dynamics.main.fqdn}}
+    - "*.{{ .Values.ambassadorAdmin.dynamics.main.fqdn}}"
+  secretName: {{ .Values.ambassadorAdmin.dynamics.main.fqdn}}
+  duration: {{ .Values.ambassadorAdmin.di.certificate.duration }}
+  {{- if .Values.ambassadorAdmin.di.certificate.privateKey }}
+  privateKey: {{- include "common.tplvalues.render" ( dict "value" .Values.ambassadorAdmin.di.certificate.privateKey "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.ambassadorAdmin.di.certificate.subject }}
+  subject: {{- include "common.tplvalues.render" ( dict "value" .Values.ambassadorAdmin.di.certificate.subject "context" $) | nindent 4 }}
+  {{- end }}
+  issuerRef:
+    name: cluster-issuer-ca.{{ .Values.ambassadorAdmin.dynamics.common.baseFqdn }}
+    kind: ClusterIssuer
+    group: cert-manager.io
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
