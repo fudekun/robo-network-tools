@@ -68,7 +68,9 @@ executor() {
   for arg in "${modules[@]}" ; do
     local kv
     IFS="=" read -r -a kv <<< "$arg"
-    bash "$(getWorkdirOfScripts)/modules/modules/${kv[0]}/${kv[0]}.bash" "$@"
+    cmdWithLoding \
+      "bash $(getWorkdirOfScripts)/modules/modules/${kv[0]}/${kv[0]}.bash ${*}" \
+      "- Activating the ${kv[0]} ..."
     ret=$?
     if [[ "${ret}" -ne 0 ]]; then
       break

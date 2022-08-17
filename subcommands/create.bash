@@ -64,9 +64,13 @@ function executor() {
   ## 3. Execute
   ##
   if [[ ${fullpath_of_script} != "" ]]; then
-    cmdWithLoding \
-      "bash ${fullpath_of_script} create ${*:2}" \
-      "- Activating the ${module_name} ..."
+    if [[ "$fullpath_of_script" =~ "meta-pkgs" ]]; then
+      bash "${fullpath_of_script}" create "${*:2}"
+    else
+      cmdWithLoding \
+        "bash ${fullpath_of_script} create ${*:2}" \
+        "- Activating the ${module_name} ..."
+    fi
   else
     echo "Invalid module name (${module_name} dose not exist)"
   fi
