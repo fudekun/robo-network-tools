@@ -11,6 +11,20 @@ set -euo pipefail
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
+function create_error_handler() {
+  local cluster=${1}
+  local module=${2}
+  cmdWithIndent "echo ''"
+  cmdWithIndent "echo Error detected"
+  cmdWithIndent "echo Rollback in progress ..."
+  if bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/main.rdbox delete --name "${cluster}" --module "${module}" > /dev/null 2>&1; then
+    cmdWithIndent "echo Rollback succeeded"
+  else
+    cmdWithIndent "echo Rollback failed"
+  fi
+  cmdWithIndent "echo ''"
+}
+
 function showHeaderCommand() {
   local operating=${1^}
   echo ""
@@ -25,6 +39,7 @@ function showParams() {
   printf "ARGS:\n%q (%s arg(s))\n" "$*" "$#"
   printf "ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
   echo ""
+  echo CLUSTER_NAME="${CLUSTER_NAME}"
   echo NAMESPACE="${NAMESPACE}"
   echo RELEASE="${RELEASE}"
   echo BASE_FQDN="${BASE_FQDN}"
@@ -45,7 +60,10 @@ function main() {
   MODULE_NAME="${RDBOX_MODULE_NAME_KEYCLOAK}"
   if [ "${operation}" = "create" ]; then
     update_cluster_info
-  fi  ############################
+  fi
+  ############################
+  local CLUSTER_NAME
+  CLUSTER_NAME=$(getClusterName)
   local NAMESPACE
   NAMESPACE="$(getNamespaceName "${MODULE_NAME}")"
   local RELEASE
@@ -69,6 +87,8 @@ function main() {
   showHeaderCommand "${@}"
   if [ "${operation}" = "create" ]; then
     source "$(dirname "${0}")/crud/create.bash"
+    # shellcheck disable=SC2064
+    trap "create_error_handler '${CLUSTER_NAME}' '${MODULE_NAME}'" ERR
     create "${*:2}"
   elif [ "${operation}" = "delete" ]; then
     source "$(dirname "${0}")/crud/delete.bash"

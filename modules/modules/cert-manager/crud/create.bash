@@ -39,10 +39,13 @@ function checkArgs() {
 
 function create() {
   checkArgs "$@"
-  cmdWithIndent "__executor $*"
-  verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
+  if cmdWithIndent "executor $*"; then
+    verify_string=$(showVerifierCommand)
+    echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
+    return 0
+  else
+    return 1
+  fi
 }
 
 function showVerifierCommand() {
@@ -55,6 +58,14 @@ function showVerifierCommand() {
   echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
   return $?
+}
+
+function executor() {
+  if __executor "${@}"; then
+    exit 0
+  else
+    exit 1
+  fi
 }
 
 function __executor() {

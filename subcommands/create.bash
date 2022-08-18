@@ -65,7 +65,7 @@ function executor() {
   ##
   if [[ ${fullpath_of_script} != "" ]]; then
     if [[ "$fullpath_of_script" =~ "meta-pkgs" ]]; then
-      bash "${fullpath_of_script}" create "${*:2}"
+      bash "${fullpath_of_script}" create "${@:2}"
     else
       cmdWithLoding \
         "bash ${fullpath_of_script} create ${*:2}" \

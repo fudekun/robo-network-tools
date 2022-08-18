@@ -128,14 +128,20 @@ function cmdWithIndent() {
   local is_showing_mark
   cmd=$(printf %q "$1" | sed "s/\\\//g")
   is_showing_mark="${2:-true}"
+  local STATUS
   if "$is_showing_mark"; then
     local esc
     esc=$(printf '\033')
-    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[2]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent"
+    eval "{ ${cmd} 3>&1 1>&2 2>&3 | sed 's/^/${__RDBOX_RAW_INDENT}${esc}[31m[2]&${esc}[0m -> /' ; } 3>&1 1>&2 2>&3 | showIndent;  STATUS=(\${PIPESTATUS[@]})"
   else
-    eval "${cmd} 2>&1 | showIndent"
+    eval "${cmd} 2>&1 | showIndent;  STATUS=(\${PIPESTATUS[@]})"
   fi
-  return $?
+  local code
+  if code=$(printf '%s\n' "${STATUS[@]}" | grep -x '[1-9]\|[1-9][0-9]\|1[0-2][0-9]'); then
+    return "$code"
+  else
+    return 0
+  fi
 }
 
 #######################################

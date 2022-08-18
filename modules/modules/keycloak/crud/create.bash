@@ -27,10 +27,13 @@ function create() {
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
   checkArgs "$@"
-  cmdWithIndent "__executor $*"
-  verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
+  if cmdWithIndent "executor $*"; then
+    verify_string=$(showVerifierCommand)
+    echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
+    return 0
+  else
+    return 1
+  fi
 }
 
 function showVerifierCommand() {
@@ -48,6 +51,14 @@ function showVerifierCommand() {
   echo "    echo Username: $(getPresetClusterAdminUserName "${MODULE_NAME}")"
   echo "    echo Password: \$(kubectl -n ${NAMESPACE} get secrets ${SPECIFIC_SECRETS} -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
   return $?
+}
+
+function executor() {
+  if __executor "${@}"; then
+    exit 0
+  else
+    exit 1
+  fi
 }
 
 function __executor() {

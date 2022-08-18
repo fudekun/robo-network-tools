@@ -26,10 +26,13 @@ function create() {
   local SPECIFIC_SECRETS
   SPECIFIC_SECRETS="specific-secrets"
   #######################################################
-  cmdWithIndent "__executor $*"
-  verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
+  if cmdWithIndent "executor $*"; then
+    verify_string=$(showVerifierCommand)
+    echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
+    return 0
+  else
+    return 1
+  fi
 }
 
 function showVerifierCommand() {
@@ -58,6 +61,14 @@ function showVerifierCommand() {
   echo "    kubectl config use-context $(getKubectlContextName4SSO)"
   echo "    kubectl get node          # whatever is okay, just choose the one you like"
   return $?
+}
+
+function executor() {
+  if __executor "${@}"; then
+    exit 0
+  else
+    exit 1
+  fi
 }
 
 function __executor() {
