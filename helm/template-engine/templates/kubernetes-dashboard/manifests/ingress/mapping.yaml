@@ -19,6 +19,7 @@ spec:
   prefix: /
   allow_upgrade:
   - spdy/3.1
+  - websocket
   service: "https://{{ .Values.kubernetesDashboard.dynamics.main.hostname }}.{{ template "common.names.namespace" . }}:{{ .Values.kubernetesDashboard.dynamics.ingress.port }}"
   timeout_ms: 0
 {{- end }}
