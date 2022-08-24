@@ -1,0 +1,40 @@
+## Component scraping kube scheduler
+##
+kubeScheduler:
+  ## If using kubeScheduler.endpoints only the port and targetPort are used
+  ## @param kubeScheduler.service.enabled Whether or not to create a Service object for kube-scheduler
+  ## @param kubeScheduler.service.ports.http Listening port of the kube scheduler Service object
+  ## @param kubeScheduler.service.targetPorts.http Port to target on the kube scheduler Pods. This should be the port that kube scheduler is exposing metrics on
+  ## @param kubeScheduler.service.selector Optional PODs Label selector for the service
+  ##
+  service:
+    targetPorts:
+      http: 10259
+  serviceMonitor:
+    ## @param kubeScheduler.serviceMonitor.https Enable scraping kube-scheduler over https
+    ## Requires proper certs (not self-signed) and delegated authentication/authorization checks
+    ##
+    https: true
+    ## @param kubeScheduler.serviceMonitor.insecureSkipVerify Skip TLS certificate validation when scraping
+    ##
+    insecureSkipVerify: true
+## Component scraping the kube-controller-manager
+##
+kubeControllerManager:
+  ## Service ports and selector information
+  ## @param kubeControllerManager.service.enabled Whether or not to create a Service object for kube-controller-manager
+  ## @param kubeControllerManager.service.ports.http Listening port of the kube-controller-manager Service object
+  ## @param kubeControllerManager.service.targetPorts.http Port to target on the kube-controller-manager Pods. This should be the port that kube-controller-manager is exposing metrics on
+  ## @param kubeControllerManager.service.selector Optional PODs Label selector for the service
+  ##
+  service:
+    targetPorts:
+      http: 10257
+  serviceMonitor:
+    ## @param kubeControllerManager.serviceMonitor.https Enable scraping kube-controller-manager over https
+    ## Requires proper certs (not self-signed) and delegated authentication/authorization checks
+    ##
+    https: true
+    ## @param kubeControllerManager.serviceMonitor.insecureSkipVerify Skip TLS certificate validation when scraping
+    ##
+    insecureSkipVerify: true

@@ -23,6 +23,8 @@ RDBOX_MODULE_NAME_IMPERSONATOR="impersonator"
 RDBOX_MODULE_NAME_AMBASSADOR_ADMIN="ambassador-admin"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_PROMETHEUS="prometheus"
 ## OTHER #####################################################
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"

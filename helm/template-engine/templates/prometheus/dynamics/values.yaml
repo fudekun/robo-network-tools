@@ -1,0 +1,21 @@
+##
+{{- if .Values.prometheus }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+prometheus:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.prometheus.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.prometheus.dynamics.main.hostname }}
+      fqdn: "{{ .Values.prometheus.dynamics.main.hostname }}.{{ .Values.prometheus.dynamics.common.baseFqdn }}"
+    {{- if .Values.prometheus.dynamics.certificate }}
+    certificate:
+      create: {{ .Values.prometheus.dynamics.certificate.create | default true }}
+    {{- end }}
+    {{- if .Values.prometheus.dynamics.ingress }}
+    ingress:
+      create: {{ .Values.prometheus.dynamics.ingress.create | default true }}
+      service: {{ .Values.prometheus.dynamics.ingress.service }}
+    {{- end }}
+{{- end }}
+{{- end }}
