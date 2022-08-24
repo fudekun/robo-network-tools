@@ -6,7 +6,7 @@
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}.kubernetes-dashboard-key-holder"
+  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}-kubernetes-dashboard-key-holder"
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -26,7 +26,7 @@ spec:
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}.api-apis"
+  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}-api-apis"
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -48,7 +48,7 @@ spec:
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}.fallback-api-apis"
+  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}-fallback-api-apis"
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -70,7 +70,7 @@ spec:
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}.fallback-all"
+  name: "{{ .Values.kubernetesDashboard.dynamics.k8ssso.hostname }}-fallback-all"
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
