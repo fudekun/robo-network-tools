@@ -28,6 +28,7 @@ function main() {
   mkdir -p "${module_dir}" "${module_dir}/crud"
   create_main "${module_name}" > "${module_dir}/${module_name}.bash"
   create_script "${module_name}" > "${module_dir}/crud/create.bash"
+  touch "${module_dir}/crud/delete.bash"
   # conf
   mkdir -p "${conf_dir}/di/${version}" "${conf_dir}/helm/${version}" "${conf_dir}/entry/${version}"
   touch "${conf_dir}/di/${version}/values.yaml"
@@ -84,6 +85,13 @@ function showHeaderCommand() {
 }
 
 function showParams() {
+  echo \"---\"
+  echo \"\"
+  echo CLUSTER_NAME=\"\${CLUSTER_NAME}\"
+  echo NAMESPACE=\"\${NAMESPACE}\"
+  echo RELEASE=\"\${RELEASE}\"
+  echo BASE_FQDN=\"\${BASE_FQDN}\"
+  echo \"---\"
   return \$?
 }
 
@@ -96,6 +104,8 @@ function main() {
     update_cluster_info
   fi
   ############################
+  local CLUSTER_NAME
+  CLUSTER_NAME=\$(getClusterName)
   local NAMESPACE
   NAMESPACE=\"\$(getNamespaceName \"\${MODULE_NAME}\")\"
   local RELEASE
@@ -154,9 +164,14 @@ function checkArgs() {
 }
 
 function create() {
-  cmdWithIndent \"__executor \$*\"
-  verify_string=$(showVerifierCommand)
-  echo \"\${verify_string}\" > \"\$(getFullpathOfVerifyMsgs \"\${MODULE_NAME}\")\"
+  checkArgs \"\$@\"
+  if cmdWithIndent \"executor \$*\"; then
+    verify_string=\$(showVerifierCommand)
+    echo \"\${verify_string}\" > \"\$(getFullpathOfVerifyMsgs \"\${MODULE_NAME}\")\"
+    return 0
+  else
+    return 1
+  fi
   return \$?
 }
 
@@ -166,6 +181,14 @@ function showVerifierCommand() {
   echo \"### \${MODULE_NAME} has been installed. Check its status by running:\"
   echo \"    kubectl -n \${NAMESPACE} get deployments -o wide\"
   return \$?
+}
+
+function executor() {
+  if __executor \"\${@}\"; then
+    exit 0
+  else
+    exit 1
+  fi
 }
 
 function __executor() {

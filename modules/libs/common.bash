@@ -167,13 +167,13 @@ function showLoading() {
     echo -ne "\r\033[K"
     echo -ne "  $loading_text\r"
     echo -ne "\033[35m-\033[m  $loading_text\r"
-    sleep 0.25
+    sleep 0.5
     echo -ne "\\  $loading_text\r"
-    sleep 0.25
+    sleep 0.5
     echo -ne "\033[33m|\033[m  $loading_text\r"
-    sleep 0.25
+    sleep 0.5
     echo -ne "\033[32m/\033[m  $loading_text\r"
-    sleep 0.25
+    sleep 0.5
   done
   tput cnorm                     ## (TO here) the cursor visible again:
   #-------------------
