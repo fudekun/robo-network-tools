@@ -68,6 +68,21 @@ function __executor() {
   echo "### Activating Secret ..."
   kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
     --from-literal=client-secret="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+    ### NOTE
+    ### create a client secret for keycloak
+    ###
+  local hostname
+  hostname=$(getHostName "${MODULE_NAME}" "main")
+  applyManifestByDI "${NAMESPACE}" \
+                    "${RELEASE}" \
+                    "${CREATES_RELEASE_ID}" \
+                    180s \
+                    grafana.dynamics.common.baseFqdn="${BASE_FQDN}" \
+                    grafana.dynamics.main.hostname="${hostname}" \
+                    grafana.dynamics.certificate.create="true"
+    ### NOTE
+    ### create a server cert for this
+    ###
   ## 3. Create a Entry
   ##
   echo ""
@@ -77,13 +92,12 @@ function __executor() {
   ##
   echo ""
   echo "### Installing with helm ..."
-  local authorization_url secret hostname
+  local authorization_url secret
   authorization_url=$(get_authorization_url "${CLUSTER_NAME}")
     ### NOTE
     ### ex) https://keycloak.rdbox.172-16-0-110.nip.io/realms/rdbox
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.client-secret}' | base64 -d)
-  hostname=$(getHostName "${MODULE_NAME}" "main")
   helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
       --version "${HELM_VERSION}" \
       --create-namespace \
@@ -97,6 +111,8 @@ function __executor() {
       --set grafana.config.auth\\.generic_oauth.auth_url="${authorization_url}/protocol/openid-connect/auth" \
       --set grafana.config.auth\\.generic_oauth.token_url="${authorization_url}/protocol/openid-connect/token" \
       --set grafana.config.auth\\.generic_oauth.api_url="${authorization_url}/protocol/openid-connect/userinfo" \
+      --set grafana.config.auth\\.generic_oauth.tls_client_ca="/etc/grafana-secrets/${hostname}/ca.crt" \
+      --set grafana.secrets\[0\]="${hostname}" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 5. Setup Ingress and TLSContext
   ##
@@ -112,7 +128,6 @@ function __executor() {
                     180s \
                     grafana.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     grafana.dynamics.main.hostname="${hostname}" \
-                    grafana.dynamics.certificate.create="true" \
                     grafana.dynamics.ingress.create="true" \
                     grafana.dynamics.ingress.service="${service}"
       ### NOTE
@@ -134,7 +149,8 @@ function __executor() {
                     grafana.dynamics.main.hostname="${hostname}" \
                     grafana.dynamics.grafanaDataSource.create="true" \
                     grafana.dynamics.grafanaDataSource.name="${release_prometheus}" \
-                    grafana.dynamics.grafanaDataSource.url="${url_prometheus_main}"
+                    grafana.dynamics.grafanaDataSource.url="${url_prometheus_main}" \
+                    grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert="__file\{/etc/grafana-secrets/${hostname}/ca.crt\}"
   return $?
 }
 

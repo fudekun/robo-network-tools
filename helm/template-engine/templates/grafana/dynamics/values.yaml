@@ -22,6 +22,8 @@ grafana:
       create: {{ .Values.grafana.dynamics.grafanaDataSource.create | default true }}
       name: {{ .Values.grafana.dynamics.grafanaDataSource.name }}
       url: {{ .Values.grafana.dynamics.grafanaDataSource.url }}
+      secureJsonData:
+        tlsCACert: {{ .Values.grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert }}
     {{- end }}
 {{- end }}
 {{- end }}

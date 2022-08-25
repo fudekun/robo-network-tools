@@ -24,7 +24,10 @@ spec:
       access: proxy
       isDefault: true
       jsonData:
-        tlsSkipVerify: true
+        tlsAuthWithCACert: true
+        oauthPassThru: true
+      secureJsonData:
+        tlsCACert: "${{ .Values.grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert }}"
       version: 1
       orgId: 1
 {{- end }}
