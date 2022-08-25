@@ -1,0 +1,18 @@
+grafana:
+  config:
+    log:
+      level: info
+    server:
+      root_url: __URL__
+    auth.generic_oauth:
+      enabled: true
+      allow_sign_up: true
+      scopes: openid profile groups email roles
+      client_id: __ID__
+      client_secret: __SECRET__
+      auth_url: __URL__
+      token_url: __URL__
+      api_url: __URL__
+      tls_skip_verify_insecure: true
+      email_attribute_path: preferred_username
+      role_attribute_path: contains(groups[*], 'cluster-admin') && 'Admin' || contains(realm_access.roles[*], 'admin') && 'Editor' || 'Viewer'

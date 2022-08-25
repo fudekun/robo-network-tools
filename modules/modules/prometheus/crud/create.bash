@@ -4,7 +4,6 @@ set -euo pipefail
 ###############################################################################
 # Activating a prometheus
 # Globals:
-#   RDBOX_MODULE_NAME_PROMETHEUS
 #   MODULE_NAME
 #   NAMESPACE
 #   RELEASE
@@ -59,7 +58,7 @@ function __executor() {
   echo ""
   echo "### Create a namespace of prometheus ..."
   kubectl_r create namespace "${NAMESPACE}"
-  ## 2. Install Cert-Manager
+  ## 2. Install Prometheus
   ##
   echo ""
   echo "### Installing with helm ..."
