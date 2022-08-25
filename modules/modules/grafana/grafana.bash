@@ -11,6 +11,20 @@ set -euo pipefail
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
+function create_error_handler() {
+  local cluster=${1}
+  local module=${2}
+  cmdWithIndent "echo ''"
+  cmdWithIndent "echo Error detected"
+  cmdWithIndent "echo Rollback in progress ..."
+  if bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}"/main.rdbox delete --name "${cluster}" --module "${module}" > /dev/null 2>&1; then
+    cmdWithIndent "echo Rollback succeeded"
+  else
+    cmdWithIndent "echo Rollback failed"
+  fi
+  cmdWithIndent "echo ''"
+}
+
 function showHeaderCommand() {
   local operating=${1^}
   echo ""
@@ -73,6 +87,8 @@ function main() {
   showHeaderCommand "${@}"
   if [ "${operation}" = "create" ]; then
     source "$(dirname "${0}")/crud/create.bash"
+    # shellcheck disable=SC2064
+    trap "create_error_handler '${CLUSTER_NAME}' '${MODULE_NAME}'" ERR
     create "${*:2}"
   elif [ "${operation}" = "delete" ]; then
     source "$(dirname "${0}")/crud/delete.bash"
