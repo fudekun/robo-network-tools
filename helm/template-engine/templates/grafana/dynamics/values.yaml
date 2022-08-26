@@ -25,5 +25,11 @@ grafana:
       secureJsonData:
         tlsCACert: {{ .Values.grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert }}
     {{- end }}
+    {{- if .Values.grafana.dynamics.grafanaDashboard }}
+    grafanaDashboard:
+      create: {{ .Values.grafana.dynamics.grafanaDashboard.create | default true }}
+      multicluster:
+        enabled: false
+    {{- end }}
 {{- end }}
 {{- end }}

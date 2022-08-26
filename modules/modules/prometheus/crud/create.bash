@@ -77,7 +77,11 @@ function __executor() {
   local hostname port service
   hostname=$(getHostName "${MODULE_NAME}" "main")
   port=$(kubectl -n "${NAMESPACE}" get service "${RELEASE}-kube-prometheus-prometheus" -o json \
-    | jq -r '.spec.ports[] | select (.name=="http") | .port')
+    | jq -r '.spec.ports[] | select (.name=="http-web") | .port')
+      ### NOTE
+      ### {{- define "kube-prometheus-stack.fullname" -}}
+      ### {{- $name := default .Chart.Name .Values.nameOverride -}}
+      ### {{- printf "%s-%s" .Release.Name $name | trunc 26 | trimSuffix "-" -}}
   service="http://${RELEASE}-kube-prometheus-prometheus.${NAMESPACE}.svc:${port}"
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \

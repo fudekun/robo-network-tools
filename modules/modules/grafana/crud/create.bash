@@ -151,6 +151,17 @@ function __executor() {
                     grafana.dynamics.grafanaDataSource.name="${release_prometheus}" \
                     grafana.dynamics.grafanaDataSource.url="${url_prometheus_main}" \
                     grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert="__file\{/etc/grafana-secrets/${hostname}/ca.crt\}"
+  ## ６. Setup GrafanaDashboard
+  ##
+  echo ""
+  echo "### Activating the GrafanaDashboard ..."
+  applyManifestByDI "${NAMESPACE}" \
+                    "${RELEASE}" \
+                    "${CREATES_RELEASE_ID}" \
+                    180s \
+                    grafana.dynamics.common.baseFqdn="${BASE_FQDN}" \
+                    grafana.dynamics.main.hostname="${hostname}" \
+                    grafana.dynamics.grafanaDashboard.create="true"
   return $?
 }
 
