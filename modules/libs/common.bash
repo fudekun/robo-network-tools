@@ -1248,7 +1248,7 @@ function update_cluster_info() {
   function __update_cluster_info() {
     local tmp_dir=$1
     local env_prop
-    env_prop=$(getDirNameFor confs)/modules/${MODULE_NAME}/env.properties
+    env_prop="$(getWorkdirOfScripts)/modules/modules/${MODULE_NAME}/env.properties"
     local cm_filepath="${tmp_dir}"/cm.json
     kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
       --dry-run=client \
