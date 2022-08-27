@@ -7,12 +7,10 @@ function main() {
   local __hostname_for_k8s_dashboard_k8ssso=$3
   local __base_fqdn=$4
 
-  local __name
   local __token
   local __ca
   local __server
-  __name=$(kubectl -n "${__namespace_for_k8s_dashboard}" get secrets -o name | grep "kubernetes-dashboard-token")
-  __token=$(kubectl -n "${__namespace_for_k8s_dashboard}" get "${__name}" -o jsonpath='{.data.token}' | base64 --decode)
+  __token=$(kubectl -n "${__namespace_for_k8s_dashboard}" create token "${__namespace_for_k8s_dashboard}" --duration=4294967295s)
   __ca=$(kubectl -n cert-manager get secret "${__base_fqdn}" -o jsonpath='{.data.tls\.crt}')
   __server=https://${__hostname_for_k8s_dashboard_k8ssso}.${__hostname_for_k8s_dashboard_main}.${__base_fqdn}
 
@@ -39,4 +37,4 @@ users:
 }
 
 main "$@"
-exit $?
+exit 1
