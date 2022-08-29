@@ -23,6 +23,10 @@ RDBOX_MODULE_NAME_IMPERSONATOR="impersonator"
 RDBOX_MODULE_NAME_AMBASSADOR_ADMIN="ambassador-admin"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_PROMETHEUS="prometheus"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_GRAFANA="grafana"
 ## OTHER #####################################################
 __RDBOX_OPTS_RDBOX_MAIN="n:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:"
@@ -1244,7 +1248,7 @@ function update_cluster_info() {
   function __update_cluster_info() {
     local tmp_dir=$1
     local env_prop
-    env_prop=$(getDirNameFor confs)/modules/${MODULE_NAME}/env.properties
+    env_prop="$(getWorkdirOfScripts)/modules/modules/${MODULE_NAME}/env.properties"
     local cm_filepath="${tmp_dir}"/cm.json
     kubectl -n "${__RDBOX_CLUSTER_INFO_NAMESPACE}" create configmap "${__RDBOX_CLUSTER_INFO_NAMENAME}" \
       --dry-run=client \

@@ -34,7 +34,7 @@ showVerifierCommand() {
   local arg
   local verifier=()
   ret=0
-  readarray -t modules < "$(getDirNameFor confs)/meta-pkgs/essentials/create.properties"
+  readarray -t modules < "$(getWorkdirOfScripts)/modules/meta-pkgs/essentials/create.properties"
   for arg in "${modules[@]}" ; do
     local kv
     IFS="=" read -r -a kv <<< "$arg"
@@ -64,7 +64,7 @@ executor() {
   local modules
   local arg
   ret=0
-  readarray -t modules < "$(getDirNameFor confs)/meta-pkgs/essentials/create.properties"
+  readarray -t modules < "$(getWorkdirOfScripts)/modules/meta-pkgs/essentials/create.properties"
   for arg in "${modules[@]}" ; do
     local kv
     IFS="=" read -r -a kv <<< "$arg"

@@ -1,0 +1,58 @@
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+##
+
+## @section Grafana Operator parameters
+##
+
+## This all configuration for the Grafana Operator.
+## Ref: https://github.com/integr8ly/grafana-operator/blob/master/documentation/README.md
+## Constants it is using for creating instances:
+## Ref: https://github.com/integr8ly/grafana-operator/blob/master/pkg/controller/model/constants.go
+##
+operator:
+  ## @param operator.enabled Enable the deployment of the Grafana Operator
+  ##
+  enabled: true
+  ## The options are mutually exclusive.
+  ##
+  scanAllNamespaces: true
+
+## @section Grafana parameters
+##
+
+grafana:
+  ## @param grafana.enabled Enabled the deployment of the Grafana CRD object into the cluster
+  ##
+  enabled: true
+  ## @param grafana.config [object] grafana.ini configuration for the instance for this to configure please look at upstream docs
+  ## This is the configuration from the grafana pod itself. Every toml section is a root key
+  ## Ref: https://grafana.com/docs/grafana/latest/administration/configuration/
+  ##
+  config:
+    log:
+      level: info
+    server:
+      root_url: __URL__
+    auth.generic_oauth:
+      enabled: true
+      allow_sign_up: true
+      scopes: openid profile groups email roles
+      client_id: __ID__
+      client_secret: __SECRET__
+      auth_url: __URL__
+      token_url: __URL__
+      api_url: __URL__
+      tls_client_ca: __FILE__
+      email_attribute_path: preferred_username
+      role_attribute_path: contains(groups[*], 'cluster-admin') && 'Admin' || contains(realm_access.roles[*], 'admin') && 'Editor' || 'Viewer'
+  ## @param grafana.secrets Extra secrets to mount into the grafana pod
+  ## Ref: https://github.com/integr8ly/grafana-operator/blob/master/documentation/extra_files.md
+  ## e.g:
+  ## secrets:
+  ##   - myCustomSecret
+  ##
+  secrets:
+    - __SECRET__

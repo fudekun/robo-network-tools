@@ -1,0 +1,36 @@
+##
+{{- if .Values.grafana }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.grafana.dynamics.grafanaDataSource }}
+{{- if and .Values.grafana.dynamics.grafanaDataSource.create (hasKey .Values.grafana.dynamics.grafanaDataSource "create")}}
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDataSource
+metadata:
+  name: "{{ .Values.grafana.dynamics.main.hostname }}"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: bitnami.grafana-operator
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  name: "{{ .Values.grafana.dynamics.grafanaDataSource.name }}.yaml"
+  datasources:
+    - name: {{ .Values.grafana.dynamics.grafanaDataSource.name }}
+      type: {{ .Values.grafana.dynamics.grafanaDataSource.name }}
+      uid: {{ .Values.grafana.dynamics.grafanaDataSource.name }}
+      url: {{ .Values.grafana.dynamics.grafanaDataSource.url }}
+      access: proxy
+      isDefault: true
+      jsonData:
+        tlsAuthWithCACert: true
+        oauthPassThru: true
+      secureJsonData:
+        tlsCACert: "${{ .Values.grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert }}"
+      version: 1
+      orgId: 1
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

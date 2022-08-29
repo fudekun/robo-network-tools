@@ -33,7 +33,7 @@ function main() {
   mkdir -p "${conf_dir}/di/${version}" "${conf_dir}/helm/${version}" "${conf_dir}/entry/${version}"
   touch "${conf_dir}/di/${version}/values.yaml"
   touch "${conf_dir}/helm/${version}/values.yaml"
-  conf_env_properties "${module_name}" "${version}" > "${conf_dir}/env.properties"
+  conf_env_properties "${module_name}" "${version}" > "${module_dir}/env.properties"
   # template-engine
   mkdir -p "${template_dir}/dynamics" "${template_dir}/manifests"
   dynamics_values_yaml "${module_name}" > "${template_dir}/dynamics/values.yaml"
@@ -45,7 +45,7 @@ function main() {
     - ${module_dir}/${module_name}.bash
     - ${conf_dir}/di/${version}/values.yaml
     - ${conf_dir}/helm/${version}/values.yaml
-    - ${conf_dir}/env.properties
+    - ${module_dir}/env.properties
     - ${template_dir}/dynamics/values.yaml
     - ${template_dir}/manifests/values.yaml
   2. Add to \"${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/confs/meta-pkgs/essentials/create.properties\" if necessary.

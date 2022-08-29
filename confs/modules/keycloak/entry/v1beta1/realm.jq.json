@@ -34,8 +34,7 @@
     {
       "name": $preset_group_name,
       "realmRoles": [
-        "admin",
-        "user"
+        "admin"
       ],
       "clientRoles": {
         "realm-management": [
@@ -45,12 +44,6 @@
           "manage-account"
         ]
       }
-    },
-    {
-      "name": "guest",
-      "realmRoles": [
-        "user"
-      ]
     }
   ],
   "users": [
@@ -77,28 +70,6 @@
       "notBefore": 0,
       "groups": [
         $preset_group_name
-      ]
-    },
-    {
-      "username": "guest",
-      "firstName": "guest",
-      "lastName": "guest",
-      "enabled": true,
-      "totp": false,
-      "emailVerified": false,
-      "credentials": [
-        {
-          "type": "password",
-          "secretData": "{\"value\":\"R6TI3MRwDs6jn4yO9NwmWb4tuJnootGl6ICT/dedu3mgcnXJc0HPDkAxvStGLmKDR4Eeh4GkyVAq3O6jU7sbhg==\",\"salt\":\"JDUkbmswdk5mN3FPQ3NFbHdNTw==\"}",
-          "credentialData": "{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":27500}"
-        }
-      ],
-      "disableableCredentialTypes": [
-        "password"
-      ],
-      "notBefore": 0,
-      "groups": [
-        "guest"
       ]
     }
   ],

@@ -1,0 +1,35 @@
+##
+{{- if .Values.grafana }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+grafana:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.grafana.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.grafana.dynamics.main.hostname }}
+      fqdn: "{{ .Values.grafana.dynamics.main.hostname }}.{{ .Values.grafana.dynamics.common.baseFqdn }}"
+    {{- if .Values.grafana.dynamics.certificate }}
+    certificate:
+      create: {{ .Values.grafana.dynamics.certificate.create | default true }}
+    {{- end }}
+    {{- if .Values.grafana.dynamics.ingress }}
+    ingress:
+      create: {{ .Values.grafana.dynamics.ingress.create | default true }}
+      service: {{ .Values.grafana.dynamics.ingress.service }}
+    {{- end }}
+    {{- if .Values.grafana.dynamics.grafanaDataSource }}
+    grafanaDataSource:
+      create: {{ .Values.grafana.dynamics.grafanaDataSource.create | default true }}
+      name: {{ .Values.grafana.dynamics.grafanaDataSource.name }}
+      url: {{ .Values.grafana.dynamics.grafanaDataSource.url }}
+      secureJsonData:
+        tlsCACert: {{ .Values.grafana.dynamics.grafanaDataSource.secureJsonData.tlsCACert }}
+    {{- end }}
+    {{- if .Values.grafana.dynamics.grafanaDashboard }}
+    grafanaDashboard:
+      create: {{ .Values.grafana.dynamics.grafanaDashboard.create | default true }}
+      multicluster:
+        enabled: false
+    {{- end }}
+{{- end }}
+{{- end }}

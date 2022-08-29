@@ -1,0 +1,6 @@
+{
+  "name": $name,
+  "realmRoles": [
+    $realm_role
+  ]
+}
