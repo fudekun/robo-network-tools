@@ -1,0 +1,22 @@
+{
+  "username": $username,
+  "firstName": $first_name,
+  "lastName": $last_name,
+  "enabled": true,
+  "totp": $totp,
+  "emailVerified": false,
+  "credentials": [
+    {
+      "type": "password",
+      "secretData": $secret_data,
+      "credentialData": $credential_data
+    }
+  ],
+  "disableableCredentialTypes": [
+    "password"
+  ],
+  "notBefore": 0,
+  "groups": [
+    $last_name
+  ]
+}

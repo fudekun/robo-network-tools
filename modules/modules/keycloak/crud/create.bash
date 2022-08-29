@@ -104,19 +104,6 @@ function create_main() {
   echo "### Activating Secret ..."
   if kubectl -n "${NAMESPACE}" get secret "${SPECIFIC_SECRETS}" 2>/dev/null; then
     echo "Already exist the secrets (${SPECIFIC_SECRETS}.${NAMESPACE}) ...ok"
-    echo "Update passwords for Realm"
-    kubectl_r -n "${NAMESPACE}" create secret generic "${SPECIFIC_SECRETS}" \
-      --from-literal=adminPassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.adminPassword}' | base64 -d)" \
-      --from-literal=managementPassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.managementPassword}' | base64 -d)" \
-      --from-literal=postgres-password="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.postgres-password}' | base64 -d)" \
-      --from-literal=password="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.password}' | base64 -d)" \
-      --from-literal=databasePassword="$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-            -o jsonpath='{.data.databasePassword}' | base64 -d)" \
-      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
   else
     local database_password
     database_password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
@@ -187,8 +174,17 @@ function create_main() {
 }
 
 function create_entries() {
-  ## 1. Prepare various parameters
+  ## 1. Start a session
   ##
+  local token user pass
+  user=$(getPresetKeycloakSuperAdminName "${NAMESPACE}")
+  pass=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+        -o jsonpath='{.data.adminPassword}' \
+        | base64 --decode)
+  token=$(get_access_token "master" "${user}" "${pass}")
+  ### .1 Create a new realm
+  ###    - A preset user and group, that is using for admin
+  ###
   local admin_password
   local realm
   local first_name
@@ -203,18 +199,18 @@ function create_entries() {
   local cred_hash_array
   cred_hash_array=()
   while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(getHashedPasswordByPbkdf2Sha256 "$admin_password")
-  local salt
-  local hashed_salted_value
-  local hash_iterations
+  local salt hashed_salted_value hash_iterations
   salt=${cred_hash_array[0]}
   hashed_salted_value=${cred_hash_array[1]}
   hash_iterations=${cred_hash_array[2]}
-  local secret_data
-  local credential_data
+  local secret_data credential_data
   secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
   credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
-  local src_filepath
-  local entry_json
+  local src_filepath entry_json
+  ###
+  # if ! delete_entry "__NONE__" "${token}" "__NONE__" "${realm}"; then
+  #   echo "The Client(${NAMESPACE}) is Not Found ...ok"
+  # fi
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/realm.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "cluster_name ${realm}" \
@@ -225,28 +221,45 @@ function create_entries() {
                 "secret_data ${secret_data}" \
                 "credential_data ${credential_data}" \
               )
-  local user
-  local pass
-  user=$(getPresetKeycloakSuperAdminName "${NAMESPACE}")
-  pass=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
-        -o jsonpath='{.data.adminPassword}' \
-        | base64 --decode)
-  ## 2. Start a session
-  ##
-  local token
-  token=$(get_access_token "master" "${user}" "${pass}")
-  ### .1 Create a new realm
-  ###
-  if ! delete_entry "__NONE__" "${token}" "__NONE__" "${realm}"; then
-    echo "The Client(${NAMESPACE}) is Not Found ...ok"
-  fi
   create_entry "__NONE__" "${token}" "__NONE__" "${entry_json}"
-  ### .2 Create a new ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")
+  ### .2 Create a new groups for test use
+  ###
+  src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/groups.jq.json
+  entry_json=$(parse_jq_temlate "${src_filepath}" \
+                "name guest" \
+                "realm_role user" \
+              )
+  create_entry "${realm}" "${token}" "groups" "${entry_json}"
+  ### .3 Create a new users for test use
+  ###
+  local cred_hash_array
+  cred_hash_array=()
+  while IFS='' read -r line; do cred_hash_array+=("$line"); done < <(getHashedPasswordByPbkdf2Sha256 "password")
+  local salt hashed_salted_value hash_iterations
+  salt=${cred_hash_array[0]}
+  hashed_salted_value=${cred_hash_array[1]}
+  hash_iterations=${cred_hash_array[2]}
+  local secret_data credential_data
+  secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
+  credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
+  ###
+  src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/users.jq.json
+  entry_json=$(parse_jq_temlate "${src_filepath}" \
+                "username guest" \
+                "first_name guest" \
+                "last_name guest" \
+                "totp" false\
+                "secret_data ${secret_data}" \
+                "credential_data ${credential_data}" \
+                "groups guest" \
+              )
+  create_entry "${realm}" "${token}" "users" "${entry_json}"
+  ### .4 Create a new ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")
   ###
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client_scope.jq.json
   entry_json=$(cat "${src_filepath}")
   create_entry "${realm}" "${token}" "client-scopes" "${entry_json}"
-  ## 3. Stop a session
+  ## 2. Stop a session
   ##
   revoke_access_token "master" "${token}"
   return $?
