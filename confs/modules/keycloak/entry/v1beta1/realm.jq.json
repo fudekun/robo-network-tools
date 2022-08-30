@@ -32,9 +32,10 @@
   ],
   "groups": [
     {
-      "name": $preset_group_name,
+      "name": "cluster",
       "realmRoles": [
-        "admin"
+        "cluster",
+        "group"
       ],
       "clientRoles": {
         "realm-management": [
@@ -43,7 +44,68 @@
         "account": [
           "manage-account"
         ]
-      }
+      },
+      "subGroups": [
+        {
+          "name": "cluster-admin",
+          "realmRoles": [
+            "cluster-admin"
+          ],
+          "clientRoles": {
+            "realm-management": [
+              "realm-admin"
+            ],
+            "account": [
+              "manage-account"
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "realmRoles": [
+            "admin"
+          ]
+        },
+        {
+          "name": "edit",
+          "realmRoles": [
+            "edit"
+          ]
+        },
+        {
+          "name": "view",
+          "realmRoles": [
+            "view"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "guest",
+      "realmRoles": [
+        "namespace",
+        "group"
+      ],
+      "subGroups": [
+        {
+          "name": "admin",
+          "realmRoles": [
+            "admin"
+          ]
+        },
+        {
+          "name": "edit",
+          "realmRoles": [
+            "edit"
+          ]
+        },
+        {
+          "name": "view",
+          "realmRoles": [
+            "view"
+          ]
+        }
+      ]
     }
   ],
   "users": [
@@ -68,6 +130,9 @@
         "CONFIGURE_TOTP"
       ],
       "notBefore": 0,
+      "realmRoles": [
+        "user"
+      ],
       "groups": [
         $preset_group_name
       ]
@@ -75,14 +140,6 @@
   ],
   "roles": {
     "realm": [
-      {
-        "name": "admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": $cluster_name,
-        "attributes": {
-        }
-      },
       {
         "name": "offline_access",
         "description": "${role_offline-access}",
@@ -102,7 +159,71 @@
         }
       },
       {
+        "name": "namespace",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "cluster",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "cluster-admin",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "admin",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "edit",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "view",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
         "name": "user",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "serviceaccount",
+        "composite": false,
+        "clientRole": false,
+        "containerId": $cluster_name,
+        "attributes": {
+        }
+      },
+      {
+        "name": "group",
         "composite": false,
         "clientRole": false,
         "containerId": $cluster_name,

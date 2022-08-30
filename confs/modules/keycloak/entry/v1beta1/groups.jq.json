@@ -1,6 +1,7 @@
 {
   "name": $name,
   "realmRoles": [
-    $realm_role
+    "namespace",
+    "group"
   ]
 }

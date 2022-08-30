@@ -24,7 +24,7 @@ spec:
     - name: "{{ .Values.ambassadorAdmin.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
         name: "Impersonate-Group"
-        value: "cluster-admin"
+        value: "/cluster/cluster-admin"
       onAllow: "break"
     - name: "{{ .Values.ambassadorAdmin.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:

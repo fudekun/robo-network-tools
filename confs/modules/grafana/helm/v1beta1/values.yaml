@@ -47,7 +47,7 @@ grafana:
       api_url: __URL__
       tls_client_ca: __FILE__
       email_attribute_path: preferred_username
-      role_attribute_path: contains(groups[*], 'cluster-admin') && 'Admin' || contains(realm_access.roles[*], 'admin') && 'Editor' || 'Viewer'
+      role_attribute_path: contains(groups[*], '/cluster/cluster-admin') && 'Admin' || contains(realm_access.roles[*], 'admin') && 'Editor' || 'Viewer'
   ## @param grafana.secrets Extra secrets to mount into the grafana pod
   ## Ref: https://github.com/integr8ly/grafana-operator/blob/master/documentation/extra_files.md
   ## e.g:

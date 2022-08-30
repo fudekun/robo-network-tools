@@ -90,7 +90,9 @@ function __executor() {
                     180s \
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
-                    keycloak.dynamics.main.rbac.create="true"
+                    keycloak.dynamics.main.rbac.create="true" \
+                    keycloak.dynamics.main.rbac.presetClusterAdminGroup="cluster" \
+                    keycloak.dynamics.main.rbac.presetRegularGroup="guest"
   return $?
 }
 
@@ -224,13 +226,12 @@ function create_entries() {
   create_entry "__NONE__" "${token}" "__NONE__" "${entry_json}"
   ### .2 Create a new groups for test use
   ###
-  src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/groups.jq.json
-  entry_json=$(parse_jq_temlate "${src_filepath}" \
-                "name guest" \
-                "realm_role user" \
-              )
-  create_entry "${realm}" "${token}" "groups" "${entry_json}"
-  ### .3 Create a new users for test use
+  # src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/groups.jq.json
+  # entry_json=$(parse_jq_temlate "${src_filepath}" \
+  #               "name guest" \
+  #             )
+  # create_entry "${realm}" "${token}" "groups" "${entry_json}"
+  ### .2 Create a new users for test use
   ###
   local cred_hash_array
   cred_hash_array=()
@@ -251,7 +252,7 @@ function create_entries() {
                 "totp" false\
                 "secret_data ${secret_data}" \
                 "credential_data ${credential_data}" \
-                "groups guest" \
+                "group /guest/admin" \
               )
   create_entry "${realm}" "${token}" "users" "${entry_json}"
   ### .4 Create a new ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")

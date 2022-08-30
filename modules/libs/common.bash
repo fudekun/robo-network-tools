@@ -875,7 +875,7 @@ function getPresetClusterAdminUserName() {
 function getPresetClusterAdminGroupName() {
   # !! Must be a hyphen-delimited string !!
   # e.g. *cluster-admim*
-  echo -n "cluster-admin"
+  echo -n "/cluster/cluster-admin"
   return $?
 }
 

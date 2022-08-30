@@ -16,7 +16,10 @@
     "password"
   ],
   "notBefore": 0,
+  "realmRoles": [
+    "user"
+  ],
   "groups": [
-    $last_name
+    $group
   ]
 }
