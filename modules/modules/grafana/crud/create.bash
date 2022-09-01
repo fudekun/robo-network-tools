@@ -92,12 +92,13 @@ function __executor() {
   ##
   echo ""
   echo "### Installing with helm ..."
-  local authorization_url secret
+  local authorization_url secret preset_cluster_admin_group
   authorization_url=$(get_authorization_url "${CLUSTER_NAME}")
     ### NOTE
     ### ex) https://keycloak.rdbox.172-16-0-110.nip.io/realms/rdbox
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.client-secret}' | base64 -d)
+  preset_cluster_admin_group=$(getPresetClusterAdminGroupName)
   helm -n "${NAMESPACE}" upgrade --install "${RELEASE}" "${HELM_NAME}" \
       --version "${HELM_VERSION}" \
       --create-namespace \
@@ -112,6 +113,7 @@ function __executor() {
       --set grafana.config.auth\\.generic_oauth.token_url="${authorization_url}/protocol/openid-connect/token" \
       --set grafana.config.auth\\.generic_oauth.api_url="${authorization_url}/protocol/openid-connect/userinfo" \
       --set grafana.config.auth\\.generic_oauth.tls_client_ca="/etc/grafana-secrets/${hostname}/ca.crt" \
+      --set grafana.config.auth\\.generic_oauth.role_attribute_path="contains(groups[*]\, \'${preset_cluster_admin_group}\') && 'Admin' || contains(realm_access.roles[*]\, 'admin') && 'Editor' || 'Viewer'" \
       --set grafana.secrets\[0\]="${hostname}" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 5. Setup Ingress and TLSContext

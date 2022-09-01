@@ -165,6 +165,8 @@ function __create_filter() {
   service_for_ambassador="http://${release_ambassador}-admin.${ns_ambassador}.svc:${port_ambassador}"
   local jwks_uri
   jwks_uri="https://$(getHostName "${RDBOX_MODULE_NAME_KEYCLOAK}" "main").${BASE_FQDN}/realms/$(getClusterName)/protocol/openid-connect/certs"
+  local allowed_group
+  allowed_group=$(getPresetClusterAdminGroupName)
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
                     "${CREATES_RELEASE_ID}" \
@@ -177,7 +179,8 @@ function __create_filter() {
                     ambassadorAdmin.dynamics.filter.create="true" \
                     ambassadorAdmin.dynamics.filter.authorizationURL="${authorization_url}" \
                     ambassadorAdmin.dynamics.filter.secret="\"${secret}\"" \
-                    ambassadorAdmin.dynamics.filter.jwksUri="${jwks_uri}"
+                    ambassadorAdmin.dynamics.filter.jwksUri="${jwks_uri}" \
+                    ambassadorAdmin.dynamics.filter.allowedGroup="${allowed_group}"
   return $?
 }
 

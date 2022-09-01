@@ -880,6 +880,21 @@ function getPresetClusterAdminGroupName() {
 }
 
 #######################################
+# Get the guest group name
+#    - This user is used for test and tutorial
+# Outputs:
+#   /guest/admin
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+#######################################
+function getPresetNamespaceGuestGroupName() {
+  # !! Must be a hyphen-delimited string !!
+  # e.g. *cluster-admim*
+  echo -n "/guest/admin"
+  return $?
+}
+
+#######################################
 # Get the salted password by Pbkdf2Sha256
 # Globals:
 #   None

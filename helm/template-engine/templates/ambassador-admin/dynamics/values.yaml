@@ -23,6 +23,7 @@ ambassadorAdmin:
       authorizationURL: "{{ .Values.ambassadorAdmin.dynamics.filter.authorizationURL }}"
       secret: "{{ .Values.ambassadorAdmin.dynamics.filter.secret }}"
       jwksUri: "{{ .Values.ambassadorAdmin.dynamics.filter.jwksUri }}"
+      allowedGroup: "{{ .Values.ambassadorAdmin.dynamics.filter.allowedGroup }}"
     {{- end }}
 {{- end }}
 {{- end }}

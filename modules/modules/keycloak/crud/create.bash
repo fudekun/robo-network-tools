@@ -84,6 +84,12 @@ function __executor() {
   ##
   echo ""
   echo "### Activating realm entries of the k8s RBAC ..."
+  local group_for_cluster_admin top_group_for_cluster_admin
+  group_for_cluster_admin=$(getPresetClusterAdminGroupName)
+  top_group_for_cluster_admin=$(echo "${group_for_cluster_admin}" | awk -F '/' '{print $2}')
+  local group_for_guest top_group_for_guest
+  group_for_guest=$(getPresetNamespaceGuestGroupName)
+  top_group_for_guest=$(echo "${group_for_guest}" | awk -F '/' '{print $2}')
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
                     "${CREATES_RELEASE_ID}" \
@@ -91,8 +97,8 @@ function __executor() {
                     keycloak.dynamics.common.baseFqdn="${BASE_FQDN}" \
                     keycloak.dynamics.main.hostname="$(getHostName "${MODULE_NAME}" "main")" \
                     keycloak.dynamics.main.rbac.create="true" \
-                    keycloak.dynamics.main.rbac.presetClusterAdminGroup="cluster" \
-                    keycloak.dynamics.main.rbac.presetRegularGroup="guest"
+                    keycloak.dynamics.main.rbac.presetClusterAdminGroup="${top_group_for_cluster_admin}" \
+                    keycloak.dynamics.main.rbac.presetRegularGroup="${top_group_for_guest}"
   return $?
 }
 
@@ -252,7 +258,7 @@ function create_entries() {
                 "totp" false\
                 "secret_data ${secret_data}" \
                 "credential_data ${credential_data}" \
-                "group /guest/admin" \
+                "group $(getPresetNamespaceGuestGroupName)" \
               )
   create_entry "${realm}" "${token}" "users" "${entry_json}"
   ### .4 Create a new ClientScope(This name is the "groups". pointer the "oidc-group-membership-mapper")
