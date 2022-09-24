@@ -28,8 +28,9 @@ RDBOX_MODULE_NAME_PROMETHEUS="prometheus"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_GRAFANA="grafana"
 ## OTHER #####################################################
+__RDBOX_OPTS_CREATE_VOLUME="o:s:p:z:"
+__RDBOX_OPTS_CREATE_MAIN="d:m:h:${__RDBOX_OPTS_CREATE_VOLUME}"
 __RDBOX_OPTS_RDBOX_MAIN="n:"
-__RDBOX_OPTS_CREATE_MAIN="d:m:"
 __RDBOX_CLUSTER_INFO_NAMESPACE="cluster-common"
 __RDBOX_CLUSTER_INFO_NAMENAME="cluster-info"
 __RDBOX_SUBCOMMANDS_DIR_RELATIVE_PATH="/subcommands"
@@ -695,6 +696,15 @@ function getBaseFQDN() {
 }
 function getIPv4 () {
   getClusterinfoFromConfigmap ".data[\"nic0.ipv4\"]"
+}
+function getVolumeClass () {
+  getClusterinfoFromConfigmap ".data[\"volume.class\"]"
+}
+function getVolumeMode () {
+  getClusterinfoFromConfigmap ".data[\"volume.mode\"]"
+}
+function getVolumeSize () {
+  getClusterinfoFromConfigmap ".data[\"volume.size\"]"
 }
 function getNamespaceName() {
   local __namespace=$1

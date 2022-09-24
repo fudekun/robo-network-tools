@@ -80,7 +80,7 @@ In the rdbox repository (insiders branch) that you cloned, you will find a direc
 Copy the `sros2_oidc` directory to your working directory for ROS2.
 
 ```bash
-git clone -b insiders https://github.com/rdbox-intec/rdbox
+git clone --recursive -b insiders https://github.com/rdbox-intec/rdbox
 cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 ```
 

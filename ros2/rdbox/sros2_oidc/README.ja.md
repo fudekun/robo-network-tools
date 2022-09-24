@@ -80,7 +80,7 @@ Keycloakは、[RDBOXの初期セットアップ](https://github.com/rdbox-intec/
 クローンした`sros2_oidc`のソースコードを含むrdboxディレクトリを、あなたのROS2用作業ディレクトリにコピーしてください。
 
 ```bash
-git clone -b insiders https://github.com/rdbox-intec/rdbox
+git clone --recursive -b insiders https://github.com/rdbox-intec/rdbox
 cp -rf ./rdbox/ros2/rdbox ${YOUR_ROS2_WS}/src
 ```
 

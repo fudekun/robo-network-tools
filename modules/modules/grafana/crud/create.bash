@@ -115,6 +115,7 @@ function __executor() {
       --set grafana.config.auth\\.generic_oauth.tls_client_ca="/etc/grafana-secrets/${hostname}/ca.crt" \
       --set grafana.config.auth\\.generic_oauth.role_attribute_path="contains(groups[*]\, \'${preset_cluster_admin_group}\') && 'Admin' || contains(realm_access.roles[*]\, 'admin') && 'Editor' || 'Viewer'" \
       --set grafana.secrets\[0\]="${hostname}" \
+      --set grafana.persistence.storageClass="$(getVolumeClass)" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 5. Setup Ingress and TLSContext
   ##

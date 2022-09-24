@@ -29,7 +29,7 @@ nodes:
     kind: JoinConfiguration
     nodeRegistration:
       kubeletExtraArgs:
-        node-labels: "ingress-ready=true"
+        node-labels: "ingress-ready=true,storage-ready=true"
   extraPortMappings:
   - containerPort: 32022
     hostPort: 32022
@@ -41,5 +41,5 @@ nodes:
     hostPort: 443
     protocol: TCP
   extraMounts:
-  - containerPath: /fromhost
-    hostPath: /tmp/tocontainer
+  - containerPath: /data/nfs
+    hostPath: __DATA__

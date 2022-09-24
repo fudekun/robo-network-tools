@@ -111,7 +111,7 @@ sudo apt-get install -y \
 ブランチに注意して下さい。
 
 ```bash
-git clone -b insiders https://github.com/rdbox-intec/rdbox.git
+git clone --recursive -b insiders https://github.com/rdbox-intec/rdbox.git
 cd rdbox
 ```
 
@@ -240,9 +240,17 @@ Successfully tagged rdbox/docker:20.10
 - `--module k8s-cluster`では今回構築するモジュールの種別を指定。
 - `--domain nip.io`には名前解決可能なローカルドメインを指定する必要があります。
   - 存在しない場合は`nip.io`などの**ワイルドカードDNSサービス**を指定して下さい。
+- `--volume_type tmp`にはデータ保存形式を指定。
+  - tmp: クラスタを消去すると削除されるテスト検証用
+  - nfs: クラスタ内に簡易NFSサーバを構築し，その中にデータを保存する．クラスタを消去してもデータは消えない．（試験的）
+    - `--volume_size 40`データ保存容量を指定します．GB単位．40GB以上の指定を推奨します．
 
 ```bash
-./rdbox create --name rdbox --module k8s-cluster --domain nip.io
+./rdbox create --name rdbox --module k8s-cluster --domain nip.io --volume_type tmp
+```
+
+```bash
+./rdbox create -n rdbox -m k8s-cluster -d nip.io --volume_type nfs --volume_size 40
 ```
 
 ```bash

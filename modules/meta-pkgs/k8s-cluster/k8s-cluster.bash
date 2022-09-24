@@ -34,6 +34,7 @@ function checkArgs() {
       -d|--domain) domain_name="$optarg" ;;
       -h|--host) host_name="$optarg" ;;
       -n|--name) cluster_name="$optarg" ;;
+      -o|--volume_type) volume_type="$optarg" ;;
       *) ;;
     esac
   done
@@ -62,9 +63,14 @@ function showVerifierCommand() {
 function executor() {
   ## Input Argument Checking
   ##
-  local cluster_name domain_name host_name
+  local cluster_name domain_name volume_type host_name
   checkArgs "${@:2}"
-  host_name=${host_name:-""}
+  host_name=${host_name:-}
+  volume_type=${volume_type:-}
+  if [ -z "${volume_type}" ]; then
+    echo "You must set (-o|--volume_type [nfs|tmp])"
+    return 1
+  fi
   ## Install KinD
   ##
   cmdWithLoding \
@@ -80,6 +86,11 @@ function executor() {
   cmdWithLoding \
     "installWeaveNet" \
     "Activating the weave-net"
+  ## Install Volume
+  ##
+  cmdWithLoding \
+    "installVolume ${*:2}" \
+    "Activating the volume"
   return $?
 }
 
@@ -101,6 +112,13 @@ function setupConfigMap() {
 ##
 function installWeaveNet() {
   bash "$(getWorkdirOfScripts)/modules/modules/weave-net/weave-net.bash"
+  return $?
+}
+
+## 4. Install Volume
+##
+function installVolume() {
+  bash "$(getWorkdirOfScripts)/modules/modules/volume/volume.bash" "$@"
   return $?
 }
 

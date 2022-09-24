@@ -69,6 +69,8 @@ function __executor() {
       --timeout 600s \
       --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
       --set commonAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
+      --set alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName="$(getVolumeClass)" \
+      --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName="$(getVolumeClass)" \
       -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 3. Setup Ingress and TLSContext
   ##

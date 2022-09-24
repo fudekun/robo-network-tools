@@ -1,0 +1,3 @@
+[submodule "helm/k8s-nfs-ganesha"]
+	path = helm/k8s-nfs-ganesha
+	url = https://github.com/rdbox-intec/k8s-nfs-ganesha

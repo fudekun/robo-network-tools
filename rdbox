@@ -8,6 +8,8 @@ set -euo pipefail
 ###############################################################################
 
 function main() {
+  ## Run in the Host
+  ##
   initial_directory
   ## Run in the Container
   ##
@@ -20,6 +22,7 @@ function main() {
   fi
   ## Run in the Host
   ##
+  local os_name
   os_name=$(getOsNameAtHost)
   if [[ "${os_name}" == "MacOS" ]]; then
     getNetworkInfo
@@ -30,7 +33,7 @@ function main() {
       -p 8000:8000 \
       -v "$(pwd)":/rdbox \
       -v "${HOME}"/.kube:/tmp/.kube \
-      -v "${HOME}"/crobotics:/tmp/crobotics \
+      -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
@@ -39,6 +42,8 @@ function main() {
       -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
       -e LOCAL_UID="$(id -u "${USER}")" \
       -e LOCAL_GID="$(id -g "${USER}")" \
+      -e RDBOX_WORKDIR_OF_WORK_BASE="${RDBOX_WORKDIR_OF_WORK_BASE}" \
+      -e RDBOX_WORKDIR_OF_DATA_BASE="${RDBOX_WORKDIR_OF_DATA_BASE}" \
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   elif [[ "${os_name}" == "Linux" ]]; then
@@ -46,12 +51,14 @@ function main() {
       --network host \
       -v "$(pwd)":/rdbox \
       -v "${HOME}"/.kube:/tmp/.kube \
-      -v "${HOME}"/crobotics:/tmp/crobotics \
+      -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
       -e LOCAL_UID="$(id -u "${USER}")" \
       -e LOCAL_GID="$(id -g "${USER}")" \
+      -e RDBOX_WORKDIR_OF_WORK_BASE="${RDBOX_WORKDIR_OF_WORK_BASE}" \
+      -e RDBOX_WORKDIR_OF_DATA_BASE="${RDBOX_WORKDIR_OF_DATA_BASE}" \
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   fi
@@ -59,8 +66,13 @@ function main() {
 }
 
 function initial_directory() {
+  local work_dir
   work_dir=${RDBOX_WORKDIR_OF_WORK_BASE:-${HOME}/crobotics}
-  mkdir -p "${work_dir}"
+  RDBOX_WORKDIR_OF_WORK_BASE=${work_dir}
+  export RDBOX_WORKDIR_OF_WORK_BASE="${RDBOX_WORKDIR_OF_WORK_BASE}"
+  export RDBOX_WORKDIR_OF_DATA_BASE="${RDBOX_WORKDIR_OF_WORK_BASE}_data"
+  mkdir -p "${RDBOX_WORKDIR_OF_WORK_BASE}"
+  mkdir -p "${RDBOX_WORKDIR_OF_DATA_BASE}"
   mkdir -p "${HOME}/.kube"
 }
 

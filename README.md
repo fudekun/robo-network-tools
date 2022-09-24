@@ -113,7 +113,7 @@ sudo apt-get install -y \
 Note the branch name. (`insiders` branch)
 
 ```bash
-git clone -b insiders https://github.com/rdbox-intec/rdbox.git
+git clone --recursive -b insiders https://github.com/rdbox-intec/rdbox.git
 cd rdbox
 ```
 
@@ -242,9 +242,17 @@ Use the `rdbox create` command to deploy the above resources.
 - `--module k8s-cluster`: Specify the name of module (k8s-cluster)
 - `--domain nip.io`: You must specify a name-resolvable local domain.
   - If it does not exist, specify a **wildcard DNS service** such as `nip.io`.
+- `--volume_type tmp` specifies the data storage format.
+  - tmp: Data is deleted when the cluster is deleted. Storage for testing purposes.
+  - nfs: A simple NFS server is built in a cluster and data is stored in the server. Data is not lost even if the cluster is deleted. (Trial)
+    - `--volume_size 40` Specifies the amount of data storage space, in GB. 40 GB or more is recommended.
 
 ```bash
-./rdbox create --name rdbox --module k8s-cluster --domain nip.io
+./rdbox create --name rdbox --module k8s-cluster --domain nip.io --volume_type tmp
+```
+
+```bash
+./rdbox create -n rdbox -m k8s-cluster -d nip.io --volume_type nfs --volume_size 40
 ```
 
 ```bash

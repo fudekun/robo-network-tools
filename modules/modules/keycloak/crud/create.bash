@@ -144,6 +144,7 @@ function create_main() {
     --set ingress.extraTls\[0\].secretName="${hostname_for_keycloak_main}.${BASE_FQDN}" \
     --set extraEnvVars\[0\].name=KEYCLOAK_EXTRA_ARGS \
     --set extraEnvVars\[0\].value=-Dkeycloak.frontendUrl=https://"${hostname_for_keycloak_main}.${BASE_FQDN}" \
+    --set global.storageClass="$(getVolumeClass)" \
     -f "$(getFullpathOfValuesYamlBy "${NAMESPACE}" confs helm)"
   ## 3. Setup TLSContext
   ##

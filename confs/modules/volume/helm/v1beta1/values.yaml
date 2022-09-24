@@ -1,0 +1,13 @@
+## @section nfs-subdir-external-provisioner Deployment parameters
+
+## An automatic provisioner for Kubernetes that uses your already configured NFS server,
+## automatically creating Persistent Volumes.
+## ref: https://artifacthub.io/packages/helm/nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+##
+nfs-subdir-external-provisioner:
+  nfs:
+    mountOptions:
+    - port=2049
+  storageClass:
+    archiveOnDelete: false
+    onDelete: retain

@@ -27,6 +27,34 @@ grafana:
   ## @param grafana.enabled Enabled the deployment of the Grafana CRD object into the cluster
   ##
   enabled: true
+  ## Enable persistence using Persistent Volume Claims
+  ## Ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
+  ##
+  persistence:
+    ## @param grafana.persistence.enabled Enable persistent storage for the grafana deployment
+    ## NOTE: In order to avoid deployment failure due to multi-attach of the same volume,
+    ## you might also want to set `grafana.updateStrategy` to Recreate.
+    ## More information can be found here: https://github.com/grafana-operator/grafana-operator/issues/453
+    ##
+    enabled: true
+    ## @param grafana.persistence.storageClass Define the storageClass for the persistent storage if not defined default is used
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    storageClass: "standard"
+    ## @param grafana.persistence.accessModes Define the accessModes for the persistent storage
+    ##
+    accessModes:
+      - ReadWriteOnce
+    ## @param grafana.persistence.annotations Add annotations to the persistent volume
+    ##
+    annotations: {}
+    ## @param grafana.persistence.size Define the size of the PersistentVolumeClaim to request for
+    ##
+    size: 8Gi
   ## @param grafana.config [object] grafana.ini configuration for the instance for this to configure please look at upstream docs
   ## This is the configuration from the grafana pod itself. Every toml section is a root key
   ## Ref: https://grafana.com/docs/grafana/latest/administration/configuration/
