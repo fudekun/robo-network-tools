@@ -101,3 +101,24 @@ postgresql:
   ##
   auth:
     existingSecret: specific-secrets
+  primary:
+    ## Configure extra options for PostgreSQL Primary containers' liveness, readiness and startup probes
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
+    ## @param primary.livenessProbe.enabled Enable livenessProbe on PostgreSQL Primary containers
+    ## @param primary.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+    ## @param primary.livenessProbe.periodSeconds Period seconds for livenessProbe
+    ## @param primary.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+    ## @param primary.livenessProbe.failureThreshold Failure threshold for livenessProbe
+    ## @param primary.livenessProbe.successThreshold Success threshold for livenessProbe
+    ##
+    livenessProbe:
+      failureThreshold: 30
+    ## @param primary.readinessProbe.enabled Enable readinessProbe on PostgreSQL Primary containers
+    ## @param primary.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+    ## @param primary.readinessProbe.periodSeconds Period seconds for readinessProbe
+    ## @param primary.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+    ## @param primary.readinessProbe.failureThreshold Failure threshold for readinessProbe
+    ## @param primary.readinessProbe.successThreshold Success threshold for readinessProbe
+    ##
+    readinessProbe:
+      failureThreshold: 30
