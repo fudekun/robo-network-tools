@@ -104,7 +104,9 @@ function delete_all() {
       kubectl config delete-context "${__ctx_name}"
     fi
     echo "Deleteing Cluster ..."
-    helm -n volume uninstall volume --wait --timeout 30s
+    if helm -n volume uninstall volume --wait --timeout 30s; then
+      echo "OK!"
+    fi
     sudo kind delete cluster --kubeconfig "${KUBECONFIG}" --name "${__cluster_name}" 2>&1
     return $?
   }

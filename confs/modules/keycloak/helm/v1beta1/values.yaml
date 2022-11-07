@@ -26,25 +26,15 @@ image:
 ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
 ##
 auth:
-  ## @param auth.createAdminUser Create administrator user on boot
-  ##
-  createAdminUser: true
   ## @param auth.adminUser Keycloak administrator user
   ##
   adminUser: super-admin
-  ## @param auth.existingSecretPerPassword Override `existingSecret` and other secret values
-  existingSecretPerPassword:
-    adminPassword:
-      name: specific-secrets
-    managementPassword:
-      name: specific-secrets
-    databasePassword:
-      name: specific-secrets
-
-## @param proxyAddressForwarding Enable Proxy Address Forwarding
-## ref: https://www.keycloak.org/docs/latest/server_installation/#_setting-up-a-load-balancer-or-proxy
-##
-proxyAddressForwarding: false
+  ## @param auth.existingSecret Existing secret containing Keycloak admin password
+  ##
+  existingSecret: specific-secrets
+  ## @param auth.passwordSecretKey Key where the Keycloak admin password is being stored inside the existing secret.
+  ##
+  passwordSecretKey: adminPassword
 
 ## Keycloak ingress parameters
 ## ref: https://kubernetes.io/docs/user-guide/ingress/
