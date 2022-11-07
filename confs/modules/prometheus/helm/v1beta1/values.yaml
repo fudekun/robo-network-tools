@@ -30,7 +30,6 @@ alertmanager:
           resources:
             requests:
               storage: 8Gi
-          selector: {}
 
 ## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
 ##
