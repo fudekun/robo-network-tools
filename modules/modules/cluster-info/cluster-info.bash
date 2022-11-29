@@ -27,7 +27,7 @@ function checkArgs() {
     if isValidHostname "$3"; then
       __RDBOX_HOST_NAME=$(printf %q "$3")
       export __RDBOX_HOST_NAME=$__RDBOX_HOST_NAME
-      readonly __RDBOX_HOST_NAME
+      ###readonly __RDBOX_HOST_NAME
     else
       return 3
     fi
