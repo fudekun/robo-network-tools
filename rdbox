@@ -47,9 +47,9 @@ function main() {
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   elif [[ "${os_name}" == "Linux" ]]; then
-    mkdir -p /home/ubuntu/.cache/helm
-    mkdir -p /home/ubuntu/.config/helm
-    mkdir -p /home/ubuntu/.local/share/helm
+    mkdir -p "${HOME}"/.cache/helm
+    mkdir -p "${HOME}"/.config/helm
+    mkdir -p "${HOME}"/.local/share/helm
     docker run -it --rm \
       --network host \
       -v "$(pwd)":/rdbox \
