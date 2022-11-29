@@ -53,6 +53,7 @@ function main() {
       -v "${HOME}"/.kube:/tmp/.kube \
       -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
+      -v "${HOME}"/.cache/helm:/home/ubuntu/.cache/helm
       -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
       -e LOCAL_UID="$(id -u "${USER}")" \
