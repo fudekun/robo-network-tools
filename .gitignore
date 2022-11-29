@@ -310,3 +310,6 @@ cython_debug/
 
 
 todo/
+
+
+*.images.json
