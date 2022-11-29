@@ -47,6 +47,9 @@ function main() {
       rdbox/docker:20.10 \
       "/rdbox/main.rdbox" "$@"
   elif [[ "${os_name}" == "Linux" ]]; then
+    mkdir -p /home/ubuntu/.cache/helm
+    mkdir -p /home/ubuntu/.config/helm
+    mkdir -p /home/ubuntu/.local/share/helm
     docker run -it --rm \
       --network host \
       -v "$(pwd)":/rdbox \
@@ -54,6 +57,8 @@ function main() {
       -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -v "${HOME}"/.cache/helm:/home/ubuntu/.cache/helm \
+      -v "${HOME}"/.cache/helm:/home/ubuntu/.config/helm \
+      -v "${HOME}"/.cache/helm:/home/ubuntu/.local/helm \
       -e KUBECONFIG=/tmp/.kube/config \
       -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
       -e LOCAL_UID="$(id -u "${USER}")" \
