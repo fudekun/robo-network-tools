@@ -18,8 +18,10 @@ set -euo pipefail
 #   https://unix.stackexchange.com/questions/582922/how-to-pass-local-variable-to-trap-handler-in-bash
 #######################################
 function exit_handler() {
+  local rv="$?"
   local tmp_dir="${1}"
   rm -rf "$tmp_dir"
+  return $rv
 }
 
 #######################################

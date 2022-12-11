@@ -33,8 +33,10 @@ function main() {
       ;;
     *)
       echo "Unexpected subcommand ${subcommand}"
+      return 1
       ;;
   esac
+  return $?
 }
 
 function get_cluster_name() {
@@ -95,23 +97,27 @@ function exec_with_logger() {
   local ms
   local cmd
   local log_file_path
+  local ret
   ms=$(getEpochMillisec)
   cmd="${fullpath_script} ${*:4}"
   log_file_path="${workdir_of_logs}/${operation}.${ms}.rdbox.log"
+  set +euo pipefail
   if script --log-out /dev/null -q -c "ifconfig" > /dev/null 2>&1; then
     ## For Linux
-    script --log-out /dev/null -q -c "${cmd}" 2>&1 \
+    script -e --log-out /dev/null -q -c "${cmd}" 2>&1 \
       | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
         > "${log_file_path}")
   else
     ## For MacOS
-    script -q /dev/null "${fullpath_script}" "${@:4}" 2>&1 \
+    script -e -q /dev/null "${fullpath_script}" "${@:4}" 2>&1 \
       | tee >(awk -F'\r' 'BEGIN{RS="\r\n" ; ORS="\n"}{print $NF; fflush()}' \
         > "${log_file_path}")
   fi
+  ret="${PIPESTATUS[0]}"
+  set -euo pipefail
   echo "# Finalizing logger ...(Please Max 10s wait)"
   sleep 5
-  return $?
+  return "$ret"
 }
 
 function __bash() {
