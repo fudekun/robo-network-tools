@@ -1,0 +1,27 @@
+##
+{{- if .Values.stdWeb }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.stdWeb.dynamics.ingress }}
+{{- if and .Values.stdWeb.dynamics.ingress.create (hasKey .Values.stdWeb.dynamics.ingress "create")}}
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: {{ .Values.stdWeb.dynamics.main.fqdn }}
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  hostname: {{ .Values.stdWeb.dynamics.main.fqdn }}
+  requestPolicy:
+    insecure:
+      action: Route
+  tlsSecret:
+    name: {{ .Values.stdWeb.dynamics.main.fqdn }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

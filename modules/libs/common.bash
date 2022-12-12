@@ -27,6 +27,8 @@ RDBOX_MODULE_NAME_K8S_DASHBOARD="kubernetes-dashboard"
 RDBOX_MODULE_NAME_PROMETHEUS="prometheus"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_GRAFANA="grafana"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_STD_WEB="std-web"
 ## OTHER #####################################################
 __RDBOX_OPTS_CREATE_VOLUME="o:s:p:z:"
 __RDBOX_OPTS_CREATE_MAIN="d:m:h:${__RDBOX_OPTS_CREATE_VOLUME}"

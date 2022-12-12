@@ -1,0 +1,64 @@
+##
+{{- if .Values.stdWeb }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+{{- if .Values.stdWeb.dynamics.filter }}
+{{- if and .Values.stdWeb.dynamics.filter.create (hasKey .Values.stdWeb.dynamics.filter "create")}}
+apiVersion: getambassador.io/v3alpha1
+kind: Filter
+metadata:
+  name: "{{ .Values.stdWeb.dynamics.main.hostname }}-oauth2"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  OAuth2:
+    authorizationURL: "{{ .Values.stdWeb.dynamics.filter.authorizationURL }}"
+    clientID: "{{ .Values.stdWeb.dynamics.main.hostname }}" ## OAuth2 client from your IdP
+    secret: "{{ .Values.stdWeb.dynamics.filter.secret }}" ## Secret used to access OAuth2 client
+    protectedOrigins:
+    - origin: https://{{ .Values.stdWeb.dynamics.main.fqdn }}/.ambassador/oauth2/redirection-endpoint
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Filter
+metadata:
+  name: "{{ .Values.stdWeb.dynamics.main.hostname }}-jwt-impersonate"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  JWT:
+    jwksURI: {{ .Values.stdWeb.dynamics.filter.jwksUri }}
+    injectRequestHeaders:
+    - name: "Impersonate-User"
+      value: {{ printf "{{ .token.Claims.preferred_username }}" | quote }}
+    - name: "Impersonate-Group"
+      value: {{ printf "{{range .token.Claims.groups}}{{ . }}{{end}}" | quote }}
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Filter
+metadata:
+  name: "{{ .Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
+  namespace: {{ template "common.names.namespace" . }}
+  labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ .Chart.Version }}
+spec:
+  JWT:
+    jwksURI: {{ .Values.stdWeb.dynamics.filter.jwksUri }}
+    errorResponse:
+      bodyTemplate: "permission denied"
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,56 @@
+##
+{{- if .Values.stdWeb }}
+{{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Values.stdWeb.dynamics.main.hostname }}"
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.stdWeb.di.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.stdWeb.di.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.stdWeb.di.commonAnnotations .Values.stdWeb.di.service.annotations }}
+  annotations:
+    {{- if .Values.stdWeb.di.commonAnnotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.stdWeb.di.service.annotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.stdWeb.di.service.annotations "context" $) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  type: {{ .Values.stdWeb.di.service.type }}
+  {{- if .Values.stdWeb.di.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.stdWeb.di.service.sessionAffinity }}
+  {{- end }}
+  {{- if .Values.stdWeb.di.service.sessionAffinityConfig }}
+  sessionAffinityConfig: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.service.sessionAffinityConfig "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if and .Values.stdWeb.di.service.clusterIP (eq .Values.stdWeb.di.service.type "ClusterIP") }}
+  clusterIP: {{ .Values.stdWeb.di.service.clusterIP }}
+  {{- end }}
+  {{- if (and (eq .Values.stdWeb.di.service.type "LoadBalancer") (not (empty .Values.stdWeb.di.service.loadBalancerIP))) }}
+  loadBalancerIP: {{ .Values.stdWeb.di.service.loadBalancerIP }}
+  {{- end }}
+  {{- if and (eq .Values.stdWeb.di.service.type "LoadBalancer") .Values.stdWeb.di.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{- toYaml .Values.stdWeb.di.service.loadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
+  {{- if or (eq .Values.stdWeb.di.service.type "LoadBalancer") (eq .Values.stdWeb.di.service.type "NodePort") }}
+  externalTrafficPolicy: {{ .Values.stdWeb.di.service.externalTrafficPolicy | quote }}
+  {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.stdWeb.di.service.ports.http }}
+      targetPort: http
+      {{- if and (or (eq .Values.stdWeb.di.service.type "NodePort") (eq .Values.stdWeb.di.service.type "LoadBalancer")) (not (empty .Values.stdWeb.di.service.nodePorts.http)) }}
+      nodePort: {{ .Values.stdWeb.di.service.nodePorts.http }}
+      {{- else if eq .Values.stdWeb.di.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    {{- if .Values.stdWeb.di.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  selector: {{- include "common.labels.matchLabels" . | nindent 4 }}
+{{- end }}
+{{- end }}

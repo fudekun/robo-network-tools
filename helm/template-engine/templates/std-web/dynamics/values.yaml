@@ -1,0 +1,29 @@
+##
+{{- if .Values.stdWeb }}
+{{- if and .Values.global.dynamics (hasKey .Values.global "dynamics")}}
+stdWeb:
+  dynamics:
+    common:
+      baseFqdn: {{ .Values.stdWeb.dynamics.common.baseFqdn }}
+    main:
+      hostname: {{ .Values.stdWeb.dynamics.main.hostname }}
+      fqdn: "{{ .Values.stdWeb.dynamics.main.hostname }}.{{ .Values.stdWeb.dynamics.common.baseFqdn }}"
+    {{- if .Values.stdWeb.dynamics.certificate }}
+    certificate:
+      create: {{ .Values.stdWeb.dynamics.certificate.create | default true }}
+    {{- end }}
+    {{- if .Values.stdWeb.dynamics.ingress }}
+    ingress:
+      create: {{ .Values.stdWeb.dynamics.ingress.create | default true }}
+      service: {{ .Values.stdWeb.dynamics.ingress.service }}
+    {{- end }}
+    {{- if .Values.stdWeb.dynamics.filter }}
+    filter:
+      create: {{ .Values.stdWeb.dynamics.filter.create | default true }}
+      authorizationURL: "{{ .Values.stdWeb.dynamics.filter.authorizationURL }}"
+      secret: "{{ .Values.stdWeb.dynamics.filter.secret }}"
+      jwksUri: "{{ .Values.stdWeb.dynamics.filter.jwksUri }}"
+      allowedGroup: "{{ .Values.stdWeb.dynamics.filter.allowedGroup }}"
+    {{- end }}
+{{- end }}
+{{- end }}
