@@ -6,7 +6,7 @@
 apiVersion: getambassador.io/v3alpha1
 kind: FilterPolicy
 metadata:
-  name: "{{ .Values.stdWeb.dynamics.main.hostname }}"
+  name: "{{ include "common.names.fullname" . }}"
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -17,14 +17,14 @@ metadata:
 spec:
   rules:
   - host: "{{ .Values.stdWeb.dynamics.main.fqdn }}"
-    path: "*"
+    path: "{{ .Values.stdWeb.di.path }}"
     filters:
     - name: "{{ .Values.stdWeb.dynamics.main.hostname }}-oauth2"
     - name: "{{ .Values.stdWeb.dynamics.main.hostname }}-jwt-impersonate"
     - name: "{{ .Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
         name: "Impersonate-Group"
-        value: "{{ .Values.stdWeb.dynamics.filter.allowedGroup }}"
+        value: "{{ .Values.stdWeb.di.allowed_group.pattern }}"
       onAllow: "break"
     - name: "{{ .Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:

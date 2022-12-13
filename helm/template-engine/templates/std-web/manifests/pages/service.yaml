@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: "{{ .Values.stdWeb.dynamics.main.hostname }}"
+  name: {{ include "common.names.fullname" . }}
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.stdWeb.di.commonLabels }}

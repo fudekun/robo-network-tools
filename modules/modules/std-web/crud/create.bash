@@ -158,12 +158,8 @@ function __create_filter() {
                   -o jsonpath='{.data.client-secret}' | base64 -d)
   local hostname_for_this
   hostname_for_this="$(getHostName "${MODULE_NAME}" "main")"
-  local service_for_this
-  service_for_this="http://${RELEASE}.${NAMESPACE}.svc:80"
   local jwks_uri
   jwks_uri="https://$(getHostName "${RDBOX_MODULE_NAME_KEYCLOAK}" "main").${BASE_FQDN}/realms/$(getClusterName)/protocol/openid-connect/certs"
-  local allowed_group
-  allowed_group=$(getPresetClusterAdminGroupName)
   applyManifestByDI "${NAMESPACE}" \
                     "${RELEASE}" \
                     "${CREATES_RELEASE_ID}" \
@@ -172,12 +168,10 @@ function __create_filter() {
                     stdWeb.dynamics.main.hostname="${hostname_for_this}" \
                     stdWeb.dynamics.certificate.create="true" \
                     stdWeb.dynamics.ingress.create="true" \
-                    stdWeb.dynamics.ingress.service="${service_for_this}" \
                     stdWeb.dynamics.filter.create="true" \
                     stdWeb.dynamics.filter.authorizationURL="${authorization_url}" \
                     stdWeb.dynamics.filter.secret="\"${secret}\"" \
-                    stdWeb.dynamics.filter.jwksUri="${jwks_uri}" \
-                    stdWeb.dynamics.filter.allowedGroup="${allowed_group}"
+                    stdWeb.dynamics.filter.jwksUri="${jwks_uri}"
   return $?
 }
 

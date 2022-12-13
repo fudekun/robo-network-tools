@@ -15,6 +15,11 @@ stdWeb:
       #   streetAddresses: Toyosu
       #   postalCodes: 135-0061
       #   serialNumber: A20D27E4-1863-4BD5-9EF1-B25C38D76C88
+    name: "nginx1"
+    path: "/nginx1"
+    allowed_group:
+      pattern: "/cluster/cluster-admin"
+      regex: false
     deployment:
       image:
         registry: docker.io
@@ -76,3 +81,5 @@ stdWeb:
       name: ""
       automountServiceAccountToken: true
       annotations: {}
+    mapping: {}
+    filterPolicy: {}

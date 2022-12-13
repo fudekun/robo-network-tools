@@ -15,7 +15,6 @@ stdWeb:
     {{- if .Values.stdWeb.dynamics.ingress }}
     ingress:
       create: {{ .Values.stdWeb.dynamics.ingress.create | default true }}
-      service: {{ .Values.stdWeb.dynamics.ingress.service }}
     {{- end }}
     {{- if .Values.stdWeb.dynamics.filter }}
     filter:

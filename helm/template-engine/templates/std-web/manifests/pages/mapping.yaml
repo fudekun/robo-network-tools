@@ -6,7 +6,7 @@
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: "{{ .Values.stdWeb.dynamics.main.hostname }}"
+  name: {{ include "common.names.fullname" . }}
   namespace: {{ template "common.names.namespace" . }}
   labels: {{- include "common.labels.matchLabels" . | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -16,10 +16,12 @@ metadata:
     rdbox.local/chart: {{ .Chart.Version }}
 spec:
   host: {{ .Values.stdWeb.dynamics.main.fqdn }}
-  prefix: /
+  prefix: "{{ .Values.stdWeb.di.path }}"
+  prefix_regex: false
+  rewrite: "/"
   allow_upgrade:
   - spdy/3.1
-  service: "{{ .Values.stdWeb.dynamics.ingress.service }}"
+  service: "{{ include "common.names.fullname" . }}.{{ template "common.names.namespace" . }}.svc:{{ .Values.stdWeb.di.service.ports.http }}"
   timeout_ms: 0
 {{- end }}
 {{- end }}
