@@ -34,6 +34,23 @@ spec:
       arguments:
         scope:
           - "deny"
+  - host: "{{ $.Values.stdWeb.dynamics.main.fqdn }}"
+    path: "{{ .path }}/*"
+    filters:
+    - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-oauth2"
+    - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-impersonate"
+    - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
+      ifRequestHeader:
+        name: "Impersonate-Group"
+        value: "{{ .allowed_group.pattern }}"
+      onAllow: "break"
+    - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
+      ifRequestHeader:
+        name: "Impersonate-Group"
+      onDeny: "break"
+      arguments:
+        scope:
+          - "deny"
 ---
 {{ end -}}
 {{- end }}

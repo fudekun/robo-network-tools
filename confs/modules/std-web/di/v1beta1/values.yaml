@@ -25,7 +25,7 @@ stdWeb:
         image:
           registry: docker.io
           repository: nginxinc/nginx-unprivileged
-          tag: 1.23
+          tag: 1.22
           digest: ""
           pullPolicy: IfNotPresent
           pullSecrets: []

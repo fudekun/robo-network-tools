@@ -143,7 +143,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: std-web-data
-              mountPath: /bitnami/std-web
+              mountPath: /rdbox/std-web
             {{- if .deployment.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .deployment.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
