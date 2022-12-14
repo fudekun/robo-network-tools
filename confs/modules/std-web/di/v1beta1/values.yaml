@@ -84,3 +84,71 @@ stdWeb:
         annotations: {}
       mapping: {}
       filterPolicy: {}
+    - name: "nginx2"
+      path: "/nginx2"
+      allowed_group:
+        pattern: "/guest/admin"
+        regex: false
+      deployment:
+        image:
+          registry: docker.io
+          repository: nginxinc/nginx-unprivileged
+          tag: 1.23
+          digest: ""
+          pullPolicy: IfNotPresent
+          pullSecrets: []
+          debug: false
+        replicaCount: 1
+        command: []
+        args: []
+        containerPorts:
+          http: 8080
+        persistence:
+          enabled: false
+        containerSecurityContext:
+          enabled: true
+          runAsUser: 1001
+          runAsNonRoot: true
+        podSecurityContext:
+          enabled: true
+          fsGroup: 1001
+        livenessProbe:
+          enabled: true
+          path: /
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+          successThreshold: 1
+        readinessProbe:
+          enabled: true
+          path: /
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 1
+          failureThreshold: 5
+          successThreshold: 1
+        podAffinityPreset: ""
+        podAntiAffinityPreset: soft
+        nodeAffinityPreset:
+          type: ""
+          key: ""
+          values: []
+        affinity: {}
+        nodeSelector: {}
+        resources:
+          limits: {}
+          requests: {}
+      service:
+        type: LoadBalancer
+        ports:
+          http: 80
+        nodePorts:
+          http: ""
+      serviceAccount:
+        create: true
+        name: ""
+        automountServiceAccountToken: true
+        annotations: {}
+      mapping: {}
+      filterPolicy: {}
