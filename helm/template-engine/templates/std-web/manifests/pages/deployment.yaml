@@ -7,7 +7,14 @@ kind: Deployment
 metadata:
   name: {{ include "common.names.fullname" $ }}-{{ .name }}
   namespace: {{ include "common.names.namespace" $ | quote }}
-  labels: {{- include "common.labels.standard" $ | nindent 4 }}
+  labels:
+    app.kubernetes.io/name: {{ include "common.names.fullname" $ }}-{{ .name }}
+    app.kubernetes.io/instance: std-web-{{ .name }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: rdbox.std-web
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ $.Chart.Version }}
     {{- if .commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
@@ -22,7 +29,9 @@ metadata:
   {{- end }}
 spec:
   selector:
-    matchLabels: {{- include "common.labels.matchLabels" $ | nindent 6 }}
+    matchLabels:
+      app.kubernetes.io/name: {{ include "common.names.fullname" $ }}-{{ .name }}
+      app.kubernetes.io/instance: std-web-{{ .name }}
   {{- if .deployment.updateStrategy }}
   strategy: {{- toYaml .deployment.updateStrategy | nindent 4 }}
   {{- end }}
@@ -32,8 +41,14 @@ spec:
       {{- if .deployment.podAnnotations }}
       annotations: {{- include "common.tplvalues.render" (dict "value" .deployment.podAnnotations "context" $) | nindent 8 }}
       {{- end }}
-      labels: {{- include "common.labels.standard" $ | nindent 8 }}
-        app.kubernetes.io/component: std-web
+      labels:
+        app.kubernetes.io/name: {{ include "common.names.fullname" $ }}-{{ .name }}
+        app.kubernetes.io/instance: std-web-{{ .name }}
+        app.kubernetes.io/component: dependency-injection
+        app.kubernetes.io/part-of: rdbox.std-web
+        app.kubernetes.io/managed-by: rdbox
+        rdbox.local/format: v1beta1
+        rdbox.local/chart: {{ $.Chart.Version }}
         {{- if .deployment.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .deployment.podLabels "context" $) | nindent 8 }}
         {{- end }}

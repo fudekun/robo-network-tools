@@ -7,7 +7,12 @@ kind: Service
 metadata:
   name: {{ include "common.names.fullname" $ }}-{{ .name }}
   namespace: {{ include "common.names.namespace" $ | quote }}
-  labels: {{- include "common.labels.standard" $ | nindent 4 }}
+  labels: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: rdbox.std-web
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ $.Chart.Version }}
     {{- if .commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
@@ -52,7 +57,9 @@ spec:
     {{- if .service.extraPorts }}
     {{- include "common.tplvalues.render" (dict "value" .service.extraPorts "context" $) | nindent 4 }}
     {{- end }}
-  selector: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+  selector:
+    app.kubernetes.io/name: {{ include "common.names.fullname" $ }}-{{ .name }}
+    app.kubernetes.io/instance: std-web-{{ .name }}
 ---
 {{ end -}}
 {{- end }}

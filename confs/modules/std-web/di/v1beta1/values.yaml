@@ -37,6 +37,8 @@ stdWeb:
           http: 8080
         persistence:
           enabled: false
+        extraEnvVarsCM: ""
+        extraEnvVarsSecret: ""
         containerSecurityContext:
           enabled: true
           runAsUser: 1001
@@ -105,6 +107,8 @@ stdWeb:
           http: 8080
         persistence:
           enabled: false
+        extraEnvVarsCM: ""
+        extraEnvVarsSecret: ""
         containerSecurityContext:
           enabled: true
           runAsUser: 1001

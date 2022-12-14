@@ -11,7 +11,7 @@ metadata:
   namespace: {{ template "common.names.namespace" $ }}
   labels: {{- include "common.labels.matchLabels" $ | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
-    app.kubernetes.io/part-of: datawire.edge-stack
+    app.kubernetes.io/part-of: rdbox.std-web
     app.kubernetes.io/managed-by: rdbox
     rdbox.local/format: v1beta1
     rdbox.local/chart: {{ $.Chart.Version }}
