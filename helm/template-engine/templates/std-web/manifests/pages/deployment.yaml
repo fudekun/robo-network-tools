@@ -1,146 +1,152 @@
 ##
 {{- if .Values.stdWeb }}
 {{- if and .Values.global.manifests (hasKey .Values.global "manifests")}}
-apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+{{- range .Values.stdWeb.di.pages }}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" $ }}
 kind: Deployment
 metadata:
-  name: {{ include "common.names.fullname" . }}
-  namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" . | nindent 4 }}
-    {{- if .Values.stdWeb.di.deployment.commonLabels }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.stdWeb.di.deployment.commonLabels "context" $ ) | nindent 4 }}
+  name: {{ include "common.names.fullname" $ }}-{{ .name }}
+  namespace: {{ include "common.names.namespace" $ | quote }}
+  labels: {{- include "common.labels.standard" $ | nindent 4 }}
+    {{- if .commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
-  {{- if .Values.stdWeb.di.deployment.commonAnnotations }}
-  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.stdWeb.di.deployment.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- if or .commonAnnotations .service.annotations }}
+  annotations:
+    {{- if .commonAnnotations }}
+    {{- include "common.tplvalues.render" (dict "value" .commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .service.annotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .service.annotations "context" $) | nindent 4 }}
+    {{- end }}
   {{- end }}
 spec:
   selector:
-    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
-  {{- if .Values.stdWeb.di.deployment.updateStrategy }}
-  strategy: {{- toYaml .Values.stdWeb.di.deployment.updateStrategy | nindent 4 }}
+    matchLabels: {{- include "common.labels.matchLabels" $ | nindent 6 }}
+  {{- if .deployment.updateStrategy }}
+  strategy: {{- toYaml .deployment.updateStrategy | nindent 4 }}
   {{- end }}
-  replicas: {{ .Values.stdWeb.di.deployment.replicaCount }}
+  replicas: {{ .deployment.replicaCount }}
   template:
     metadata:
-      labels: {{- include "common.labels.standard" . | nindent 8 }}
-        {{- if .Values.stdWeb.di.deployment.commonLabels }}
-        {{- include "common.tplvalues.render" ( dict "value" .Values.stdWeb.di.deployment.commonLabels "context" $ ) | nindent 8 }}
-        {{- end }}
-        {{- if .Values.stdWeb.di.deployment.podLabels }}
-        {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.podLabels "context" $) | nindent 8 }}
-        {{- end }}
-      annotations:
-        {{- if .Values.stdWeb.di.deployment.podAnnotations }}
-        {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.podAnnotations "context" $) | nindent 8 }}
+      {{- if .deployment.podAnnotations }}
+      annotations: {{- include "common.tplvalues.render" (dict "value" .deployment.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels: {{- include "common.labels.standard" $ | nindent 8 }}
+        app.kubernetes.io/component: std-web
+        {{- if .deployment.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .deployment.podLabels "context" $) | nindent 8 }}
         {{- end }}
     spec:
-      {{- include "stdWeb.imagePullSecrets" . | nindent 6 }}
-      serviceAccountName: {{ include "stdWeb.serviceAccountName" . }}
-      {{- if .Values.stdWeb.di.deployment.podSecurityContext.enabled }}
-      securityContext: {{- omit .Values.stdWeb.di.deployment.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{ include "common.images.pullSecrets" (dict "images" (list .deployment.image) "global" .deployment.global) }}
+      serviceAccountName: {{ default ( include "common.names.fullname" $ ) .serviceAccount.name }}-{{ .name }}
+      {{- if .deployment.podSecurityContext.enabled }}
+      securityContext: {{- omit .deployment.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
-      {{- if .Values.stdWeb.di.deployment.affinity }}
-      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.affinity "context" $) | nindent 8 }}
+      {{- if .deployment.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .deployment.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.stdWeb.di.deployment.podAffinityPreset "context" $) | nindent 10 }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.stdWeb.di.deployment.podAntiAffinityPreset "context" $) | nindent 10 }}
-        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.stdWeb.di.deployment.nodeAffinityPreset.type "key" .Values.stdWeb.di.deployment.nodeAffinityPreset.key "values" .Values.stdWeb.di.deployment.nodeAffinityPreset) | nindent 10 }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .deployment.podAffinityPreset "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .deployment.podAntiAffinityPreset "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .deployment.nodeAffinityPreset.type "key" .deployment.nodeAffinityPreset.key "values" .deployment.nodeAffinityPreset) | nindent 10 }}
       {{- end }}
-      {{- if .Values.stdWeb.di.deployment.schedulerName }}
-      schedulerName: {{ .Values.stdWeb.di.deployment.schedulerName }}
+      {{- if .deployment.schedulerName }}
+      schedulerName: {{ .deployment.schedulerName }}
       {{- end }}
-      {{- if .Values.stdWeb.di.deployment.topologySpreadConstraints }}
-      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- if .deployment.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .deployment.topologySpreadConstraints "context" .) | nindent 8 }}
       {{- end }}
-      priorityClassName: {{ .Values.stdWeb.di.deployment.priorityClassName | quote }}
-      {{- if .Values.stdWeb.di.deployment.nodeSelector }}
-      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.nodeSelector "context" $) | nindent 8 }}
+      priorityClassName: {{ .deployment.priorityClassName | quote }}
+      {{- if .deployment.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .deployment.nodeSelector "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.stdWeb.di.deployment.tolerations }}
-      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.tolerations "context" $) | nindent 8 }}
+      {{- if .deployment.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .deployment.tolerations "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.stdWeb.di.deployment.hostAliases }}
+      {{- if .deployment.hostAliases }}
       # yamllint disable rule:indentation
-      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.hostAliases "context" $) | nindent 8 }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .deployment.hostAliases "context" $) | nindent 8 }}
       # yamllint enable rule:indentation
       {{- end }}
       containers:
-        - name: {{ include "common.names.fullname" . }}
-          image: {{ template "stdWeb.image" . }}
-          imagePullPolicy: {{ .Values.stdWeb.di.deployment.image.pullPolicy | quote }}
-          {{- if .Values.stdWeb.di.deployment.command }}
-          command: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.command "context" $) | nindent 12 }}
+        - name: {{ include "common.names.fullname" $ }}
+          image: {{ include "common.images.image" (dict "imageRoot" .deployment.image "global" .deployment.global) }}
+          imagePullPolicy: {{ .deployment.image.pullPolicy | quote }}
+          {{- if .deployment.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .deployment.command "context" $) | nindent 12 }}
           {{- end }}
-          {{- if .Values.stdWeb.di.deployment.args }}
-          args: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.args "context" $) | nindent 12 }}
+          {{- if .deployment.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .deployment.args "context" $) | nindent 12 }}
           {{- end }}
-          {{- if .Values.stdWeb.di.deployment.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.stdWeb.di.deployment.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- if .deployment.containerSecurityContext.enabled }}
+          securityContext: {{- omit .deployment.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
           envFrom:
-            {{- if .Values.stdWeb.di.deployment.extraEnvVarsCM }}
+            {{- if .deployment.extraEnvVarsCM }}
             - configMapRef:
-                name: {{ include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.extraEnvVarsCM "context" $) }}
+                name: {{ include "common.tplvalues.render" (dict "value" .deployment.extraEnvVarsCM "context" $) }}
             {{- end }}
-            {{- if .Values.stdWeb.di.deployment.extraEnvVarsSecret }}
+            {{- if .deployment.extraEnvVarsSecret }}
             - secretRef:
-                name: {{ include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.extraEnvVarsSecret "context" $) }}
+                name: {{ include "common.tplvalues.render" (dict "value" .deployment.extraEnvVarsSecret "context" $) }}
             {{- end }}
-          {{- if .Values.stdWeb.di.deployment.lifecycleHooks }}
-          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.lifecycleHooks "context" $) | nindent 12 }}
+          {{- if .deployment.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .deployment.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.stdWeb.di.deployment.containerPorts.http }}
-          {{- if .Values.stdWeb.di.deployment.customLivenessProbe }}
-          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.customLivenessProbe "context" $) | nindent 12 }}
-          {{- else if .Values.stdWeb.di.deployment.livenessProbe.enabled }}
+              containerPort: {{ .deployment.containerPorts.http }}
+          {{- if .deployment.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .deployment.customLivenessProbe "context" $) | nindent 12 }}
+          {{- else if .deployment.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.stdWeb.di.deployment.livenessProbe.path }}
+              path: {{ .deployment.livenessProbe.path }}
               port: http
-            initialDelaySeconds: {{ .Values.stdWeb.di.deployment.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.stdWeb.di.deployment.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.stdWeb.di.deployment.livenessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.stdWeb.di.deployment.livenessProbe.successThreshold }}
-            failureThreshold: {{ .Values.stdWeb.di.deployment.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .deployment.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .deployment.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .deployment.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .deployment.livenessProbe.successThreshold }}
+            failureThreshold: {{ .deployment.livenessProbe.failureThreshold }}
           {{- end }}
-          {{- if .Values.stdWeb.di.deployment.customReadinessProbe }}
-          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.customReadinessProbe "context" $) | nindent 12 }}
-          {{- else if .Values.stdWeb.di.deployment.readinessProbe.enabled }}
+          {{- if .deployment.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .deployment.customReadinessProbe "context" $) | nindent 12 }}
+          {{- else if .deployment.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.stdWeb.di.deployment.readinessProbe.path }}
+              path: {{ .deployment.readinessProbe.path }}
               port: http
-            initialDelaySeconds: {{ .Values.stdWeb.di.deployment.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.stdWeb.di.deployment.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.stdWeb.di.deployment.readinessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.stdWeb.di.deployment.readinessProbe.successThreshold }}
-            failureThreshold: {{ .Values.stdWeb.di.deployment.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .deployment.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .deployment.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .deployment.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .deployment.readinessProbe.successThreshold }}
+            failureThreshold: {{ .deployment.readinessProbe.failureThreshold }}
           {{- end }}
-          {{- if .Values.stdWeb.di.deployment.resources }}
-          resources: {{- toYaml .Values.stdWeb.di.deployment.resources | nindent 12 }}
+          {{- if .deployment.resources }}
+          resources: {{- toYaml .deployment.resources | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: std-web-data
               mountPath: /bitnami/std-web
-            {{- if .Values.stdWeb.di.deployment.extraVolumeMounts }}
-            {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- if .deployment.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .deployment.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
-        {{- if .Values.stdWeb.di.deployment.sidecars }}
-        {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.sidecars "context" $) | nindent 8 }}
+        {{- if .deployment.sidecars }}
+        {{- include "common.tplvalues.render" (dict "value" .deployment.sidecars "context" $) | nindent 8 }}
         {{- end }}
       volumes:
         - name: std-web-data
-          {{- if .Values.stdWeb.di.deployment.persistence.enabled }}
+          {{- if .deployment.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ .Values.stdWeb.di.deployment.persistence.existingClaim | default (print (include "common.names.fullname" .)) }}
+            claimName: {{ .deployment.persistence.existingClaim | default (print (include "common.names.fullname" .)) }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        {{- if .Values.stdWeb.di.deployment.extraVolumes }}
-        {{- include "common.tplvalues.render" (dict "value" .Values.stdWeb.di.deployment.extraVolumes "context" $) | nindent 8 }}
+        {{- if .deployment.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .deployment.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
+---
+{{ end -}}
 {{- end }}
 {{- end }}
