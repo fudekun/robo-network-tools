@@ -7,7 +7,7 @@
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
-  name: {{ include "common.names.fullname" $ }}-{{ .name }}
+  name: {{ include "common.names.fullname" $ }}-{{ .name }}-1
   namespace: {{ template "common.names.namespace" $ }}
   labels: {{- include "common.labels.matchLabels" $ | nindent 4 }}
     app.kubernetes.io/component: dependency-injection
@@ -20,9 +20,43 @@ spec:
   prefix: "{{ .path }}"
   prefix_regex: false
   rewrite: "/"
+  add_response_headers:
+    Cache-Control:
+      value: no-store
+    Pragma:
+      value: no-cache
   allow_upgrade:
   - spdy/3.1
   service: "{{ include "common.names.fullname" $ }}-{{ .name }}.{{ template "common.names.namespace" $ }}.svc:{{ .service.ports.http }}"
+  timeout_ms: 0
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: {{ include "common.names.fullname" $ }}-{{ .name }}-3
+  namespace: {{ template "common.names.namespace" $ }}
+  labels: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: dependency-injection
+    app.kubernetes.io/part-of: rdbox.std-web
+    app.kubernetes.io/managed-by: rdbox
+    rdbox.local/format: v1beta1
+    rdbox.local/chart: {{ $.Chart.Version }}
+spec:
+  host: {{ $.Values.stdWeb.dynamics.main.fqdn }}
+  prefix: '/'
+  prefix_redirect: "{{ .path }}/"
+  host_redirect: true
+  regex_headers:
+    Referer: "https://{{ $.Values.stdWeb.dynamics.main.fqdn }}{{ .path }}($|/$|/.*)"
+  redirect_response_code: 302
+  add_response_headers:
+    Cache-Control:
+      value: no-store
+    Pragma:
+      value: no-cache
+  allow_upgrade:
+  - spdy/3.1
+  service: "{{ $.Values.stdWeb.dynamics.main.fqdn }}"
   timeout_ms: 0
 ---
 {{ end -}}

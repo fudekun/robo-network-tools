@@ -25,7 +25,11 @@ spec:
     - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
         name: "Impersonate-Group"
+        {{- if .allowed_group.is_regex }}
+        valueRegex: "{{ .allowed_group.pattern }}"
+        {{- else }}
         value: "{{ .allowed_group.pattern }}"
+        {{- end }}
       onAllow: "break"
     - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
@@ -42,7 +46,11 @@ spec:
     - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
         name: "Impersonate-Group"
+        {{- if .allowed_group.is_regex }}
+        valueRegex: "{{ .allowed_group.pattern }}"
+        {{- else }}
         value: "{{ .allowed_group.pattern }}"
+        {{- end }}
       onAllow: "break"
     - name: "{{ $.Values.stdWeb.dynamics.main.hostname }}-jwt-dummy"
       ifRequestHeader:
