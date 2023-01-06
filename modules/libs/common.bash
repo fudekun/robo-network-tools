@@ -324,9 +324,20 @@ function applyManifestByDI() {
     echo "---"
     echo "- Successful --dry-run. Apply this manifest."
     echo "   - ${__fullpath_of_generated_manifests}"
-    kubectl apply --timeout "${__timeout}" --wait -f "${__fullpath_of_generated_manifests}"
+    if kubectl apply --timeout "${__timeout}" --wait -f "${__fullpath_of_generated_manifests}" ; then
+      echo "- Successful kubectl apply"
+      echo "   - ${__fullpath_of_generated_manifests}"
+      return 0
+    else
+      echo "- Failed kubectl apply" >&2
+      echo "   - ${__fullpath_of_generated_manifests}" >&2
+      return 1
+    fi
+  else
+    echo "---"
+    echo "- [ERROR] The format of the manifest is incorrect" >&2
+    return 1
   fi
-  return $?
 }
 
 function __generateDynamicsValuesForDI() {
