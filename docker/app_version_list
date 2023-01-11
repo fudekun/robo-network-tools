@@ -3,9 +3,9 @@
 
 ## The version of kubectl depends on the KinD implementation.
 ## References: https://github.com/kubernetes-sigs/kind/releases/latest
-KIND=0.14.0
-KUBECTL=1.24.3
+KIND=0.17.0
+KUBECTL=1.25.3
 DOCKER_CE=20.10
 CONTAINERD=1.6
-HELM=3.9
-GOST=2.11.2
+HELM=3.10
+GOST=2.11.4

@@ -3,6 +3,7 @@ set -euox pipefail
 
 function main() {
   docker build \
+    --no-cache \
     --build-arg VERSION_KIND="${KIND}" \
     --build-arg VERSION_KUBECTL="${KUBECTL}" \
     --build-arg VERSION_DOCKER_CE="${DOCKER_CE}" \

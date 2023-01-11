@@ -119,7 +119,7 @@ spec:
 
                                 ],
                                 "type": "number",
-                                "unit": "short"
+                                "unit": "s"
                             },
                             {
                                 "alias": "Instance",
