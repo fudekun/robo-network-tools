@@ -35,7 +35,6 @@ function create() {
   else
     return 1
   fi
-  return $?
 }
 
 function showVerifierCommand() {

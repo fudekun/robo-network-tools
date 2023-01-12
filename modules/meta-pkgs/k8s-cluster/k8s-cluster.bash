@@ -2,126 +2,89 @@
 set -euo pipefail
 
 ###############################################################################
-## Create a minimum KinD to run a ROS2 app on a Kubernetes cluster.
+## Execute k8s-cluster(Meta-Package) configuration
 ###############################################################################
 
-function showHeaderCommand() {
+showHeaderCommand() {
   echo ""
   echo "---"
   echo "# Installing Meta-Package (k8s-cluster) ..."
-  return $?
+  return 0
 }
 
-## 0. Input Argument Checking
+## 1. Input Argument Checking
 ##
-function checkArgs() {
-  echo ""
-  printf "# ARGS:\n%q (%s arg(s))\n" "$*" "$#"
-  printf "# ENVS:\n%s\n" "$(export | grep RDBOX | sed 's/^declare -x //')"
-  local opt optarg
-  while getopts "${__RDBOX_OPTS_CREATE_MAIN}""${__RDBOX_OPTS_RDBOX_MAIN}"-: opt; do
-    optarg="$OPTARG"
-    if [[ "$opt" = - ]]; then
-      opt="-${OPTARG%%=*}"
-      optarg="${OPTARG/${OPTARG%%=*}/}"
-      optarg="${optarg#=}"
-      if [[ -z "$optarg" ]] && [[ ! "${!OPTIND}" = -* ]]; then
-        optarg="${!OPTIND}"
-        shift
-      fi
-    fi
-    case "-$opt" in
-      -d|--domain) domain_name="$optarg" ;;
-      -h|--host) host_name="$optarg" ;;
-      -n|--name) cluster_name="$optarg" ;;
-      -o|--volume_type) volume_type="$optarg" ;;
-      *) ;;
-    esac
-  done
-  shift $((OPTIND - 1))
+checkArgs() {
   return $?
 }
 
-function main() {
-  showHeaderCommand "$@"
+main() {
+  showHeaderCommand
+  checkArgs "$@"
   executor "$@"
-  # cmdWithIndent "executor $*"
   showVerifierCommand
   return $?
 }
 
 ## 99. Notify Verifier-Command
 ##
-function showVerifierCommand() {
+showVerifierCommand() {
+  local ret
+  local modules
+  local arg
+  local verifier=()
+  ret=0
+  readarray -t modules < "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/meta-pkgs/k8s-cluster/create.properties"
+  for arg in "${modules[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    if [ "${kv[1]}" -gt 0 ]; then
+      verifier+=("${kv[1]}=${kv[0]}")
+    fi
+  done
   echo ""
-  echo "## USAGE"
-  echo "### K8s Cluster by KinD and Weave-Net has been installed. Check its status by running:"
-  echo "    kubectl get node -o wide"
-  return $?
+  echo "---"
+  echo "# Succeed, Installing Meta-Package (k8s-cluster)"
+  local sorted
+  readarray -t sorted < <(for a in "${verifier[@]}"; do echo "$a"; done | sort)
+  for arg in "${sorted[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    cat "$(getFullpathOfVerifyMsgs "$(getNamespaceName "${kv[1]}")")"
+    ret=$?
+    if [[ "${ret}" -ne 0 ]]; then
+      break
+    fi
+  done
+  return "${ret}"
 }
 
-function executor() {
-  ## Input Argument Checking
-  ##
-  local cluster_name domain_name volume_type host_name
-  checkArgs "${@:2}"
-  host_name=${host_name:-}
-  volume_type=${volume_type:-}
-  if [ -z "${volume_type}" ]; then
-    echo "You must set (-o|--volume_type [nfs|tmp])"
-    return 1
-  fi
-  ## Install KinD
-  ##
-  cmdWithLoding \
-    "installKinD ${cluster_name} ${domain_name} ${host_name}" \
-    "Activating the K8s Cluster by KinD"
-  ## SetUp ConfigMap
-  ##
-  cmdWithLoding \
-    "setupConfigMap ${cluster_name} ${domain_name} ${host_name}" \
-    "Activating the cluster-info"
-  ## Install Weave-Net
-  ##
-  cmdWithLoding \
-    "installWeaveNet" \
-    "Activating the weave-net"
-  ## Install Volume
-  ##
-  cmdWithLoding \
-    "installVolume ${*:2}" \
-    "Activating the volume"
-  return $?
+executor() {
+  local ret
+  local modules
+  local arg
+  ret=0
+  readarray -t modules < "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/meta-pkgs/k8s-cluster/create.properties"
+  for arg in "${modules[@]}" ; do
+    local kv
+    IFS="=" read -r -a kv <<< "$arg"
+    cmdWithLoding \
+      "bash ${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/${kv[0]}/${kv[0]}.bash ${*}" \
+      "- Activating the ${kv[0]} ..."
+    ret=$?
+    if [[ "${ret}" -ne 0 ]]; then
+      break
+    fi
+  done
+  return "${ret}"
 }
 
-## 1. Install KinD
+## Set the base directory for RDBOX scripts!!
 ##
-function installKinD() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/kind/kind.bash" "$@"
-  return $?
-}
-
-## 2. SetUp ConfigMap
-##
-function setupConfigMap() {
-  bash "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/modules/cluster-info/cluster-info.bash" "$@"
-  return $?
-}
-
-## 3. Install Weave-Net
-##
-function installWeaveNet() {
-  bash "$(getWorkdirOfScripts)/modules/modules/weave-net/weave-net.bash"
-  return $?
-}
-
-## 4. Install Volume
-##
-function installVolume() {
-  bash "$(getWorkdirOfScripts)/modules/modules/volume/volume.bash" "$@"
-  return $?
-}
-
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=${RDBOX_WORKDIR_OF_SCRIPTS_BASE:-$(cd "$(dirname "$0")"; pwd)}
+RDBOX_WORKDIR_OF_SCRIPTS_BASE=$(printf %q "$RDBOX_WORKDIR_OF_SCRIPTS_BASE")
+export RDBOX_WORKDIR_OF_SCRIPTS_BASE=$RDBOX_WORKDIR_OF_SCRIPTS_BASE
+  ### EXTRAPOLATION
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"
 main "$@"
 exit $?

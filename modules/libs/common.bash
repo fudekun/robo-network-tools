@@ -10,6 +10,14 @@
 RDBOX_APP_VERSION="v0.0.1"
 ## MODULE NAME ###############################################
   # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_KIND="kind"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_CLUSTER_INFO="cluster-info"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_WEAVE_NET="weave-net"
+  # shellcheck disable=SC2034
+RDBOX_MODULE_NAME_VOLUME="volume"
+  # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_CERT_MANAGER="cert-manager"
   # shellcheck disable=SC2034
 RDBOX_MODULE_NAME_METALLB="metallb"
