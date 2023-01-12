@@ -25,7 +25,7 @@ function delete() {
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
+  return 0
 }
 
 function showVerifierCommand() {
@@ -36,7 +36,9 @@ function __executor() {
   ## 1. Delete impersonator
   echo ""
   echo "### Delete the impersonator ..."
+  set +euo pipefail
   delete_main
+  set -euo pipefail
   return $?
 }
 

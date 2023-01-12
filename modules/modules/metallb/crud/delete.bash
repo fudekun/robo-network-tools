@@ -21,7 +21,7 @@ function delete() {
   cmdWithIndent "__executor $*"
   verify_string=$(showVerifierCommand)
   echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
+  return 0
 }
 
 function showVerifierCommand() {
@@ -32,7 +32,9 @@ function __executor() {
   ## 1. Delete metallb
   echo ""
   echo "### Delete the metallb ..."
+  set +euo pipefail
   delete_main
+  set -euo pipefail
   return $?
 }
 
