@@ -330,20 +330,12 @@ function create_user_context() {
 }
 
 function create_entries() {
-  local namespace_for_keycloak
-  namespace_for_keycloak="$(getNamespaceName "${RDBOX_MODULE_NAME_KEYCLOAK}")"
-  local user
-  local pass
-  user=$(getPresetKeycloakSuperAdminName "${namespace_for_keycloak}")
-  pass=$(kubectl -n "${namespace_for_keycloak}" get secrets "${SPECIFIC_SECRETS}" \
-        -o jsonpath='{.data.adminPassword}' \
-        | base64 --decode)
-  ## 2. Start a session
+  ## 1. Start a session
   ##
   local token
   local realm
-  token=$(get_access_token "master" "${user}" "${pass}")
   realm=$(getClusterName)
+  token=$(get_access_token_of_sa "${realm}")
   ### 1. Delete a old client if they exist
   ###
   if ! delete_entry "${realm}" "${token}" "clients" "${NAMESPACE}"; then
@@ -362,7 +354,7 @@ function create_entries() {
                 "client_id ${NAMESPACE}" \
               )
   create_entry "${realm}" "${token}" "clients" "${entry_json}"
-  ## 3. Stop a session
+  ## 2. Stop a session
   ##
   revoke_access_token "master" "${token}"
   return $?

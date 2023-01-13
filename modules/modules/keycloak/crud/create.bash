@@ -121,7 +121,8 @@ function create_main() {
       --from-literal=postgres-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
       --from-literal=password="${database_password}" \
       --from-literal=databasePassword="${database_password}" \
-      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
+      --from-literal=k8s-default-cluster-admin-password="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')" \
+      --from-literal=k8s-default-cluster-cli-secret="$(openssl rand -base64 32 | sed -e 's/\+/\@/g')"
         ### NOTE
         ### The postgresql-postgres-password is password for root user
         ### The postgresql-password is password for the unprivileged user
@@ -267,9 +268,39 @@ function create_entries() {
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/client_scope.jq.json
   entry_json=$(cat "${src_filepath}")
   create_entry "${realm}" "${token}" "client-scopes" "${entry_json}"
+  ### .5 admin-cli (Support the function of service account)
+  ###
+  local secret
+  secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
+            -o jsonpath='{.data.k8s-default-cluster-cli-secret}' | base64 -d)
+  update_entry "${realm}" "${token}" "clients" "admin-cli" "{\"serviceAccountsEnabled\": true, \"publicClient\": false, \"secret\": \"${secret}\"}"
+  ### .6 admin-cli (add client Roles)
+  ###
+  setup_service_account "${realm}" "${token}" "manage-clients" "manage-users"
   ## 2. Stop a session
   ##
   revoke_access_token "master" "${token}"
+  return $?
+}
+
+function setup_service_account() {
+  local realm=$1
+  local token=$2
+  local client_info client_id
+  client_info=$(read_entry "${realm}" "${token}" "clients" "clientId=admin-cli&first=0&max=11&search=true")
+  client_id=$(echo "${client_info}" | jq -r '.[].id')
+  local sa_user_info sa_user_id
+  sa_user_info=$(read_entry "${realm}" "${token}" "clients/${client_id}/service-account-user")
+  sa_user_id=$(echo "${sa_user_info}" | jq -r '.id')
+  for role_name in "${@:3}" ; do
+    local role_info role_id role_client_id
+    role_info=$(read_entry "${realm}" "${token}" "admin-ui-available-roles/users/${sa_user_id}" "first=0&max=101&search=${role_name}")
+    role_id=$(echo "${role_info}" | jq -r '.[].id')
+    role_client_id=$(echo "${role_info}" | jq -r '.[].clientId')
+    role_name=$(echo "${role_info}" | jq -r '.[].role')
+    create_entry "${realm}" "${token}" "users/${sa_user_id}/role-mappings/realm" "[]"
+    create_entry "${realm}" "${token}" "users/${sa_user_id}/role-mappings/clients/${role_client_id}" "[{\"id\": \"${role_id}\", \"name\": \"${role_name}\"}]"
+  done
   return $?
 }
 

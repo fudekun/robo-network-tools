@@ -45,9 +45,9 @@ function __executor() {
 function delete_main() {
   ## 1. Delete a Entry
   ##
-  echo ""
-  echo "### Deleting Entry ..."
-  __delete_entry
+  # echo ""
+  # echo "### Deleting Entry ..."
+  # __delete_entry
   ## 2. Delete Helm
   ##
   echo ""

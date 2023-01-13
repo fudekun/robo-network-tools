@@ -79,28 +79,18 @@ function delete_main() {
 #   0 if thing was gived assurance output, non-zero on error.
 #######################################
 function __delete_entry() {
-  ## 1. Prepare various parameters
-  ##
-  local namespace_for_keycloak
-  namespace_for_keycloak="$(getNamespaceName "keycloak")"
-  local user
-  local pass
-  user=$(getPresetKeycloakSuperAdminName "${namespace_for_keycloak}")
-  pass=$(kubectl -n "${namespace_for_keycloak}" get secrets "${SPECIFIC_SECRETS}" \
-        -o jsonpath='{.data.adminPassword}' \
-        | base64 --decode)
-  ## 2. Start a session
+  ## 1. Start a session
   ##
   local token
   local realm
-  token=$(get_access_token "master" "${user}" "${pass}")
   realm=$(getClusterName)
+  token=$(get_access_token_of_sa "${realm}")
   ### 1. Delete a old client if they exist
   ###
   if ! delete_entry "${realm}" "${token}" "clients" "${NAMESPACE}"; then
     echo "The Client(${NAMESPACE}) is Not Found ...ok"
   fi
-  ## 3. Stop a session
+  ## 2. Stop a session
   ##
   revoke_access_token "master" "${token}"
   return $?

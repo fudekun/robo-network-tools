@@ -140,6 +140,57 @@ function get_access_token() {
 }
 
 #######################################
+# Get a access token (ServiceAccount)
+# Globals:
+#   NONE
+# Arguments:
+#   realm          (e.g. rdbox)
+# Outputs:
+#   A json string include accessToken and refreshToken
+#   - https://www.keycloak.org/docs-api/18.0/rest-api/#_accesstoken
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://github.com/keycloak/keycloak-documentation/blob/main/securing_apps/topics/oidc/oidc-generic.adoc#example-using-curl
+#######################################
+function get_access_token_of_sa() {
+  function __get_access_token_of_sa() {
+    local tmp_dir=$1
+    local ca_filepath=${tmp_dir}/tls.crt
+    local realm=$2
+    local keycloak_fqdn
+    local token_endpoint
+    local resp
+    keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
+    token_endpoint=$(curl -fs \
+      --cacert "${ca_filepath}" \
+      https://"${keycloak_fqdn}"/realms/"${realm}"/.well-known/openid-configuration \
+      | jq -r '.mtls_endpoint_aliases.token_endpoint')
+      ### NOTE
+      ### ex) https://keycloak.rdbox.172-16-0-110.nip.io/realms/mastrer/.well-known/openid-configuration
+    local secret b64str
+    secret=$(kubectl -n keycloak get secrets "${SPECIFIC_SECRETS}" \
+              -o jsonpath='{.data.k8s-default-cluster-cli-secret}' | base64 -d)
+    b64str=$(echo -n "admin-cli:${secret}" | base64)
+    resp=$(curl -fs --cacert "${ca_filepath}" -X POST "$token_endpoint" \
+      -H "Authorization: Basic ${b64str}" \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=client_credentials"
+    )
+      ### NOTE
+      ### ex) https://keycloak.rdbox.172-16-0-110.nip.io/realms/mastrer/protocol/openid-connect/token
+    echo "$resp"
+    return 0
+  }
+  local cert_dir
+  cert_dir=$(get_cert)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${cert_dir}'" EXIT
+  __get_access_token_of_sa "$cert_dir" "$@"
+  return $?
+}
+
+#######################################
 # Revoke a access token
 # Globals:
 #   NONE
@@ -249,6 +300,113 @@ function create_entry() {
   return $?
 }
 
+function read_entry() {
+  function __read_entry() {
+    local tmp_dir=$1
+    local ca_filepath=${tmp_dir}/tls.crt
+    local realm=$2
+    local token=$3
+    local entry_target=$4
+    local query=${5:-""}
+    local keycloak_fqdn
+    local operation_endpoint_url
+    local access_token
+    access_token=$(perse_token "${token}" "access_token")
+    keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
+    if [ "${realm}" = "__NONE__" ]; then
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms"
+    else
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}/${entry_target}"
+    fi
+    if [ -n "$query" ]; then
+      operation_endpoint_url="${operation_endpoint_url}?${query}"
+    fi
+    local response
+    local http_code
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X GET "${operation_endpoint_url}" \
+        -H "Authorization: bearer ${access_token}" \
+        -H "Content-Type: application/json")" 1>&2) 2>&1)
+    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "${response}"
+      return 0
+    else
+      echo "the HTTP Code is ${http_code}"
+      echo "${response}"
+      return 1
+    fi
+  }
+  local cert_dir
+  cert_dir=$(get_cert)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${cert_dir}'" EXIT
+  __read_entry "$cert_dir" "$@"
+  return $?
+}
+
+function update_entry() {
+  function __update_entry() {
+    local tmp_dir=$1
+    local ca_filepath=${tmp_dir}/tls.crt
+    local realm=$2
+    local token=$3
+    local entry_target=$4
+    local entry_id=$5
+    local entry_json=$6
+    local keycloak_fqdn
+    local operation_endpoint_url
+    local access_token
+    access_token=$(perse_token "${token}" "access_token")
+    keycloak_fqdn=$(getHostName "keycloak" "main").$(getBaseFQDN)
+    if [ "${realm}" = "__NONE__" ]; then
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms"
+    else
+      operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}/${entry_target}"
+    fi
+    local response
+    local http_code
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X GET "${operation_endpoint_url}?clientId=${entry_id}&first=0&max=11&search=true" \
+        -H "Authorization: bearer ${access_token}" \
+        -H "Content-Type: application/json")" 1>&2) 2>&1)
+    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "Success get the new entry(${http_code})"
+    else
+      echo "the HTTP Code is ${http_code}"
+      echo "${response}"
+      return 1
+    fi
+    local id
+    id=$(echo "${response}" | jq -r '.[].id')
+    local response
+    local http_code
+    {
+        IFS=$'\n' read -r -d '' response;
+        IFS=$'\n' read -r -d '' http_code;
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X PUT "${operation_endpoint_url}/${id}" \
+        -H "Authorization: bearer ${access_token}" \
+        -H "Content-Type: application/json" \
+        -d "${entry_json}")" 1>&2) 2>&1)
+    if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "Success get the new entry(${http_code})"
+    else
+      echo "the HTTP Code is ${http_code}"
+      echo "${response}"
+      return 1
+    fi
+  }
+  local cert_dir
+  cert_dir=$(get_cert)
+  # shellcheck disable=SC2064
+  trap "exit_handler '${cert_dir}'" EXIT
+  __update_entry "$cert_dir" "$@"
+  return $?
+}
+
 #######################################
 # Delete any entry
 # Globals:
@@ -295,7 +453,7 @@ function delete_entry() {
           -H "Content-Type: application/json" \
           -d "clientId=${entry_id}")" 1>&2) 2>&1)
       if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
-        id=$(echo "$response" | jq -r ".[0].id")
+        id=$(echo "$response" | jq -r '.[0].id')
       else
         return 1
       fi
