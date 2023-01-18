@@ -37,7 +37,7 @@ function showParams() {
   echo HELM_NAME="${HELM_NAME}"
   echo HELM_VERSION="${HELM_VERSION}"
   echo "---"
-  return $?
+  return 0
 }
 
 function main() {

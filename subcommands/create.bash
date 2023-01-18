@@ -45,7 +45,7 @@ function check_args() {
   done
   shift $((OPTIND - 1))
   echo -n "${module_name}"
-  return $?
+  return 0
 }
 
 function executor() {
@@ -86,10 +86,11 @@ function get_fullpath_of_script() {
   count_of_directories=$(find "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules" -type d -name "${module_name}" | wc -l | sed 's/ //g')
   if [[ $count_of_directories -eq 1 ]]; then
     echo -n "${directories}/${module_name}.bash"
+    return 0
   else
     echo -n ""
+    return 1
   fi
-  return $?
 }
 
 source "${RDBOX_WORKDIR_OF_SCRIPTS_BASE}/modules/libs/common.bash"

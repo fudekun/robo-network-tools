@@ -60,7 +60,7 @@ function showVerifierCommand() {
   echo "  ### Your default browser will launch and you should perform the login operation"
   echo "    kubectl config use-context $(getKubectlContextName4SSO)"
   echo "    kubectl get node          # whatever is okay, just choose the one you like"
-  return $?
+  return 0
 }
 
 function executor() {
@@ -267,7 +267,6 @@ function create_specific_kubeapi() {
   fi
     ### NOTE
     ### Wait until to startup the Host
-  return 0
 }
 
 #######################################

@@ -30,7 +30,6 @@ function create() {
   else
     return 1
   fi
-  return $?
 }
 
 function showVerifierCommand() {
@@ -38,7 +37,7 @@ function showVerifierCommand() {
   echo "## USAGE"
   echo "### ${MODULE_NAME} has been installed. Check its status by running:"
   echo "    kubectl -n ${NAMESPACE} get deployments -o wide"
-  return $?
+  return 0
 }
 
 function executor() {

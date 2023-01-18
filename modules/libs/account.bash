@@ -290,7 +290,6 @@ function create_entry() {
       echo "${response}"
       return 1
     fi
-    return $?
   }
   local cert_dir
   cert_dir=$(get_cert)
@@ -300,6 +299,23 @@ function create_entry() {
   return $?
 }
 
+#######################################
+# Read any entry
+# Globals:
+#   NONE
+# Arguments:
+#   realm           (e.g. rdbox)
+#   token           a json string was obtained from the get_access_token() function
+#   entry_target    (e.g. clients, clients/eea68042-5981-443a-97ea-436c46a59d0c/service-account-user)
+#   <optional>query (e.g. clientId=admin-cli&first=0&max=11&search=true)
+# Outputs:
+#   Entry information in JSON format
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://www.keycloak.org/docs-api/18.0/rest-api/
+#   https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
+#######################################
 function read_entry() {
   function __read_entry() {
     local tmp_dir=$1
@@ -346,6 +362,25 @@ function read_entry() {
   return $?
 }
 
+#######################################
+# Update any entry
+#   The "query" argument is used to obtain the unique ID of the update target.
+# Globals:
+#   NONE
+# Arguments:
+#   realm           (e.g. rdbox)
+#   token           a json string was obtained from the get_access_token() function
+#   entry_target    (e.g. clients, clients/eea68042-5981-443a-97ea-436c46a59d0c/service-account-user)
+#   query           (e.g. admin-cli)
+#   entry_json      (e.g. "{\"serviceAccountsEnabled\": true, \"publicClient\": false, \"secret\": \"${secret}\"}")
+# Outputs:
+#   NONE
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://www.keycloak.org/docs-api/18.0/rest-api/
+#   https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
+#######################################
 function update_entry() {
   function __update_entry() {
     local tmp_dir=$1
@@ -353,7 +388,7 @@ function update_entry() {
     local realm=$2
     local token=$3
     local entry_target=$4
-    local entry_id=$5
+    local query=$5
     local entry_json=$6
     local keycloak_fqdn
     local operation_endpoint_url
@@ -365,23 +400,32 @@ function update_entry() {
     else
       operation_endpoint_url="https://${keycloak_fqdn}/admin/realms/${realm}/${entry_target}"
     fi
+    if [ -n "$query" ]; then
+      get_endpoint_url="${operation_endpoint_url}?${query}"
+    fi
     local response
     local http_code
     {
         IFS=$'\n' read -r -d '' response;
         IFS=$'\n' read -r -d '' http_code;
-    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X GET "${operation_endpoint_url}?clientId=${entry_id}&first=0&max=11&search=true" \
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X GET "${get_endpoint_url}" \
         -H "Authorization: bearer ${access_token}" \
         -H "Content-Type: application/json")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
-      echo "Success get the new entry(${http_code})"
+      echo "Success get the existing entry(${http_code})"
     else
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
       return 1
     fi
+    match_item_count=$(echo "${response}" | jq '. | length')
+    if [ "${match_item_count}" -ne 1 ]; then
+      echo "Too match the your query(${query})"
+      echo "${response}"
+      return 1
+    fi
     local id
-    id=$(echo "${response}" | jq -r '.[].id')
+    id=$(echo "${response}" | jq -r '.[0].id')
     local response
     local http_code
     {
@@ -392,7 +436,7 @@ function update_entry() {
         -H "Content-Type: application/json" \
         -d "${entry_json}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
-      echo "Success get the new entry(${http_code})"
+      echo "Success update the existing entry(${http_code})"
     else
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
@@ -465,12 +509,12 @@ function delete_entry() {
         -H "Authorization: bearer ${access_token}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
       echo "Success delete the old entry(${http_code})"
+      return 0
     else
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
       return 1
     fi
-    return $?
   }
   local cert_dir
   cert_dir=$(get_cert)

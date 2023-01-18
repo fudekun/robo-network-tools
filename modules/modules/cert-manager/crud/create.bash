@@ -57,7 +57,7 @@ function showVerifierCommand() {
   echo "    (Windows) https://docs.microsoft.com/en-us/windows-hardware/drivers/install/certificate-stores"
   echo "    (MacOS  ) https://support.apple.com/guide/keychain-access/kyca2431/mac"
   echo "    (Ubuntu ) https://ubuntu.com/server/docs/security-trust-store"
-  return $?
+  return 0
 }
 
 function executor() {

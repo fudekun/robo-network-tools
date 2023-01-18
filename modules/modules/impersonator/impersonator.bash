@@ -11,6 +11,7 @@ set -euo pipefail
 # Style: https://google.github.io/styleguide/shellguide.html
 ###############################################################################
 
+# shellcheck disable=SC2317
 function create_error_handler() {
   local cluster=${1}
   local module=${2}
@@ -34,6 +35,7 @@ function showHeaderCommand() {
   return $?
 }
 
+# shellcheck disable=SC2317
 function showParams() {
   echo "---"
   printf "ARGS:\n%q (%s arg(s))\n" "$*" "$#"
@@ -44,7 +46,7 @@ function showParams() {
   echo RELEASE="${RELEASE}"
   echo BASE_FQDN="${BASE_FQDN}"
   echo "---"
-  return $?
+  return 0
 }
 
 function main() {

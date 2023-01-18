@@ -50,7 +50,7 @@ function showVerifierCommand() {
   echo "  ${base_url}/realms/$(getClusterName)/protocol/openid-connect/auth?client_id=security-admin-console"
   echo "    echo Username: $(getPresetClusterAdminUserName "${MODULE_NAME}")"
   echo "    echo Password: \$(kubectl -n ${NAMESPACE} get secrets ${SPECIFIC_SECRETS} -o jsonpath='{.data.k8s-default-cluster-admin-password}' | base64 --decode)"
-  return $?
+  return 0
 }
 
 function executor() {
@@ -180,11 +180,11 @@ function create_main() {
     echo "The HTTP Status is ${http_code} ...ng"
     return 1
   fi
-  return $?
 }
 
 function create_entries() {
   ## 1. Start a session
+  ##    - Use Super-admin account information
   ##
   local token user pass
   user=$(getPresetKeycloakSuperAdminName "${NAMESPACE}")
@@ -193,7 +193,9 @@ function create_entries() {
         | base64 --decode)
   token=$(get_access_token "master" "${user}" "${pass}")
   ### .1 Create a new realm
-  ###    - A preset user and group, that is using for admin
+  ###    - A preset realm settings(login policy, language and more ...)
+  ###    - A preset user(admin) and groups(admin and more ...)
+  ###    - A preset roles
   ###
   local admin_password
   local realm
@@ -217,10 +219,6 @@ function create_entries() {
   secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
   credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
   local src_filepath entry_json
-  ###
-  # if ! delete_entry "__NONE__" "${token}" "__NONE__" "${realm}"; then
-  #   echo "The Client(${NAMESPACE}) is Not Found ...ok"
-  # fi
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/realm.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "cluster_name ${realm}" \
@@ -232,13 +230,6 @@ function create_entries() {
                 "credential_data ${credential_data}" \
               )
   create_entry "__NONE__" "${token}" "__NONE__" "${entry_json}"
-  ### .2 Create a new groups for test use
-  ###
-  # src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/groups.jq.json
-  # entry_json=$(parse_jq_temlate "${src_filepath}" \
-  #               "name guest" \
-  #             )
-  # create_entry "${realm}" "${token}" "groups" "${entry_json}"
   ### .2 Create a new users for test use
   ###
   local cred_hash_array
@@ -251,7 +242,7 @@ function create_entries() {
   local secret_data credential_data
   secret_data="{\"value\":\"${hashed_salted_value}\",\"salt\":\"${salt}\"}"
   credential_data="{\"algorithm\":\"pbkdf2-sha256\",\"hashIterations\":${hash_iterations}}"
-  ###
+  ### ----------------------------
   src_filepath=$(getFullpathOfOnesBy "${MODULE_NAME}" confs entry)/users.jq.json
   entry_json=$(parse_jq_temlate "${src_filepath}" \
                 "username guest" \
@@ -273,33 +264,72 @@ function create_entries() {
   local secret
   secret=$(kubectl -n "${NAMESPACE}" get secrets "${SPECIFIC_SECRETS}" \
             -o jsonpath='{.data.k8s-default-cluster-cli-secret}' | base64 -d)
-  update_entry "${realm}" "${token}" "clients" "admin-cli" "{\"serviceAccountsEnabled\": true, \"publicClient\": false, \"secret\": \"${secret}\"}"
+  update_entry "${realm}" \
+                "${token}" \
+                "clients" \
+                "clientId=admin-cli&first=0&max=11&search=true" \
+                "{\"serviceAccountsEnabled\": true, \"publicClient\": false, \"secret\": \"${secret}\"}"
   ### .6 admin-cli (add client Roles)
   ###
-  setup_service_account "${realm}" "${token}" "manage-clients" "manage-users"
+  bind_role_to_service_account "${realm}" \
+                                "${token}" \
+                                "admin-cli" \
+                                "manage-clients" "manage-users"
   ## 2. Stop a session
   ##
   revoke_access_token "master" "${token}"
   return $?
 }
 
-function setup_service_account() {
+#######################################
+# Function to bind a role(specified by argument) to ServiceAccount.
+#   The roll(specified by argument) is variable-length.
+# Globals:
+#   NONE
+# Arguments:
+#   realm            (e.g. rdbox)
+#   token            a json string was obtained from the get_access_token() function
+#   client_name      (e.g. admin-cli)
+#   <variable>role   (e.g. "manage-clients" "manage-users")
+# Outputs:
+#   NONE
+# Returns:
+#   0 if thing was gived assurance output, non-zero on error.
+# References:
+#   https://www.keycloak.org/docs-api/18.0/rest-api/
+#######################################
+function bind_role_to_service_account() {
   local realm=$1
   local token=$2
+  local client_name=$3
   local client_info client_id
-  client_info=$(read_entry "${realm}" "${token}" "clients" "clientId=admin-cli&first=0&max=11&search=true")
+  client_info=$(read_entry "${realm}" "${token}" "clients" "clientId=${client_name}&first=0&max=11&search=true")
+  if [ "$(echo "${client_info}" | jq '. | length')" -ne 1 ]; then
+    echo "The specified client_name(${client_name}) does not exist"
+    return 0
+  fi
   client_id=$(echo "${client_info}" | jq -r '.[].id')
   local sa_user_info sa_user_id
   sa_user_info=$(read_entry "${realm}" "${token}" "clients/${client_id}/service-account-user")
   sa_user_id=$(echo "${sa_user_info}" | jq -r '.id')
-  for role_name in "${@:3}" ; do
+  for role_name in "${@:4}" ; do
     local role_info role_id role_client_id
     role_info=$(read_entry "${realm}" "${token}" "admin-ui-available-roles/users/${sa_user_id}" "first=0&max=101&search=${role_name}")
+    if [ "$(echo "${role_info}" | jq '. | length')" -ne 1 ]; then
+      echo "The specified role_name(${role_name}) does not exist"
+      continue
+    fi
     role_id=$(echo "${role_info}" | jq -r '.[].id')
     role_client_id=$(echo "${role_info}" | jq -r '.[].clientId')
     role_name=$(echo "${role_info}" | jq -r '.[].role')
-    create_entry "${realm}" "${token}" "users/${sa_user_id}/role-mappings/realm" "[]"
-    create_entry "${realm}" "${token}" "users/${sa_user_id}/role-mappings/clients/${role_client_id}" "[{\"id\": \"${role_id}\", \"name\": \"${role_name}\"}]"
+    create_entry "${realm}" \
+                  "${token}" \
+                  "users/${sa_user_id}/role-mappings/realm" \
+                  "[]"
+    create_entry "${realm}" \
+                  "${token}" \
+                  "users/${sa_user_id}/role-mappings/clients/${role_client_id}" \
+                  "[{\"id\": \"${role_id}\", \"name\": \"${role_name}\"}]"
   done
   return $?
 }

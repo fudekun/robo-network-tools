@@ -40,7 +40,9 @@ spec:
     - name: "Impersonate-User"
       value: {{ printf "{{ .token.Claims.preferred_username }}" | quote }}
     - name: "Impersonate-Group"
-      value: {{ printf "{{range .token.Claims.groups}}{{ . }}{{end}}" | quote }}
+      value: {{ printf "{{ index .token.Claims.groups 0 }}" | quote }}
+    - name: "X-Rdbox-Impersonate-Group"
+      value: {{ printf "{{range .token.Claims.groups}}{{ . }};{{end}}" | quote }}
 ---
 apiVersion: getambassador.io/v3alpha1
 kind: Filter

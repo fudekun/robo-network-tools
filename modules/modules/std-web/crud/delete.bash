@@ -13,7 +13,8 @@ set -euo pipefail
 ###############################################################################
 
 function checkArgs() {
-  return $?
+  echo Enable "${SPECIFIC_SECRETS}"
+  return 0
 }
 
 function delete() {
@@ -23,12 +24,6 @@ function delete() {
   #######################################################
   checkArgs "$@"
   cmdWithIndent "__executor $*"
-  verify_string=$(showVerifierCommand)
-  echo "${verify_string}" > "$(getFullpathOfVerifyMsgs "${MODULE_NAME}")"
-  return $?
-}
-
-function showVerifierCommand() {
   return $?
 }
 

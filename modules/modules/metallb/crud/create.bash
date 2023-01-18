@@ -37,7 +37,7 @@ function showVerifierCommand() {
   echo "## USAGE"
   echo "### metallb has been installed. Check its status by running:"
   echo "    kubectl -n ${NAMESPACE} get deployments -o wide"
-  return $?
+  return 0
 }
 
 function executor() {

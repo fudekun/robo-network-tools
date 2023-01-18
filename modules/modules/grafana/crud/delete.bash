@@ -13,7 +13,8 @@ set -euo pipefail
 ###############################################################################
 
 function checkArgs() {
-  return $?
+  echo Enable "${SPECIFIC_SECRETS}"
+  return 0
 }
 
 function delete() {

@@ -20,6 +20,7 @@ function showHeaderCommand() {
   return $?
 }
 
+# shellcheck disable=SC2317
 function showParams() {
   echo "---"
   echo ""
@@ -28,7 +29,7 @@ function showParams() {
   echo RELEASE="${RELEASE}"
   echo BASE_FQDN="${BASE_FQDN}"
   echo "---"
-  return $?
+  return 0
 }
 
 function main() {

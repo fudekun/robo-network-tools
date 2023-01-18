@@ -41,7 +41,7 @@ function showVerifierCommand() {
   echo "## USAGE"
   echo "### kubernetes-dashboard has been installed. Check its status by running:"
   echo "    kubectl -n ${NAMESPACE} get deployments -o wide"
-  return $?
+  return 0
 }
 
 function executor() {
@@ -141,7 +141,7 @@ function create_specific_kubeapi() {
   echo "No errors were detected in the test"
     ### NOTE
     ### Connection test
-  return $?
+  return 0
 }
 
 function create_main() {
