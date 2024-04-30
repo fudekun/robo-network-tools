@@ -26,9 +26,9 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
 
 ## Setup kubectl
 ## References: https://kubernetes.io/ja/docs/tasks/tools/install-kubectl/
-RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | apt-key add - \
-    && echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" \
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key \
+    | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v$(echo $VERSION_KUBECTL | awk -F '.' -v 'OFS=.' '{print $1,$2}')/deb/ /" \
       | tee -a /etc/apt/sources.list.d/kubernetes.list
 
 ## Setup the helm
@@ -59,7 +59,7 @@ RUN apt-get update \
         docker-ce=5:${VERSION_DOCKER_CE}.* \
         docker-ce-cli=5:${VERSION_DOCKER_CE}.* \
         containerd.io=${VERSION_CONTAINERD}.* \
-        kubectl=${VERSION_KUBECTL}-00 \
+        kubectl=${VERSION_KUBECTL}-1.1 \
         helm=${VERSION_HELM}.* \
         jq \
         iproute2 \

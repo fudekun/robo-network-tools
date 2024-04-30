@@ -544,7 +544,7 @@ function isValidHostname() {
 #   0 if thing is valid , non-zero on error.
 #######################################
 function isValidDomainname() {
-  local __regex='^([A-Za-z]{2,6}|[A-Za-z]{2,6}\.[A-Za-z]{2,6})$'
+  local __regex='.*'
   local __domainname
   __domainname=$1
   if [[ "$__domainname" =~ ${__regex} ]]; then
@@ -658,7 +658,7 @@ function getNetworkInfo() {
   if [[ "${runtime_name}" == "Host" ]] && [[ "${os_name}" == "MacOS" ]]; then
     RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep default | grep -v "\!" | grep -v ":" | awk '{print $4}')}
   else
-    RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep ^0.0.0.0 | grep -v ":" | awk '{print $8}')}
+    RDBOX_NETWORK_DEFULT_NIC_NAME=${RDBOX_NETWORK_DEFULT_NIC_NAME:-$(netstat -rn | grep ^0.0.0.0 | grep -v ":" | awk '{print $8}' | head -n 1)}
   fi
   RDBOX_NETWORK_DEFULT_NIC_NAME=$(printf %q "$RDBOX_NETWORK_DEFULT_NIC_NAME")
     # EXTRAPOLATION

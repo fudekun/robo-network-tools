@@ -124,6 +124,7 @@ function delete_all() {
     return $?
   }
   echo ""
+  echo ""
   echo "---"
   echo "# Deleting Cluster ..."
   __delete_all "$@"

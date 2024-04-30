@@ -667,7 +667,7 @@ $ kubectl port-forward -n guest deploy/nginx-deployment 8888:80
 ```bash
 cd ${ソースコードをクローンした場所}
 ./rdbox logout --name rdbox
-./rdbox delete --name rdbox
+./rdbox delete --name rdbox --module all
 ```
 
 ```bash

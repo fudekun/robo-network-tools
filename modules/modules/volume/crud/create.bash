@@ -120,6 +120,7 @@ function __executor() {
                 mkdir -p ${volume_path} && \
                 mount -t auto -o loop /data/nfs/${cluster_name}/ext4.img ${volume_path}"
       fi
+      sudo kind load docker-image rdbox/k8s-nfs-ganesha:3.5 --name "${cluster_name}"
       helm -n volume upgrade --install volume "${dirpath_of_nfs_ganesha}" \
           --create-namespace \
           --wait \
