@@ -280,14 +280,18 @@ function create_entry() {
         -H "Content-Type: application/json" \
         -d "${entry_json}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "create_entry POST"
       echo "Success create the new entry(${http_code})"
     elif [ "${http_code}" -eq 409 ]; then
+      echo "create_entry POST"
       echo "Already exist the same entry, the HTTP Code is ${http_code}"
-      echo "${response}"
       return 0
     else
+      echo "create_entry POST(error)"
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
+      echo "${entry_json}"
+      echo "${operation_endpoint_url}"
       return 1
     fi
   }
@@ -349,8 +353,11 @@ function read_entry() {
       echo "${response}"
       return 0
     else
+      echo "read_entry GET(error)"
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
+      echo "${entry_json}"
+      echo "${operation_endpoint_url}"
       return 1
     fi
   }
@@ -412,10 +419,14 @@ function update_entry() {
         -H "Authorization: bearer ${access_token}" \
         -H "Content-Type: application/json")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "update_entry GET"
       echo "Success get the existing entry(${http_code})"
     else
+      echo "update_entry GET(error)"
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
+      echo "${entry_json}"
+      echo "${operation_endpoint_url}"
       return 1
     fi
     match_item_count=$(echo "${response}" | jq '. | length')
@@ -436,10 +447,14 @@ function update_entry() {
         -H "Content-Type: application/json" \
         -d "${entry_json}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+      echo "update_entry PUT"
       echo "Success update the existing entry(${http_code})"
     else
+      echo "update_entry PUT(error)"
       echo "the HTTP Code is ${http_code}"
       echo "${response}"
+      echo "${entry_json}"
+      echo "${operation_endpoint_url}"
       return 1
     fi
   }

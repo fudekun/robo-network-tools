@@ -302,6 +302,15 @@ function bind_role_to_service_account() {
   local realm=$1
   local token=$2
   local client_name=$3
+  
+  local client_info_realm_management client_realm_management_id
+  client_info_realm_management=$(read_entry "${realm}" "${token}" "clients" "clientId=realm-management&first=0&max=11&search=true")
+  if [ "$(echo "${client_info}" | jq '. | length')" -ne 1 ]; then
+    echo "The specified client_name(realm-management) does not exist"
+    return 0
+  fi
+  client_realm_management_id=$(echo "${client_info_realm_management}" | jq -r '.[].id')
+
   local client_info client_id
   client_info=$(read_entry "${realm}" "${token}" "clients" "clientId=${client_name}&first=0&max=11&search=true")
   if [ "$(echo "${client_info}" | jq '. | length')" -ne 1 ]; then
@@ -309,26 +318,26 @@ function bind_role_to_service_account() {
     return 0
   fi
   client_id=$(echo "${client_info}" | jq -r '.[].id')
+
   local sa_user_info sa_user_id
   sa_user_info=$(read_entry "${realm}" "${token}" "clients/${client_id}/service-account-user")
   sa_user_id=$(echo "${sa_user_info}" | jq -r '.id')
+
   for role_name in "${@:4}" ; do
-    local role_info role_id role_client_id
-    role_info=$(read_entry "${realm}" "${token}" "admin-ui-available-roles/users/${sa_user_id}" "first=0&max=101&search=${role_name}")
+    local role_info role_id
+    role_info=$(read_entry "${realm}" "${token}" "clients/${client_realm_management_id}/roles" "first=0&max=101&search=${role_name}")
     if [ "$(echo "${role_info}" | jq '. | length')" -ne 1 ]; then
       echo "The specified role_name(${role_name}) does not exist"
       continue
     fi
     role_id=$(echo "${role_info}" | jq -r '.[].id')
-    role_client_id=$(echo "${role_info}" | jq -r '.[].clientId')
-    role_name=$(echo "${role_info}" | jq -r '.[].role')
     create_entry "${realm}" \
                   "${token}" \
                   "users/${sa_user_id}/role-mappings/realm" \
                   "[]"
     create_entry "${realm}" \
                   "${token}" \
-                  "users/${sa_user_id}/role-mappings/clients/${role_client_id}" \
+                  "users/${sa_user_id}/role-mappings/clients/${client_realm_management_id}" \
                   "[{\"id\": \"${role_id}\", \"name\": \"${role_name}\"}]"
   done
   return $?
