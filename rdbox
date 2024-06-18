@@ -32,10 +32,10 @@ function main() {
     docker run -it --rm \
       -p 8000:8000 \
       -v "$(pwd)":/rdbox \
-      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/.kube:/home/ubuntu/.kube \
       -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
-      -e KUBECONFIG=/tmp/.kube/config \
+      -e KUBECONFIG=/home/ubuntu/.kube/config \
       -e RDBOX_NETWORK_DEFULT_NIC_NAME="${RDBOX_NETWORK_DEFULT_NIC_NAME}" \
       -e RDBOX_NETWORK_DEFULT_NIC_IPV4="${RDBOX_NETWORK_DEFULT_NIC_IPV4}" \
       -e RDBOX_NETWORK_DEFULT_NIC_IPV6="${RDBOX_NETWORK_DEFULT_NIC_IPV6}" \
@@ -53,13 +53,13 @@ function main() {
     docker run -it --rm \
       --network host \
       -v "$(pwd)":/rdbox \
-      -v "${HOME}"/.kube:/tmp/.kube \
+      -v "${HOME}"/.kube:/home/ubuntu/.kube \
       -v "${RDBOX_WORKDIR_OF_WORK_BASE}":"${RDBOX_WORKDIR_OF_WORK_BASE}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -v "${HOME}"/.cache/helm:/home/ubuntu/.cache/helm \
       -v "${HOME}"/.cache/helm:/home/ubuntu/.config/helm \
       -v "${HOME}"/.cache/helm:/home/ubuntu/.local/helm \
-      -e KUBECONFIG=/tmp/.kube/config \
+      -e KUBECONFIG=/home/ubuntu/.kube/config \
       -e RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT="${RDBOX_ESSENTIALS_A_POLICY_TO_ISSUE_CERT:-new}" \
       -e LOCAL_UID="$(id -u "${USER}")" \
       -e LOCAL_GID="$(id -g "${USER}")" \
