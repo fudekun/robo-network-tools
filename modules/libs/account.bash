@@ -119,23 +119,42 @@ function get_access_token() {
         -d "totp=$totp"
       )
     else
-      resp=$(curl -fs --cacert "${ca_filepath}" -X POST "$token_endpoint" \
+      local response
+      local http_code
+      {
+          IFS=$'\n' read -r -d '' response;
+          IFS=$'\n' read -r -d '' http_code;
+      } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X POST "${token_endpoint}" \
         -d "client_id=admin-cli" \
         -d "grant_type=password" \
         -d "username=$username" \
-        -d "password=$password"
-      )
+        -d "password=$password")" 1>&2) 2>&1)
+
+      if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
+        if [ -z "$response" ]; then
+          return 1
+        else
+          echo "$response"
+          return 0
+        fi
+      else
+        return 1
+      fi
     fi
       ### NOTE
       ### ex) https://keycloak.rdbox.172-16-0-110.nip.io/realms/mastrer/protocol/openid-connect/token
-    echo "$resp"
     return 0
   }
   local cert_dir
   cert_dir=$(get_cert)
   # shellcheck disable=SC2064
   trap "exit_handler '${cert_dir}'" EXIT
-  __get_access_token "$cert_dir" "$@"
+  if __get_access_token "$cert_dir" "$@"; then
+    return 0
+  else
+    sleep 10
+    __get_access_token "$cert_dir" "$@"
+  fi
   return $?
 }
 
@@ -275,13 +294,14 @@ function create_entry() {
     {
         IFS=$'\n' read -r -d '' response;
         IFS=$'\n' read -r -d '' http_code;
-    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" -X POST "${operation_endpoint_url}" \
+    } < <((printf '\0%s\0' "$(curl -s -w '%{http_code}' -o /dev/stderr --cacert "${ca_filepath}" --retry 60 --retry-delay 10 --retry-all-errors -X POST "${operation_endpoint_url}" \
         -H "Authorization: bearer ${access_token}" \
         -H "Content-Type: application/json" \
         -d "${entry_json}")" 1>&2) 2>&1)
     if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
       echo "create_entry POST"
       echo "Success create the new entry(${http_code})"
+      return 0
     elif [ "${http_code}" -eq 409 ]; then
       echo "create_entry POST"
       echo "Already exist the same entry, the HTTP Code is ${http_code}"
@@ -299,7 +319,12 @@ function create_entry() {
   cert_dir=$(get_cert)
   # shellcheck disable=SC2064
   trap "exit_handler '${cert_dir}'" EXIT
-  __create_entry "$cert_dir" "$@"
+  if __create_entry "$cert_dir" "$@"; then
+    return 0
+  else
+    sleep 10
+    __create_entry "$cert_dir" "$@"
+  fi
   return $?
 }
 

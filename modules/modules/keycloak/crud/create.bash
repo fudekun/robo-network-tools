@@ -136,7 +136,7 @@ function create_main() {
     --version "${HELM_VERSION}" \
     --create-namespace \
     --wait \
-    --timeout 600s \
+    --timeout 1200s \
     --description "CREATES_RELEASE_ID=r${CREATES_RELEASE_ID}" \
     --set commonAnnotations."rdbox\.local/release"="r${CREATES_RELEASE_ID}" \
     --set ingress.hostname="${hostname_for_keycloak_main}.${BASE_FQDN}" \
@@ -172,7 +172,7 @@ function create_main() {
   echo "### Testing to access the endpoint ..."
   rootca_file=$(getFullpathOfRootCA)
   http_code=$(waitForSuccessOfCommand \
-              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${rootca_file} https://${hostname_for_keycloak_main}.${BASE_FQDN}/")
+              "curl -fs -w '%{http_code}' -o /dev/null --cacert ${rootca_file} https://${hostname_for_keycloak_main}.${BASE_FQDN}/realms/master")
   if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 299 ];then
     echo "The HTTP Status is ${http_code} ...ok"
     return 0
@@ -305,7 +305,7 @@ function bind_role_to_service_account() {
   
   local client_info_realm_management client_realm_management_id
   client_info_realm_management=$(read_entry "${realm}" "${token}" "clients" "clientId=realm-management&first=0&max=11&search=true")
-  if [ "$(echo "${client_info}" | jq '. | length')" -ne 1 ]; then
+  if [ "$(echo "${client_info_realm_management}" | jq '. | length')" -ne 1 ]; then
     echo "The specified client_name(realm-management) does not exist"
     return 0
   fi
