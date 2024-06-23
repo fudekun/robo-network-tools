@@ -161,8 +161,8 @@ function create_main() {
   echo ""
   echo "### Create a service account with RBAC(kubernetes.dashboard) ..."
   kubectl_r apply \
-    -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/05_dashboard-rbac.yaml \
-    -f https://raw.githubusercontent.com/kubernetes/dashboard/v"${__app_version}"/aio/deploy/recommended/01_dashboard-serviceaccount.yaml
+    -f https://raw.githubusercontent.com/kubernetes/dashboard/"${__app_version}"/aio/deploy/recommended/05_dashboard-rbac.yaml \
+    -f https://raw.githubusercontent.com/kubernetes/dashboard/"${__app_version}"/aio/deploy/recommended/01_dashboard-serviceaccount.yaml
   ### .2 Setup .kube/config
   ###
   local __name_cm_kubeconfig="kubeconfig"
